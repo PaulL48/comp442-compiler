@@ -2,11 +2,11 @@ use crate::double_buffer::{DoubleFixedBuffer, DoubleFixedBufferCursor, BUFFER_SI
 use crate::lexical_rule::{FusedRuleState, LexicalRule, RuleState};
 use crate::token::Token;
 use crate::utilities::is_start_of_codepoint;
+use lazy_static::lazy_static;
+use log::{error, trace, warn};
 use regex_automata::DFA;
 use std::fs::File;
 use std::io::Read;
-use lazy_static::lazy_static;
-use log::{trace, warn, error};
 
 pub struct Lexer {
     rules: Vec<LexicalRule>,

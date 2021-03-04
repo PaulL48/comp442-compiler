@@ -6,8 +6,8 @@
 mod directory_iterator;
 
 pub use crate::directory_iterator::directory;
-use std::path::Path;
 use log::error;
+use std::path::Path;
 use std::str::FromStr;
 
 pub fn extension(path: &str) -> Option<&str> {
@@ -32,7 +32,7 @@ pub fn file_name(path: &str) -> Option<&str> {
             return Some(file_name);
         }
     }
-    return None
+    return None;
 }
 
 pub fn canonicalize(path: &str) -> std::io::Result<String> {

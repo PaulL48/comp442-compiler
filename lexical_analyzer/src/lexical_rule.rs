@@ -1,3 +1,4 @@
+use log::{error, info, trace, warn};
 use path::canonicalize;
 use regex_automata;
 use regex_automata::DFA;
@@ -5,7 +6,6 @@ use std::fmt;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::str::FromStr;
-use log::{trace, info, warn, error};
 
 const INPUT_FILE_SEPARATOR: char = '@';
 

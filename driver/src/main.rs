@@ -1,10 +1,10 @@
 mod cli_config;
 
 use clap::{load_yaml, App};
-use log::info;
-use simplelog::*;
-use path;
 use cli_config::CliConfig;
+use log::info;
+use path;
+use simplelog::*;
 
 /// Development switch to easily turn terminal logging on or off
 const LOGGING_SWITCH: LevelFilter = LevelFilter::Info;
