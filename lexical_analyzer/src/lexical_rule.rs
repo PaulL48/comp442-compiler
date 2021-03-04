@@ -5,6 +5,7 @@ use std::fmt;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::str::FromStr;
+use log::{trace, info, warn, error};
 
 const INPUT_FILE_SEPARATOR: char = '@';
 

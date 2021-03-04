@@ -1,7 +1,7 @@
 //! A specialized buffer for lexical analysis with a constant space complexity
 //! The size of the buffer limits the length of any analysis of the file and
 //! can be changed by modifying BUFFER_SIZE
-
+use log::{trace, error};
 use std::io::Read;
 use std::ops::Index;
 

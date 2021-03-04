@@ -5,6 +5,8 @@ use crate::utilities::is_start_of_codepoint;
 use regex_automata::DFA;
 use std::fs::File;
 use std::io::Read;
+use lazy_static::lazy_static;
+use log::{trace, warn, error};
 
 pub struct Lexer {
     rules: Vec<LexicalRule>,
