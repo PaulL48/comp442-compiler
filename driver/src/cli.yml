@@ -1,0 +1,28 @@
+name: Paul's lexer generator and analyzer
+version: "1.0"
+author: Paul L. <paul.lane083@gmail.com>
+about: Creates a lexical analyzer and parses a set of source files
+args:
+    - tokens:
+        short: t
+        long: tokenfile
+        value_name: FILE
+        help: File containing the definitions for the lexical analyzer's tokens
+        takes_value: true
+    - keywords:
+        short: k
+        long: keywords
+        value_name: FILE
+        help: File containing keywords
+        takes_value: true
+    - output:
+        short: o
+        long: outfolder
+        value_name: FOLDER
+        help: Folder to generate output of lexical analysis (will clobber contents)
+        takes_value: true
+    - INPUT:
+        short: i
+        long: infolder
+        value_name: FOLDER
+        help: Folder to search for *.src files to analyze

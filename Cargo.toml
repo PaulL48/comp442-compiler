@@ -1,0 +1,8 @@
+[workspace]
+
+members = [
+    "driver",
+    "lexical_analyzer",
+    "syntactic_analyzer",
+    "path",
+]
