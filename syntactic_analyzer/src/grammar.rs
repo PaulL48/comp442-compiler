@@ -71,6 +71,7 @@ first(A) {
 // Each symbol can have one or more production, each production is a chain of terminals and non-terminals
 
 use std::hash::Hash;
+use lazy_static::lazy_static;
 
 #[derive(Debug, PartialEq, Hash, Clone)]
 enum Symbol {
@@ -80,6 +81,10 @@ enum Symbol {
 }
 
 impl Eq for Symbol {}
+
+lazy_static! {
+    static ref EPSILON_SET: HashSet<Symbol> = [Symbol::Epsilon].iter().cloned().collect();
+}
 
 // With this structure we would have production as Vec<Symbol> and a grammar as a Vec<production>
 /*
@@ -99,14 +104,21 @@ use std::collections::hash_set::HashSet;
 use std::vec::Vec;
 
 type Production = Vec<Symbol>;
+
+#[derive(Debug)]
 struct Grammar {
     terminals: HashSet<Symbol>,
     non_terminals: HashSet<Symbol>,
+    start_symbol: Symbol,
     productions: HashMap<Symbol, Vec<Production>>,
+    // start symbol
 }
 
 impl Grammar {
-    fn new(productions: HashMap<Symbol, Vec<Production>>) -> Self {
+    fn new(productions: HashMap<Symbol, Vec<Production>>, start_symbol: Symbol) -> Self {
+
+
+        // 
         // scan all the symbols and symbols in the productions
         let mut terminals = HashSet::new();
         let mut non_terminals = HashSet::new();
@@ -115,7 +127,7 @@ impl Grammar {
             match symbol {
                 Symbol::NonTerminal(_) => non_terminals.insert(symbol.clone()),
                 Symbol::Terminal(_) => terminals.insert(symbol.clone()),
-                Symbol::Epsilon => panic!("Epsilon cannot appear on the LHS of a production")
+                Symbol::Epsilon => panic!("Epsilon cannot appear on the LHS of a production"),
             };
 
             for option in production {
@@ -133,6 +145,7 @@ impl Grammar {
             terminals,
             non_terminals,
             productions,
+            start_symbol,
         }
     }
 }
@@ -145,53 +158,298 @@ impl Grammar {
 // So now iterating every production for every non-terminal would be O(n * m')
 // n is the number of non-terminals; m' is the number of productions for a given non-terminal
 
-// So how about the first set
-// (Note: it would seem that caching first(A) would be wise)
-fn first(grammar: &Grammar, a: &Symbol) -> HashSet<Symbol> {
+fn first<'a>(grammar: &'a Grammar, a: &'a Symbol,) -> HashSet<Symbol> {
+    first_internal(grammar, a, &mut HashSet::new())
+}
+
+fn first_internal<'a>(
+    grammar: &'a Grammar,
+    a: &'a Symbol,
+    visited: &mut HashSet<&'a Symbol>,
+) -> HashSet<Symbol> {
     let mut result = HashSet::new();
-    if grammar.terminals.contains(a) || *a == Symbol::Epsilon {
-        result.insert(a.clone());
-    } else if grammar.non_terminals.contains(a) {
-        for production in grammar.productions.get(a) {
-            for option in production {
-                println!("recusing on {:?} from {:?}", option[0], a);
-                let mut f = first(grammar, &option[0]);
-                f.remove(&Symbol::Epsilon);
-                result.extend(f);
-                for symbol in option
-                    .iter()
-                    .skip(1)
-                    .take_while(|symbol| {println!("rec on {:?} from {:?}", symbol, a); return first(grammar, symbol).contains(&Symbol::Epsilon)})
+    if visited.contains(a) {
+        return result;
+    }
+
+    match a {
+        Symbol::NonTerminal(_) => {
+            visited.insert(a);
+            // TODO: make this more robust be returning result
+            for option in grammar.productions.get(a).expect(&format!("Symbol {:?} does not exist within the grammar", a)) {
+                result.extend(&first_internal(grammar, option.first().unwrap(), visited) - &EPSILON_SET);
+                let mut all_epsilons = true;
+                for p in option.windows(2) {
+                    if first_internal(grammar, &p[0], visited).contains(&Symbol::Epsilon) {
+                        result.extend(first_internal(grammar, &p[1], visited));
+                    } else {
+                        all_epsilons = false;
+                        break;
+                    }
+                }
+
+                if all_epsilons
+                    && first_internal(grammar, option.last().unwrap(), visited)
+                        .contains(&Symbol::Epsilon)
                 {
-                    println!("Recursing on {:?} from {:?}", symbol ,a);
-                    result.extend(first(grammar, symbol));
+                    result.insert(Symbol::Epsilon);
                 }
             }
+        }
+        terminal_or_epsilon => {
+            result.insert(terminal_or_epsilon.clone());
         }
     }
     return result;
 }
 
+/*
+    Follow sets of example grammar ($ is eos)
+
+    follow(E)  -> $ )
+    follow(E') -> $ )
+    follow(T)  -> + $ )
+    follow(T') -> + $ )
+    follow(F)  -> * + $ )
+*/
+
+// What we can do is that in the result of the follow set, terminals are terminals
+// nonterminals are placeholders for their follow sets
+
+
+
+fn follow(grammar: &Grammar, a: &Symbol) -> HashSet<Symbol> {
+    // A must be non-terminal
+
+    // If the symbol is the start symbol
+    //      follow(A) includes eos
+    let mut result = HashSet::new();
+    if *a == grammar.start_symbol {
+        result.insert(Symbol::Terminal("$".to_string()));
+    }
+
+    // match a {
+    //     Symbol::Terminal(_) => {
+    //         result.insert(a.clone());
+    //         return result;
+    //     },
+    //     _ => ()
+    // }
+
+    for (producing_symbol, production) in &grammar.productions {
+        for option in production {
+            for symbol_pair in option.windows(2) {
+                if symbol_pair[0] == *a {
+                    if first(grammar, &symbol_pair[1]).contains(&Symbol::Epsilon) {
+                        result.extend(&first(grammar, &symbol_pair[1]) - &EPSILON_SET);
+                        result.insert(producing_symbol.clone());
+                    } else {
+                        result.insert(symbol_pair[1].clone());
+                    }
+                }
+            }
+
+            // Rule 2
+            if a == option.last().unwrap() {
+                result.insert(producing_symbol.clone());
+            }
+        }
+    }
+    result
+
+    // If there is a production B -> XAY in productions (X can be nothing)
+    //      follow(A) includes first(Y) - EPSILON
+
+    // If there is a production B -> XAY in productions and Y can produce epsilon (X can be nothing)
+    // (Note "Y" can produce epsilon is just a bad way of writing first(Y) includes epsilon)
+    //      follow(A) includes follow(B)
+
+    // Prof seems to go through rules and exhaust them for the grammar before moving on
+    // ie. find all start symbols
+    // find all for "If there is a production B -> XAY in productions (X can be nothing)"
+    // find all for "If there is a production B -> XAY in productions and Y can produce epsilon (X can be nothing)"
+
+    // The last rule, follow(A) includes follow(B) is affected by the order that the productions are processed
+    // so the professor suggests that the inclusion relation must be applied repeatedly until the sets stop changing
+
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use lazy_static::lazy_static;
+
+    lazy_static! {
+        static ref TEST_GRAMMAR: Grammar = Grammar::new(
+            [
+                (
+                    Symbol::NonTerminal("E".to_string()),
+                    vec![vec![
+                        Symbol::NonTerminal("T".to_string()),
+                        Symbol::NonTerminal("E'".to_string()),
+                    ]],
+                ),
+                (
+                    Symbol::NonTerminal("E'".to_string()),
+                    vec![
+                        vec![
+                            Symbol::Terminal("+".to_string()),
+                            Symbol::NonTerminal("T".to_string()),
+                            Symbol::NonTerminal("E'".to_string()),
+                        ],
+                        vec![Symbol::Epsilon],
+                    ],
+                ),
+                (
+                    Symbol::NonTerminal("T".to_string()),
+                    vec![vec![
+                        Symbol::NonTerminal("F".to_string()),
+                        Symbol::NonTerminal("T'".to_string()),
+                    ]],
+                ),
+                (
+                    Symbol::NonTerminal("T'".to_string()),
+                    vec![
+                        vec![
+                            Symbol::Terminal("*".to_string()),
+                            Symbol::NonTerminal("F".to_string()),
+                            Symbol::NonTerminal("T'".to_string()),
+                        ],
+                        vec![Symbol::Epsilon],
+                    ],
+                ),
+                (
+                    Symbol::NonTerminal("F".to_string()),
+                    vec![
+                        vec![Symbol::Terminal("0".to_string())],
+                        vec![Symbol::Terminal("1".to_string())],
+                        vec![
+                            Symbol::Terminal("(".to_string()),
+                            Symbol::NonTerminal("E".to_string()),
+                            Symbol::Terminal(")".to_string()),
+                        ],
+                    ],
+                ),
+            ]
+            .iter()
+            .cloned()
+            .collect(),
+            Symbol::NonTerminal("E".to_string()),
+        );
+    }
 
     #[test]
     fn test_first_ok() {
+        assert_eq!(
+            first(
+                &TEST_GRAMMAR,
+                &Symbol::NonTerminal("E".to_string())
+            ),
+            [
+                Symbol::Terminal("0".to_string()),
+                Symbol::Terminal("1".to_string()),
+                Symbol::Terminal("(".to_string())
+            ]
+            .iter()
+            .cloned()
+            .collect::<HashSet<Symbol>>()
+        );
 
-        let grammar = Grammar::new([
-            (Symbol::NonTerminal("E".to_string()),  vec![vec![Symbol::NonTerminal("T".to_string()), Symbol::NonTerminal("E'".to_string())]]),
-            (Symbol::NonTerminal("E'".to_string()), vec![vec![Symbol::Terminal("+".to_string()), Symbol::NonTerminal("T".to_string()), Symbol::NonTerminal("E'".to_string())], vec![Symbol::Epsilon]]),
-            (Symbol::NonTerminal("T".to_string()),  vec![vec![Symbol::NonTerminal("F".to_string()), Symbol::NonTerminal("T'".to_string())]]),
-            (Symbol::NonTerminal("T'".to_string()), vec![vec![Symbol::Terminal("*".to_string()), Symbol::NonTerminal("F".to_string()), Symbol::NonTerminal("T'".to_string())], vec![Symbol::Epsilon]]),
-            (Symbol::NonTerminal("F".to_string()),  vec![vec![Symbol::Terminal("0".to_string())], vec![Symbol::Terminal("1".to_string())], vec![Symbol::Terminal("(".to_string()), Symbol::NonTerminal("E".to_string()), Symbol::Terminal(")".to_string())]]),
-        ].iter().cloned().collect());
+        assert_eq!(
+            first(
+                &TEST_GRAMMAR,
+                &Symbol::NonTerminal("E'".to_string())
+            ),
+            [Symbol::Terminal("+".to_string()), Symbol::Epsilon,]
+                .iter()
+                .cloned()
+                .collect()
+        );
 
-        println!("{:?}", grammar.productions);
-        println!("{:?}", grammar.non_terminals);
-        println!("{:?}", grammar.terminals);
+        assert_eq!(
+            first(
+                &TEST_GRAMMAR,
+                &Symbol::NonTerminal("T".to_string())
+            ),
+            [
+                Symbol::Terminal("0".to_string()),
+                Symbol::Terminal("1".to_string()),
+                Symbol::Terminal("(".to_string())
+            ]
+            .iter()
+            .cloned()
+            .collect()
+        );
 
-        assert_eq!(first(&grammar, &Symbol::NonTerminal("E".to_string())), [Symbol::Terminal("0".to_string()), Symbol::Terminal("1".to_string()), Symbol::Terminal("(".to_string())].iter().cloned().collect::<HashSet<Symbol>>());
+        assert_eq!(
+            first(
+                &TEST_GRAMMAR,
+                &Symbol::NonTerminal("T'".to_string())
+            ),
+            [Symbol::Terminal("*".to_string()), Symbol::Epsilon,]
+                .iter()
+                .cloned()
+                .collect()
+        );
+
+        assert_eq!(
+            first(
+                &TEST_GRAMMAR,
+                &Symbol::NonTerminal("F".to_string())
+            ),
+            [
+                Symbol::Terminal("0".to_string()),
+                Symbol::Terminal("1".to_string()),
+                Symbol::Terminal("(".to_string()),
+            ]
+            .iter()
+            .cloned()
+            .collect()
+        );
+    }
+
+    #[test]
+    fn test_follow() {
+        assert_eq!(
+            follow(&TEST_GRAMMAR, &Symbol::NonTerminal("E".to_string())),
+            [
+                Symbol::Terminal("$".to_string()),
+                Symbol::Terminal(")".to_string())
+            ].iter().cloned().collect()
+        );
+
+        assert_eq!(
+            follow(&TEST_GRAMMAR, &Symbol::NonTerminal("E'".to_string())),
+            [
+                Symbol::NonTerminal("E".to_string()),
+                Symbol::NonTerminal("E'".to_string()),
+            ].iter().cloned().collect()
+        );
+
+        assert_eq!(
+            follow(&TEST_GRAMMAR, &Symbol::NonTerminal("T".to_string())),
+            [
+                Symbol::Terminal("+".to_string()),
+                Symbol::NonTerminal("E".to_string()),
+                Symbol::NonTerminal("E'".to_string()),
+            ].iter().cloned().collect()
+        );
+
+        assert_eq!(
+            follow(&TEST_GRAMMAR, &Symbol::NonTerminal("T'".to_string())),
+            [
+                Symbol::NonTerminal("T".to_string()),
+                Symbol::NonTerminal("T'".to_string()),
+            ].iter().cloned().collect()
+        );
+        
+        assert_eq!(
+            follow(&TEST_GRAMMAR, &Symbol::NonTerminal("F".to_string())),
+            [
+                Symbol::Terminal("*".to_string()),
+                Symbol::NonTerminal("T".to_string()),
+                Symbol::NonTerminal("T'".to_string()),
+            ].iter().cloned().collect()
+        );
     }
 }

@@ -14,11 +14,3 @@
 // Need tools to generate FIRST and FOLLOW sets of the symbols in the grammar
 // This necessitates an internal representation of a grammar and production
 mod grammar;
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}
