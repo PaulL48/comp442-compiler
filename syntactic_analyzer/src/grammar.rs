@@ -1,77 +1,7 @@
-// generating first and follows sets
-// first:
-
-/*
-// Where A is a terminal or non-terminal
-first(A) {
-    if (A in Terminals) || (A == EPSILON)
-        first(A) includes A
-    else if (A in Nonterminals) && There-exists (A -> S1 S2 S3 ... Sk) in productions such that S1...Sk in (Nonterminals U terminals)
-        first(A) includes (first(S1) - {EPSILON})
-        if there exists zero or more i < k && (EPSILON in first(S1), first(S2), ..., first(Sk))
-            first(A) includes first(Si+1)
-
-
-}
-
-
-
-a better rendition
-first(A) {
-    if (A in Terminals) || (A == EPSILON)
-        first(A) includes A
-    else if (A in Nonterminals)
-        for each production (A -> S1 S2 ... Sk)
-            // 2.1
-            first(A) includes (first(S1) - {EPSILON})
-
-            // 2.1 start
-            // Find the longest series of epsilons starting from S1
-            i = 0
-            for (; i < k; ++i)
-                if !EPSILON in first(Si)
-                    break
-
-            // 2.3
-            // If every S can be epsilon, A can be epsilon
-            if i == k
-                first(A) includes EPSILON
-
-            // Now since every S up to Si can be epsilon, A can start with the first of S1 to Si
-            for (; i >= 0; --i)
-                first(A) includes first(Si)
-
-            // 2.1 end
-}
-
-
-*/
-
-// Initial goals create an internal representation of a grammar that provides
-// economy of computing the first and follow sets
-
-// example grammar
-/*
-    E  -> TE'
-    E' -> +TE' | EPSILON
-    T  -> FT'
-    T' -> *FT' | EPSILON
-    F  -> 0 | 1 | (E)
-*/
-
-// Formatted for parsing <> delimit non-terminals, '' delimit terminals
-/*
-    <E>  -> <T> <E'>
-    <E'> -> '+' <T> <E'> | EPSILON
-    <T>  -> <F> <T'>
-    <T'> -> '*' <F> <T'> | EPSILON
-    <F>  -> '0' | '1' | '(' <E> ')'
-*/
-
-// Each symbol can have one or more production, each production is a chain of terminals and non-terminals
-
-use std::hash::Hash;
+use std::collections::{hash_map::HashMap, hash_set::HashSet};
 use lazy_static::lazy_static;
+use std::hash::Hash;
+use std::vec::Vec;
 
 #[derive(Debug, PartialEq, Hash, Clone)]
 enum Symbol {
@@ -85,23 +15,6 @@ impl Eq for Symbol {}
 lazy_static! {
     static ref EPSILON_SET: HashSet<Symbol> = [Symbol::Epsilon].iter().cloned().collect();
 }
-
-// With this structure we would have production as Vec<Symbol> and a grammar as a Vec<production>
-/*
-type Production = std::Vec<Symbol>;
-struct Grammar {
-    // terminals: std::Vec<Symbol>
-    // non-terminals: std::Vec<Symbol>
-    productions: std::Vec<Production>,
-}
-*/
-// This would mean O(n) for every terminal U non-terminal to find their productions
-// So to iterate every production for every non-terminal would be O(n * m)
-// n is number of non-terminals; m is total number of productions
-// use std::collections::{hash_map::HashMap, hash_set::HashSet};
-use std::collections::hash_map::HashMap;
-use std::collections::hash_set::HashSet;
-use std::vec::Vec;
 
 type Production = Vec<Symbol>;
 
@@ -150,13 +63,9 @@ impl Grammar {
     }
 }
 
-// productions:
-/// {
-///     A: [["0"], ["1"], ["(", "E", ")"]]
-/// }
+struct FirstAndFollowSets {
 
-// So now iterating every production for every non-terminal would be O(n * m')
-// n is the number of non-terminals; m' is the number of productions for a given non-terminal
+}
 
 fn first<'a>(grammar: &'a Grammar, a: &'a Symbol,) -> HashSet<Symbol> {
     first_internal(grammar, a, &mut HashSet::new())
@@ -272,6 +181,41 @@ fn follow(grammar: &Grammar, a: &Symbol) -> HashSet<Symbol> {
     // The last rule, follow(A) includes follow(B) is affected by the order that the productions are processed
     // so the professor suggests that the inclusion relation must be applied repeatedly until the sets stop changing
 
+}
+
+/*
+    follow_set = {
+        E = {NonTerminal("E'"), Terminal("$")},
+        E' = {NonTerminal("E'")}
+    }
+*/
+
+fn expand_follow_sets_once(follow_sets: &HashMap<Symbol, HashSet<Symbol>>) -> HashMap<Symbol, HashSet<Symbol>> {
+    let mut result = follow_sets.clone();
+    for (symbol, follow_set) in follow_sets {
+        let non_terminals: Vec<Symbol> = follow_set.iter().cloned().filter(|x| matches!(x, Symbol::NonTerminal(_))).collect();
+        for non_terminal in non_terminals {
+            result.get_mut(symbol).unwrap().remove(&non_terminal);
+            if non_terminal != *symbol {
+                result.get_mut(symbol).unwrap().extend(follow_sets.get(&non_terminal).unwrap().iter().cloned());
+            }
+        }
+    }
+    result
+}
+
+const MAX_EXPANSION_DEPTH: i32 = 100000;
+
+fn expand_follow_sets(follow_sets: &HashMap<Symbol, HashSet<Symbol>>) -> HashMap<Symbol, HashSet<Symbol>> {
+    let mut current = follow_sets.clone();
+    let mut next = expand_follow_sets_once(&current);
+    let mut iterations = 0;
+    while current != next && iterations < MAX_EXPANSION_DEPTH {
+        current = next;
+        next = expand_follow_sets_once(&current);
+        iterations += 1;
+    }
+    next
 }
 
 #[cfg(test)]
@@ -449,6 +393,61 @@ mod tests {
                 Symbol::Terminal("*".to_string()),
                 Symbol::NonTerminal("T".to_string()),
                 Symbol::NonTerminal("T'".to_string()),
+            ].iter().cloned().collect()
+        );
+    }
+
+    #[test]
+    fn test_expand_follow_sets() {
+        let mut follow_sets = HashMap::new();
+        for (symbol, _) in &TEST_GRAMMAR.productions {
+            follow_sets.insert(symbol.clone(), follow(&TEST_GRAMMAR, &symbol));
+        }
+
+        let follow_sets = expand_follow_sets(&follow_sets);
+
+
+        assert_eq!(
+            follow_sets[&Symbol::NonTerminal("E".to_string())],
+            [
+                Symbol::Terminal("$".to_string()),
+                Symbol::Terminal(")".to_string())
+            ].iter().cloned().collect()
+        );
+
+        assert_eq!(
+            follow_sets[&Symbol::NonTerminal("E'".to_string())],
+            [
+                Symbol::Terminal("$".to_string()),
+                Symbol::Terminal(")".to_string())
+            ].iter().cloned().collect()
+        );
+
+        assert_eq!(
+            follow_sets[&Symbol::NonTerminal("T".to_string())],
+            [
+                Symbol::Terminal("+".to_string()),
+                Symbol::Terminal("$".to_string()),
+                Symbol::Terminal(")".to_string())
+            ].iter().cloned().collect()
+        );
+
+        assert_eq!(
+            follow_sets[&Symbol::NonTerminal("T'".to_string())],
+            [
+                Symbol::Terminal("+".to_string()),
+                Symbol::Terminal("$".to_string()),
+                Symbol::Terminal(")".to_string())
+            ].iter().cloned().collect()
+        );
+        
+        assert_eq!(
+            follow_sets[&Symbol::NonTerminal("F".to_string())],
+            [
+                Symbol::Terminal("*".to_string()),
+                Symbol::Terminal("+".to_string()),
+                Symbol::Terminal("$".to_string()),
+                Symbol::Terminal(")".to_string())
             ].iter().cloned().collect()
         );
     }
