@@ -1,0 +1,6 @@
+0 @ false @ false @ 0
+1 @ false @ false @ 1
+\( @ false @ false @ (
+\) @ false @ false @ )
+\+ @ false @ false @ +
+\* @ false @ false @ *

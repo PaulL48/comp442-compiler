@@ -14,3 +14,7 @@
 // Need tools to generate FIRST and FOLLOW sets of the symbols in the grammar
 // This necessitates an internal representation of a grammar and production
 mod grammar;
+mod parse_table;
+
+pub use grammar::*;
+pub use parse_table::*;

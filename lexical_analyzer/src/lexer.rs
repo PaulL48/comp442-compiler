@@ -25,7 +25,7 @@ pub struct Lex<'a, T: Read> {
     previous_column: usize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum LexingError {
     LexemeTooLong(usize, usize),
     InvalidCharacter(String, usize, usize),

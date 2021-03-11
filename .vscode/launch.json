@@ -19,7 +19,7 @@
                     "kind": "bin"
                 }
             },
-            "args": [],
+            "args": ["-t", "resources/mexpr_tokens.txt", "-g", "resources/test_grammar.txt"],
             "cwd": "${workspaceFolder}"
         },
         {

@@ -1,10 +1,16 @@
 use lazy_static::lazy_static;
+use log::{error, warn};
+use regex::Regex;
 use std::collections::{hash_map::HashMap, hash_set::HashSet};
+use std::fs::File;
 use std::hash::Hash;
+use std::io::Read;
+use std::io::{BufRead, BufReader};
+use std::str::FromStr;
 use std::vec::Vec;
 
 #[derive(Debug, PartialEq, Hash, Clone)]
-enum Symbol {
+pub enum Symbol {
     Terminal(String),
     NonTerminal(String),
     Epsilon,
@@ -13,27 +19,147 @@ enum Symbol {
 
 impl Eq for Symbol {}
 
+impl FromStr for Symbol {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        lazy_static! {
+            static ref TERMINAL_RE: Regex =
+                Regex::new("'(?P<value>.*)'").expect("Failed to compile RE");
+            static ref NON_TERMINAL_RE: Regex =
+                Regex::new("<(?P<value>.*)>").expect("Failed to compile RE");
+            static ref EPSILON_RE: Regex = Regex::new("EPSILON").expect("Failed to compile RE");
+        }
+
+        // Nested unwraps() are safe due to is_match guard
+        if NON_TERMINAL_RE.is_match(s) {
+            let captures = NON_TERMINAL_RE.captures(s).unwrap();
+            return Ok(Symbol::NonTerminal(captures["value"].to_string()));
+        } else if TERMINAL_RE.is_match(s) {
+            let captures = TERMINAL_RE.captures(s).unwrap();
+            return Ok(Symbol::Terminal(captures["value"].to_string()));
+        } else if EPSILON_RE.is_match(s) {
+            return Ok(Symbol::Epsilon);
+        } else {
+            return Err("bad".to_string());
+        }
+    }
+}
+
 lazy_static! {
     static ref EPSILON_SET: HashSet<Symbol> = [Symbol::Epsilon].iter().cloned().collect();
 }
 
-type Production = Vec<Symbol>;
+pub type Production = Vec<Symbol>;
 
-#[derive(Debug)]
-struct Grammar {
-    // terminals: HashSet<Symbol>,
-    // non_terminals: HashSet<Symbol>,
+#[derive(Debug, PartialEq)]
+pub struct Grammar {
     start_symbol: Symbol,
     productions: HashMap<Symbol, Vec<Production>>,
-    // start symbol
 }
 
 impl Grammar {
-    fn new(productions: HashMap<Symbol, Vec<Production>>, start_symbol: Symbol) -> Self {
+    pub fn new(productions: HashMap<Symbol, Vec<Production>>, start_symbol: Symbol) -> Self {
         Grammar {
             productions,
             start_symbol,
         }
+    }
+
+    pub fn productions(&self) -> &HashMap<Symbol, Vec<Production>> {
+        &self.productions
+    }
+
+    pub fn start_symbol(&self) -> &Symbol {
+        &self.start_symbol
+    }
+
+    pub fn from_reader<R: Read>(stream: R) -> std::io::Result<Self> {
+        let buf_reader = BufReader::new(stream);
+        let mut productions: HashMap<Symbol, Vec<Production>> = HashMap::new();
+        let mut start_symbol = Symbol::Eos;
+        let mut first = true;
+
+        for (_, line) in buf_reader.lines().enumerate() {
+            let line = match line {
+                Ok(line) => line,
+                Err(err) => {
+                    error!("Error while reading stream: {}", err);
+                    panic!();
+                }
+            };
+
+            if line.len() == 0 {
+                continue;
+            }
+
+            // Split the line at the equals
+            let parts: Vec<&str> = line.split("::=").map(|x| x.trim()).collect();
+            if parts.len() > 1 {
+                let lhs = parts[0];
+                let rhs = parts[1]
+                    .split(" ")
+                    .map(|x| x.trim())
+                    .filter(|x| !x.is_empty());
+                let lhs_symbol;
+
+                match lhs.parse::<Symbol>() {
+                    Ok(symbol) => {
+                        if productions.contains_key(&symbol) {
+                            productions.get_mut(&symbol).unwrap().push(vec![]);
+                        }
+
+                        productions.entry(symbol.clone()).or_insert(vec![vec![]]);
+                        if first {
+                            start_symbol = symbol.clone();
+                            first = false;
+                        }
+                        lhs_symbol = symbol.clone();
+                    }
+                    _ => {
+                        println!("Failed to parse {}", lhs);
+                        lhs_symbol = Symbol::Epsilon.clone();
+                    }
+                }
+
+                for component in rhs {
+                    match component.parse::<Symbol>() {
+                        Ok(symbol) => {
+                            // TODO: Address these unwraps
+
+                            productions
+                                .get_mut(&lhs_symbol)
+                                .unwrap()
+                                .last_mut()
+                                .unwrap()
+                                .push(symbol);
+                        }
+                        _ => (),
+                    }
+                }
+            }
+        }
+
+        Ok(Grammar {
+            productions,
+            start_symbol,
+        })
+    }
+
+    pub fn sentence_first(&self, sentence: &[Symbol]) -> HashSet<Symbol> {
+        let mut result = HashSet::new();
+        if sentence.is_empty() {
+            return result;
+        }
+        // is_empty guard allows unwrap of first()
+        result.extend(self.first(sentence.first().unwrap()));
+        for pair in sentence
+            .windows(2)
+            .take_while(|pair| self.first(&pair[0]).contains(&Symbol::Epsilon))
+        {
+            result.extend(self.first(&pair[1]));
+        }
+        return result;
     }
 
     pub fn first(&self, a: &Symbol) -> HashSet<Symbol> {
@@ -230,6 +356,26 @@ mod tests {
             .collect(),
             Symbol::NonTerminal("E".to_string()),
         );
+    }
+
+    #[test]
+    fn test_grammar_from_stream() {
+        let string = r#"
+            <E> ::= <T> <E'>
+            <E'> ::= '+' <T> <E'>
+            <E'> ::= EPSILON
+            <T> ::= <F> <T'>
+            <T'> ::= '*' <F> <T'>
+            <T'> ::= EPSILON
+            <F> ::= '0'
+            <F> ::= '1'
+            <F> ::= '(' <E> ')'
+        "#
+        .as_bytes();
+        let expected: &Grammar = &TEST_GRAMMAR;
+
+        let grammar = Grammar::from_reader(string).unwrap();
+        assert_eq!(grammar, *expected);
     }
 
     #[test]

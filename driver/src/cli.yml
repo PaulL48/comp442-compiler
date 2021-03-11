@@ -15,6 +15,11 @@ args:
         value_name: FILE
         help: File containing keywords
         takes_value: true
+    - grammar:
+        short: g
+        long: grammar
+        value_name: FILE
+        help: File containing the definitions for the language grammar
     - output:
         short: o
         long: outfolder
