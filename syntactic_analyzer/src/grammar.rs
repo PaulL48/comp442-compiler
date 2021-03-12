@@ -62,7 +62,7 @@ impl Grammar {
     pub fn new(productions: HashMap<Symbol, Vec<Production>>, start_symbol: Symbol) -> Self {
         Grammar {
             productions,
-            start_symbol,
+            start_symbol, 
         }
     }
 
@@ -117,8 +117,9 @@ impl Grammar {
                         lhs_symbol = symbol.clone();
                     }
                     _ => {
-                        println!("Failed to parse {}", lhs);
+                        error!("Failed to parse {}", lhs);
                         lhs_symbol = Symbol::Epsilon.clone();
+                        continue;
                     }
                 }
 

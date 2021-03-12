@@ -5,8 +5,9 @@ use crate::utilities::is_start_of_codepoint;
 use lazy_static::lazy_static;
 use log::{error, trace, warn};
 use regex_automata::DFA;
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 use std::io::Read;
+use std::io::prelude::*;
 
 pub struct Lexer {
     rules: Vec<LexicalRule>,
@@ -23,6 +24,7 @@ pub struct Lex<'a, T: Read> {
     column: usize,
     previous_line: usize,
     previous_column: usize,
+    lex_error_file: File,
 }
 
 #[derive(Debug, Clone)]
@@ -69,7 +71,7 @@ impl Lexer {
         Lexer { rules, keywords }
     }
 
-    pub fn lex(&self, source_path: &str) -> Lex<File> {
+    pub fn lex(&self, source_path: &str, lex_error_path: &str) -> Lex<File> {
         let source = match File::open(source_path) {
             Ok(file) => file,
             Err(err) => {
@@ -77,20 +79,65 @@ impl Lexer {
                 panic!();
             }
         };
-        Lex::new(self, source)
+
+        let lex_error_file = match std::fs::OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .create(true)
+            .open(lex_error_path) 
+        {
+            Ok(file) => file,
+            Err(err) => {
+                warn!("Unable to open file \"{}\": {}", lex_error_path, err);
+                warn!("Lexing errors will be unreported");
+                panic!();
+            }
+        };
+        Lex::new(self, source, lex_error_file)
     }
 }
 
 impl<'a, T: Read> Iterator for Lex<'a, T> {
-    type Item = Result<Token, LexingError>;
+    type Item = Token;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.next_token()
+        let mut next_token = self.next_token();
+        if let None = next_token {
+            return None;
+        }
+
+        loop {
+            match next_token.clone() {
+                Some(Ok(token)) => {
+                    if token.error_token {
+                        match self.lex_error_file.write_all(format!("{}\n", LexingError::from(token.clone())).as_bytes()) {
+                            Err(err) => {
+                                warn!("Failed to write to lexical error file: {}", err);
+                            },
+                            _ => {next_token = self.next_token()},
+                        }
+                    } else {
+                        return Some(token);
+                    }
+                },
+                Some(Err(err)) => {
+                    match self.lex_error_file.write_all(format!("{}\n", err).as_bytes()) {
+                        Err(err) => {
+                            warn!("Failed to write to lexical error file: {}", err);
+                        },
+                        _ => {next_token = self.next_token()},
+                    }
+                },
+                None => {
+                    return None;
+                }
+            }
+        }
     }
 }
 
 impl<'a, T: Read> Lex<'a, T> {
-    fn new(lexer: &'a Lexer, source: T) -> Self {
+    fn new(lexer: &'a Lexer, source: T, lex_error_file: File) -> Self {
         Lex {
             lexer,
             source: DoubleFixedBuffer::new(source),
@@ -100,6 +147,7 @@ impl<'a, T: Read> Lex<'a, T> {
             column: 1,
             previous_line: 1,
             previous_column: 1,
+            lex_error_file
         }
     }
 
