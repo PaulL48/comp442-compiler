@@ -1,86 +1,99 @@
-use lazy_static::lazy_static;
-use log::{error, warn};
-use regex::Regex;
-use std::collections::{hash_map::HashMap, hash_set::HashSet};
-use std::fs::File;
-use std::hash::Hash;
+use std::collections::{HashMap, HashSet};
+use crate::symbol::{Symbol, EPSILON_SET};
+use log::error;
 use std::io::Read;
 use std::io::{BufRead, BufReader};
-use std::str::FromStr;
-use std::vec::Vec;
 
-#[derive(Debug, PartialEq, Hash, Clone)]
-pub enum Symbol {
-    Terminal(String),
-    NonTerminal(String),
-    Epsilon,
-    Eos,
-}
 
-impl Eq for Symbol {}
-
-impl FromStr for Symbol {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        lazy_static! {
-            static ref TERMINAL_RE: Regex =
-                Regex::new("'(?P<value>.*)'").expect("Failed to compile RE");
-            static ref NON_TERMINAL_RE: Regex =
-                Regex::new("<(?P<value>.*)>").expect("Failed to compile RE");
-            static ref EPSILON_RE: Regex = Regex::new("EPSILON").expect("Failed to compile RE");
-        }
-
-        // Nested unwraps() are safe due to is_match guard
-        if NON_TERMINAL_RE.is_match(s) {
-            let captures = NON_TERMINAL_RE.captures(s).unwrap();
-            return Ok(Symbol::NonTerminal(captures["value"].to_string()));
-        } else if TERMINAL_RE.is_match(s) {
-            let captures = TERMINAL_RE.captures(s).unwrap();
-            return Ok(Symbol::Terminal(captures["value"].to_string()));
-        } else if EPSILON_RE.is_match(s) {
-            return Ok(Symbol::Epsilon);
-        } else {
-            return Err("bad".to_string());
-        }
-    }
-}
-
-lazy_static! {
-    static ref EPSILON_SET: HashSet<Symbol> = [Symbol::Epsilon].iter().cloned().collect();
-}
-
-pub type Production = Vec<Symbol>;
+const MAX_FOLLOW_EXPANSIONS: usize = 1000000;
+type Sentence = Vec<Symbol>;
 
 #[derive(Debug, PartialEq)]
 pub struct Grammar {
-    start_symbol: Symbol,
-    productions: HashMap<Symbol, Vec<Production>>,
+    start: Symbol,
+    productions: HashMap<Symbol, Vec<Sentence>>,
+    follow_sets: HashMap<Symbol, HashSet<Symbol>>,
 }
 
 impl Grammar {
-    pub fn new(productions: HashMap<Symbol, Vec<Production>>, start_symbol: Symbol) -> Self {
+    pub fn new(productions: &HashMap<Symbol, Vec<Sentence>>, start_symbol: &Symbol) -> Grammar {
+        // Check if a non terminal appears on a RHS and not any LHS
+        // Check if any RHS are empty (auto remove with warning)
+        if !productions.contains_key(start_symbol) {
+            error!("Start symbol {:?} is not defined on the left-hand side of any productions", start_symbol);
+            panic!();
+        }
+
+        for (producing_symbol, production) in productions {
+            for option in production {
+                if option.is_empty() {
+                    error!("Symbol {:?} has an empty production", producing_symbol);
+                    panic!();
+                }
+
+                for s in option.iter().filter(|s| matches!(s, Symbol::NonTerminal(_))) {
+                    if !productions.contains_key(s) {
+                        error!("Non terminal symbol {:?} does not appear on the left hand side of any productions", s);
+                        panic!();
+                    }
+                }
+            }
+        }
+
+        let follow_sets = follow_sets(productions, start_symbol);
+
         Grammar {
-            productions,
-            start_symbol, 
+            productions: productions.clone(),
+            start: start_symbol.clone(),
+            follow_sets,
         }
     }
 
-    pub fn productions(&self) -> &HashMap<Symbol, Vec<Production>> {
+    pub fn start(&self) -> &Symbol {
+        &self.start
+    }
+
+    pub fn productions(&self) -> &HashMap<Symbol, Vec<Sentence>> {
         &self.productions
     }
 
-    pub fn start_symbol(&self) -> &Symbol {
-        &self.start_symbol
+    pub fn follow(&self, s: &Symbol) -> &HashSet<Symbol> {
+        if matches!(s, Symbol::NonTerminal(_)) && !self.productions.contains_key(s) {
+            error!("Requested follow set of symbol outside the grammar {:?}", s);
+            panic!();
+        }
+        &self.follow_sets.get(s).unwrap()
+    }
+
+    pub fn first(&self, s: &Symbol) -> HashSet<Symbol> {
+        first(&self.productions, s)
+    }
+
+    pub fn sentence_first(&self, sentence: &Sentence) -> HashSet<Symbol> {
+        let mut result = HashSet::new();
+        if sentence.is_empty() {
+            return result;
+        }
+
+        // is_empty guards unwrap of first
+        result.extend(first(&self.productions, sentence.first().unwrap()));
+        for pair in sentence.windows(2).take_while(|pair| first(&self.productions, &pair[0]).contains(&Symbol::Epsilon)) {
+            result.extend(first(&self.productions, &pair[1]));
+        }
+        result
+    }
+
+    pub fn production(&self, non_terminal: &Symbol, option: usize) -> &Sentence {
+        &self.productions[non_terminal][option]
     }
 
     pub fn from_reader<R: Read>(stream: R) -> std::io::Result<Self> {
         let buf_reader = BufReader::new(stream);
-        let mut productions: HashMap<Symbol, Vec<Production>> = HashMap::new();
-        let mut start_symbol = Symbol::Eos;
+        let mut productions: HashMap<Symbol, Vec<Sentence>> = HashMap::new();
         let mut first = true;
+        let mut start_symbol = Symbol::Eos;
 
-        for (_, line) in buf_reader.lines().enumerate() {
+        for line in buf_reader.lines() {
             let line = match line {
                 Ok(line) => line,
                 Err(err) => {
@@ -118,7 +131,6 @@ impl Grammar {
                     }
                     _ => {
                         error!("Failed to parse {}", lhs);
-                        lhs_symbol = Symbol::Epsilon.clone();
                         continue;
                     }
                 }
@@ -141,221 +153,170 @@ impl Grammar {
             }
         }
 
-        Ok(Grammar {
-            productions,
-            start_symbol,
-        })
+        Ok(Grammar::new(&productions, &start_symbol))
     }
+}
 
-    pub fn sentence_first(&self, sentence: &[Symbol]) -> HashSet<Symbol> {
-        let mut result = HashSet::new();
-        if sentence.is_empty() {
-            return result;
-        }
-        // is_empty guard allows unwrap of first()
-        result.extend(self.first(sentence.first().unwrap()));
-        for pair in sentence
-            .windows(2)
-            .take_while(|pair| self.first(&pair[0]).contains(&Symbol::Epsilon))
-        {
-            result.extend(self.first(&pair[1]));
-        }
+fn first(productions: &HashMap<Symbol, Vec<Sentence>>, s: &Symbol) -> HashSet<Symbol>{
+    if matches!(s, Symbol::NonTerminal(_)) && !productions.contains_key(s) {
+        error!("Requested first set of symbol outside the grammar {:?}", s);
+        panic!();
+    }
+    first_internal(productions, s, &mut HashSet::new())
+}
+
+fn first_internal(productions: &HashMap<Symbol, Vec<Sentence>>, s: &Symbol, visited: &mut HashSet<Symbol>) -> HashSet<Symbol> {
+    if matches!(s, Symbol::NonTerminal(_)) && !productions.contains_key(s) {
+        error!("Requested first set of non terminal outside the grammar {:?}", s);
+        panic!();
+    }
+    
+    let mut result = HashSet::new();
+    if visited.contains(s) {
         return result;
     }
 
-    pub fn first(&self, a: &Symbol) -> HashSet<Symbol> {
-        self.first_internal(a, &mut HashSet::new())
+    match s {
+        Symbol::NonTerminal(_) => {
+            result.extend(non_terminal_first(productions, s, visited));
+        },
+        other => {result.insert(other.clone());},
     }
 
-    fn first_internal<'a>(
-        &'a self,
-        a: &'a Symbol,
-        visited: &mut HashSet<&'a Symbol>,
-    ) -> HashSet<Symbol> {
-        let mut result = HashSet::new();
-        if visited.contains(a) {
-            return result;
-        }
+    result
+}
 
-        match a {
-            Symbol::NonTerminal(_) => {
-                visited.insert(a);
-                // TODO: make this more robust be returning result
-                for option in self
-                    .productions
-                    .get(a)
-                    .expect(&format!("Symbol {:?} does not exist within the grammar", a))
-                {
-                    result.extend(
-                        &self.first_internal(option.first().unwrap(), visited) - &EPSILON_SET,
-                    );
-                    let mut all_epsilons = true;
-                    for p in option.windows(2) {
-                        if self
-                            .first_internal(&p[0], visited)
-                            .contains(&Symbol::Epsilon)
-                        {
-                            result.extend(self.first_internal(&p[1], visited));
-                        } else {
-                            all_epsilons = false;
-                            break;
-                        }
-                    }
-
-                    if all_epsilons
-                        && self
-                            .first_internal(option.last().unwrap(), visited)
-                            .contains(&Symbol::Epsilon)
-                    {
-                        result.insert(Symbol::Epsilon);
-                    }
-                }
-            }
-            terminal_or_epsilon => {
-                result.insert(terminal_or_epsilon.clone());
+fn non_terminal_first(productions: &HashMap<Symbol, Vec<Sentence>>, s: &Symbol, visited: &mut HashSet<Symbol>) -> HashSet<Symbol> {
+    let mut result = HashSet::new();
+    for option in productions.get(s).unwrap() {
+        result.extend(
+            &first_internal(productions, option.first().unwrap(), visited) - &EPSILON_SET
+        );
+        let mut all_epsilons = true;
+        for pair in option.windows(2) {
+            if first(productions, &pair[0]).contains(&Symbol::Epsilon) {
+                result.extend(first_internal(productions, &pair[1], visited))
+            } else {
+                all_epsilons = false;
+                break;
             }
         }
-        return result;
+        if all_epsilons && first(productions, option.last().unwrap()).contains(&Symbol::Epsilon) {
+            result.insert(Symbol::Epsilon);
+        }
+    }
+    result
+}
+
+fn follow_sets(productions: &HashMap<Symbol, Vec<Sentence>>, start_symbol: &Symbol) -> HashMap<Symbol, HashSet<Symbol>> {
+    let mut follow_sets = HashMap::new();
+    for (symbol, _) in productions {
+        follow_sets.insert(symbol.clone(), unexpanded_follow(productions, start_symbol, symbol));
+    }
+    expand_follow(&follow_sets)
+}
+
+fn unexpanded_follow(productions: &HashMap<Symbol, Vec<Sentence>>, start_symbol: &Symbol, s: &Symbol) -> HashSet<Symbol> {
+    let mut result = HashSet::new();
+    if s == start_symbol {
+        result.insert(Symbol::Eos);
     }
 
-    pub fn follow_sets(&self) -> HashMap<Symbol, HashSet<Symbol>> {
-        let mut follow_sets = HashMap::new();
-        for (symbol, _) in &self.productions {
-            follow_sets.insert(symbol.clone(), self.unexpanded_follow(&symbol));
-        }
-
-        Grammar::expand_follow_sets(&follow_sets)
-    }
-
-    fn unexpanded_follow(&self, a: &Symbol) -> HashSet<Symbol> {
-        let mut result = HashSet::new();
-        if *a == self.start_symbol {
-            result.insert(Symbol::Eos);
-        }
-
-        for (producing_symbol, production) in &self.productions {
-            for option in production {
-                for symbol_pair in option.windows(2) {
-                    if symbol_pair[0] == *a {
-                        if self.first(&symbol_pair[1]).contains(&Symbol::Epsilon) {
-                            result.extend(&self.first(&symbol_pair[1]) - &EPSILON_SET);
-                            result.insert(producing_symbol.clone());
-                        } else {
-                            result.insert(symbol_pair[1].clone());
-                        }
+    for (producing_symbol, production) in productions {
+        for option in production {
+            for symbol_pair in option.windows(2) {
+                if symbol_pair[0] == *s {
+                    if first(productions, &symbol_pair[1]).contains(&Symbol::Epsilon) {
+                        result.extend(&first(productions, &symbol_pair[1]) - &EPSILON_SET);
+                        result.insert(producing_symbol.clone());
+                    } else {
+                        result.insert(symbol_pair[1].clone());
                     }
                 }
+            }
 
-                // Rule 2
-                if a == option.last().unwrap() {
-                    result.insert(producing_symbol.clone());
-                }
+            // Unwrap guarded by empty RHS check in new
+            if s == option.last().unwrap() {
+                result.insert(producing_symbol.clone());
             }
         }
-        result
     }
+    result
+}
 
-    const MAX_EXPANSION_DEPTH: i32 = 100000;
+fn expand_follow(follow_sets: &HashMap<Symbol, HashSet<Symbol>>) -> HashMap<Symbol, HashSet<Symbol>> {
+    let mut current = follow_sets.clone();
+    let mut next = expand_follow_once(&current);
+    let mut iterations = 0;
+    while current != next && iterations < MAX_FOLLOW_EXPANSIONS {
+        current = next;
+        next = expand_follow_once(&current);
+        iterations += 1;
+    }
+    next
+}
 
-    fn expand_follow_sets_once(
-        follow_sets: &HashMap<Symbol, HashSet<Symbol>>,
-    ) -> HashMap<Symbol, HashSet<Symbol>> {
-        let mut result = follow_sets.clone();
-        for (symbol, follow_set) in follow_sets {
-            let non_terminals: Vec<Symbol> = follow_set
-                .iter()
-                .cloned()
-                .filter(|x| matches!(x, Symbol::NonTerminal(_)))
-                .collect();
-            for non_terminal in non_terminals {
-                result.get_mut(symbol).unwrap().remove(&non_terminal);
-                if non_terminal != *symbol {
-                    result
-                        .get_mut(symbol)
-                        .unwrap()
-                        .extend(follow_sets.get(&non_terminal).unwrap().iter().cloned());
-                }
+fn expand_follow_once(follow_sets: &HashMap<Symbol, HashSet<Symbol>>) -> HashMap<Symbol, HashSet<Symbol>> {
+    let mut result = follow_sets.clone();
+    for (symbol, follow_set) in follow_sets {
+        let non_terminals = follow_set
+            .iter()
+            .filter(|x| matches!(x, Symbol::NonTerminal(_)))
+            .cloned();
+        for non_terminal in non_terminals {
+            result.get_mut(symbol).unwrap().remove(&non_terminal);
+            if non_terminal != * symbol {
+                result.get_mut(symbol).unwrap().extend(follow_sets.get(&non_terminal).unwrap().iter().cloned());
             }
         }
-        result
     }
-
-    fn expand_follow_sets(
-        follow_sets: &HashMap<Symbol, HashSet<Symbol>>,
-    ) -> HashMap<Symbol, HashSet<Symbol>> {
-        let mut current = follow_sets.clone();
-        let mut next = Grammar::expand_follow_sets_once(&current);
-        let mut iterations = 0;
-        while current != next && iterations < Grammar::MAX_EXPANSION_DEPTH {
-            current = next;
-            next = Grammar::expand_follow_sets_once(&current);
-            iterations += 1;
-        }
-        next
-    }
+    result
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use lazy_static::lazy_static;
+    use maplit::{hashmap, hashset};
 
     lazy_static! {
         static ref TEST_GRAMMAR: Grammar = Grammar::new(
-            [
-                (
-                    Symbol::NonTerminal("E".to_string()),
-                    vec![vec![
+            &hashmap!{
+                Symbol::NonTerminal("E".to_string()) => vec![vec![
+                    Symbol::NonTerminal("T".to_string()),
+                    Symbol::NonTerminal("E'".to_string()),
+                ]],
+                Symbol::NonTerminal("E'".to_string()) => vec![
+                    vec![
+                        Symbol::Terminal("+".to_string()),
                         Symbol::NonTerminal("T".to_string()),
                         Symbol::NonTerminal("E'".to_string()),
-                    ]],
-                ),
-                (
-                    Symbol::NonTerminal("E'".to_string()),
-                    vec![
-                        vec![
-                            Symbol::Terminal("+".to_string()),
-                            Symbol::NonTerminal("T".to_string()),
-                            Symbol::NonTerminal("E'".to_string()),
-                        ],
-                        vec![Symbol::Epsilon],
-                    ],
-                ),
-                (
-                    Symbol::NonTerminal("T".to_string()),
-                    vec![vec![
-                        Symbol::NonTerminal("F".to_string()),
-                        Symbol::NonTerminal("T'".to_string()),
-                    ]],
-                ),
-                (
+                    ], 
+                    vec![Symbol::Epsilon]
+                ],
+                Symbol::NonTerminal("T".to_string()) => vec![vec![
+                    Symbol::NonTerminal("F".to_string()),
                     Symbol::NonTerminal("T'".to_string()),
+                ]],
+                Symbol::NonTerminal("T'".to_string()) => vec![
                     vec![
-                        vec![
                             Symbol::Terminal("*".to_string()),
                             Symbol::NonTerminal("F".to_string()),
                             Symbol::NonTerminal("T'".to_string()),
-                        ],
-                        vec![Symbol::Epsilon],
                     ],
-                ),
-                (
-                    Symbol::NonTerminal("F".to_string()),
+                    vec![Symbol::Epsilon],
+                ],
+                Symbol::NonTerminal("F".to_string()) => vec![
+                    vec![Symbol::Terminal("0".to_string())],
+                    vec![Symbol::Terminal("1".to_string())],
                     vec![
-                        vec![Symbol::Terminal("0".to_string())],
-                        vec![Symbol::Terminal("1".to_string())],
-                        vec![
-                            Symbol::Terminal("(".to_string()),
-                            Symbol::NonTerminal("E".to_string()),
-                            Symbol::Terminal(")".to_string()),
-                        ],
+                        Symbol::Terminal("(".to_string()),
+                        Symbol::NonTerminal("E".to_string()),
+                        Symbol::Terminal(")".to_string()),
                     ],
-                ),
-            ]
-            .iter()
-            .cloned()
-            .collect(),
-            Symbol::NonTerminal("E".to_string()),
+                ]
+            },
+            &Symbol::NonTerminal("E".to_string()),
         );
     }
 
@@ -383,174 +344,124 @@ mod tests {
     fn test_first_ok() {
         assert_eq!(
             TEST_GRAMMAR.first(&Symbol::NonTerminal("E".to_string())),
-            [
+            hashset!{
                 Symbol::Terminal("0".to_string()),
                 Symbol::Terminal("1".to_string()),
                 Symbol::Terminal("(".to_string())
-            ]
-            .iter()
-            .cloned()
-            .collect::<HashSet<Symbol>>()
+            }
         );
 
         assert_eq!(
             TEST_GRAMMAR.first(&Symbol::NonTerminal("E'".to_string())),
-            [Symbol::Terminal("+".to_string()), Symbol::Epsilon,]
-                .iter()
-                .cloned()
-                .collect()
+            hashset!{Symbol::Terminal("+".to_string()), Symbol::Epsilon}
         );
 
         assert_eq!(
             TEST_GRAMMAR.first(&Symbol::NonTerminal("T".to_string())),
-            [
+            hashset!{
                 Symbol::Terminal("0".to_string()),
                 Symbol::Terminal("1".to_string()),
                 Symbol::Terminal("(".to_string())
-            ]
-            .iter()
-            .cloned()
-            .collect()
+            }
         );
 
         assert_eq!(
             TEST_GRAMMAR.first(&Symbol::NonTerminal("T'".to_string())),
-            [Symbol::Terminal("*".to_string()), Symbol::Epsilon,]
-                .iter()
-                .cloned()
-                .collect()
+            hashset!{Symbol::Terminal("*".to_string()), Symbol::Epsilon}
         );
 
         assert_eq!(
             TEST_GRAMMAR.first(&Symbol::NonTerminal("F".to_string())),
-            [
+            hashset!{
                 Symbol::Terminal("0".to_string()),
                 Symbol::Terminal("1".to_string()),
                 Symbol::Terminal("(".to_string()),
-            ]
-            .iter()
-            .cloned()
-            .collect()
+            }
         );
     }
 
     #[test]
     fn test_follow() {
         assert_eq!(
-            TEST_GRAMMAR.unexpanded_follow(&Symbol::NonTerminal("E".to_string())),
-            [Symbol::Eos, Symbol::Terminal(")".to_string())]
-                .iter()
-                .cloned()
-                .collect()
+            unexpanded_follow(TEST_GRAMMAR.productions(), TEST_GRAMMAR.start(), &Symbol::NonTerminal("E".to_string())),
+            hashset!{Symbol::Eos, Symbol::Terminal(")".to_string())}
         );
 
         assert_eq!(
-            TEST_GRAMMAR.unexpanded_follow(&Symbol::NonTerminal("E'".to_string())),
-            [
+            unexpanded_follow(TEST_GRAMMAR.productions(), TEST_GRAMMAR.start(), &Symbol::NonTerminal("E'".to_string())),
+            hashset!{
                 Symbol::NonTerminal("E".to_string()),
                 Symbol::NonTerminal("E'".to_string()),
-            ]
-            .iter()
-            .cloned()
-            .collect()
+            }
         );
 
         assert_eq!(
-            TEST_GRAMMAR.unexpanded_follow(&Symbol::NonTerminal("T".to_string())),
-            [
+            unexpanded_follow(TEST_GRAMMAR.productions(), TEST_GRAMMAR.start(), &Symbol::NonTerminal("T".to_string())),
+            hashset!{
                 Symbol::Terminal("+".to_string()),
                 Symbol::NonTerminal("E".to_string()),
                 Symbol::NonTerminal("E'".to_string()),
-            ]
-            .iter()
-            .cloned()
-            .collect()
+            }
         );
 
         assert_eq!(
-            TEST_GRAMMAR.unexpanded_follow(&Symbol::NonTerminal("T'".to_string())),
-            [
+            unexpanded_follow(TEST_GRAMMAR.productions(), TEST_GRAMMAR.start(), &Symbol::NonTerminal("T'".to_string())),
+            hashset!{
                 Symbol::NonTerminal("T".to_string()),
                 Symbol::NonTerminal("T'".to_string()),
-            ]
-            .iter()
-            .cloned()
-            .collect()
+            }
         );
 
         assert_eq!(
-            TEST_GRAMMAR.unexpanded_follow(&Symbol::NonTerminal("F".to_string())),
-            [
+            unexpanded_follow(TEST_GRAMMAR.productions(), TEST_GRAMMAR.start(), &Symbol::NonTerminal("F".to_string())),
+            hashset!{
                 Symbol::Terminal("*".to_string()),
                 Symbol::NonTerminal("T".to_string()),
                 Symbol::NonTerminal("T'".to_string()),
-            ]
-            .iter()
-            .cloned()
-            .collect()
-        );
+            }
+        )
     }
 
     #[test]
-    fn test_expand_follow_sets() {
-        let mut follow_sets = HashMap::new();
-        for (symbol, _) in &TEST_GRAMMAR.productions {
-            follow_sets.insert(symbol.clone(), TEST_GRAMMAR.unexpanded_follow(&symbol));
-        }
-
-        let follow_sets = Grammar::expand_follow_sets(&follow_sets);
-
+    fn test_follow_sets() {
         assert_eq!(
-            follow_sets[&Symbol::NonTerminal("E".to_string())],
-            [Symbol::Eos, Symbol::Terminal(")".to_string())]
-                .iter()
-                .cloned()
-                .collect()
+            *TEST_GRAMMAR.follow(&Symbol::NonTerminal("E".to_string())),
+            hashset!{
+                Symbol::Eos, Symbol::Terminal(")".to_string())
+            }
         );
 
         assert_eq!(
-            follow_sets[&Symbol::NonTerminal("E'".to_string())],
-            [Symbol::Eos, Symbol::Terminal(")".to_string())]
-                .iter()
-                .cloned()
-                .collect()
+            *TEST_GRAMMAR.follow(&Symbol::NonTerminal("E'".to_string())),
+            hashset!{Symbol::Eos, Symbol::Terminal(")".to_string())}
         );
 
         assert_eq!(
-            follow_sets[&Symbol::NonTerminal("T".to_string())],
-            [
+            *TEST_GRAMMAR.follow(&Symbol::NonTerminal("T".to_string())),
+            hashset!{
                 Symbol::Eos,
                 Symbol::Terminal("+".to_string()),
                 Symbol::Terminal(")".to_string())
-            ]
-            .iter()
-            .cloned()
-            .collect()
+            }
         );
 
         assert_eq!(
-            follow_sets[&Symbol::NonTerminal("T'".to_string())],
-            [
+            *TEST_GRAMMAR.follow(&Symbol::NonTerminal("T'".to_string())),
+            hashset!{
                 Symbol::Eos,
                 Symbol::Terminal("+".to_string()),
                 Symbol::Terminal(")".to_string())
-            ]
-            .iter()
-            .cloned()
-            .collect()
+            }
         );
 
         assert_eq!(
-            follow_sets[&Symbol::NonTerminal("F".to_string())],
-            [
+            *TEST_GRAMMAR.follow(&Symbol::NonTerminal("F".to_string())),
+            hashset!{
                 Symbol::Terminal("*".to_string()),
                 Symbol::Terminal("+".to_string()),
                 Symbol::Eos,
                 Symbol::Terminal(")".to_string())
-            ]
-            .iter()
-            .cloned()
-            .collect()
+            }
         );
     }
 }

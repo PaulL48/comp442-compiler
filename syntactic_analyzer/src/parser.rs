@@ -7,8 +7,8 @@
 
 use lexical_analyzer::{Lex, Token};
 use crate::symbol::Symbol;
-use crate::grammar2::Grammar;
-use crate::parse_table2::ParseTable;
+use crate::grammar::Grammar;
+use crate::parse_table::ParseTable;
 
 pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &ParseTable) {
     let eos_stack = vec![Symbol::Eos];

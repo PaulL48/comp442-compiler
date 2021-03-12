@@ -15,11 +15,9 @@
 // This necessitates an internal representation of a grammar and production
 mod grammar;
 mod symbol;
-mod grammar2;
 mod parse_table;
-mod parse_table2;
 mod parser;
 
-pub use grammar2::*;
-pub use parse_table2::*;
+pub use grammar::*;
+pub use parse_table::*;
 pub use parser::parse;
