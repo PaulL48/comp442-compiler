@@ -17,6 +17,7 @@ mod grammar;
 mod symbol;
 mod parse_table;
 mod parser;
+mod semantic_action;
 
 pub use grammar::*;
 pub use parse_table::*;

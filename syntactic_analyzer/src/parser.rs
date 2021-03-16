@@ -6,15 +6,23 @@
 // lexer
 
 use lexical_analyzer::{Lex, Token};
-use crate::symbol::Symbol;
+use crate::symbol::{Symbol, Action};
 use crate::grammar::Grammar;
 use crate::parse_table::ParseTable;
+use ast::{Node, Data};
+use log::error;
 
 pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &ParseTable) {
     let eos_stack = vec![Symbol::Eos];
     let mut symbol_stack = vec![Symbol::Eos, grammar.start().clone()];
+    let mut semantic_stack = Vec::new();
     let mut current_token = lexer.next();
+    let mut previous_token = current_token.clone();
     let mut error = false;
+
+    println!("Parse table {:?}", parse_table);
+    println!("Starting Stack: {:?}", symbol_stack);
+    println!("Starting token {:?}", current_token);
 
     while symbol_stack != eos_stack {
         let symbol_stack_top = symbol_stack.last().unwrap().clone();
@@ -23,6 +31,7 @@ pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &Pa
             Symbol::Terminal(symbol) => {
                 if token_symbol == symbol_stack_top {
                     symbol_stack.pop();
+                    previous_token = current_token;
                     current_token = lexer.next();
                     println!("Processing terminal {:?}", symbol);
                     println!("Stack: {:?}", symbol_stack);
@@ -32,6 +41,7 @@ pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &Pa
                 }
             },
             Symbol::NonTerminal(_) => {
+                println!("{:?}, {:?}", symbol_stack_top, token_symbol);
                 if parse_table.contains(&symbol_stack_top, &token_symbol) {
                     let option_index = parse_table.get(&symbol_stack_top, &token_symbol);
                     let production = grammar.production(&symbol_stack_top, option_index);
@@ -44,6 +54,41 @@ pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &Pa
                     skip_errors(grammar, lexer, &mut current_token, &mut symbol_stack)
                 }
             },
+            Symbol::SemanticAction(action) => {
+                let previous_token = previous_token.clone().unwrap();
+                match action {
+                    Action::Create(data_type, name) => {
+                        let new_node;
+                        if data_type == "integer" {
+                            let parsed_number: i64 = previous_token.lexeme.parse().expect("Could not parse digit");
+                            new_node = Node::new(name, Data::Integer(parsed_number));
+                        } else if data_type == "float" {
+                            let parsed_float: f64 = previous_token.lexeme.parse().expect("Could not parse digit");
+                            new_node = Node::new(name, Data::Float(parsed_float));
+                        } else if data_type == "string" {
+                            new_node = Node::new(name, Data::String(previous_token.lexeme));
+                        } else {
+                            error!("Semantic action create has invalid type");
+                            panic!();
+                        }
+
+                        semantic_stack.push(new_node);
+                    },
+                    Action::Group(name, count) => {
+                        let mut children = Vec::new();
+                        for _ in 0..*count {
+                            children.push(semantic_stack.pop().unwrap());
+                        }
+                        children.reverse();
+                        let new_node = Node::new(name, Data::Children(children));
+                        semantic_stack.push(new_node);
+                    }
+                }
+
+                println!("Semantic Stack {:?}", semantic_stack);
+                symbol_stack.pop();
+
+            }
             _ => (),
         }
     }

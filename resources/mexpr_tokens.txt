@@ -1,5 +1,4 @@
-0 @ false @ false @ 0
-1 @ false @ false @ 1
+[0-9] @ false @ false @ digit
 \( @ false @ false @ (
 \) @ false @ false @ )
 \+ @ false @ false @ +

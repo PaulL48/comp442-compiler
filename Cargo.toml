@@ -5,4 +5,5 @@ members = [
     "lexical_analyzer",
     "syntactic_analyzer",
     "path",
+    "ast",
 ]

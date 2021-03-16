@@ -1,9 +1,8 @@
 <E> ::= <T> <E'>
-<E'> ::= '+' <T> <E'>
+<E'> ::= '+' <T> @group~2~+@ <E'>
 <E'> ::= EPSILON
 <T> ::= <F> <T'>
-<T'> ::= '*' <F> <T'>
+<T'> ::= '*' <F> @group~2~*@ <T'>
 <T'> ::= EPSILON
-<F> ::= '0'
-<F> ::= '1'
+<F> ::= 'digit' @create~integer~digit@
 <F> ::= '(' <E> ')'

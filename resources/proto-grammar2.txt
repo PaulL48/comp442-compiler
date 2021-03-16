@@ -1,0 +1,6 @@
+<Function> ::= <FuncBody>
+<FuncBody> ::= '{' @createnode~list@ <StatementList> @rename@ '}'
+<StatementList> ::= <Statement> @makesibling@ <StatementList>
+<StatementList> ::= EPSILON
+<Statement> ::= 'break' @makenode~string@ ';' 
+<Statement> ::= 'continue' @makenode~string@ ';'

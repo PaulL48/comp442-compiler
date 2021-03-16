@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use crate::symbol::Symbol;
 use crate::grammar::Grammar;
 
+#[derive(Debug)]
 pub struct ParseTable {
     table: HashMap<Symbol, HashMap<Symbol,  usize>>,
 }
