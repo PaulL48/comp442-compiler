@@ -1,4 +1,3 @@
-
 // Data requirements
 // nested node structure
 // n children per node
@@ -26,9 +25,7 @@ pub enum Data {
 
 impl Ast {
     pub fn new() -> Self {
-        Ast {
-            root: None
-        }
+        Ast { root: None }
     }
 }
 
@@ -36,7 +33,7 @@ impl Node {
     pub fn new(node_type: &str, data: Data) -> Self {
         Node {
             node_type: node_type.to_string(),
-            data
+            data,
         }
     }
 
@@ -48,4 +45,3 @@ impl Node {
         return &mut self.node_type;
     }
 }
-

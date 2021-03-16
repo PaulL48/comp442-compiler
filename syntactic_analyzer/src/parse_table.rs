@@ -1,10 +1,10 @@
-use std::collections::HashMap;
-use crate::symbol::Symbol;
 use crate::grammar::Grammar;
+use crate::symbol::Symbol;
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct ParseTable {
-    table: HashMap<Symbol, HashMap<Symbol,  usize>>,
+    table: HashMap<Symbol, HashMap<Symbol, usize>>,
 }
 
 impl ParseTable {
@@ -21,21 +21,32 @@ impl ParseTable {
             table.insert(symbol.clone(), HashMap::new());
             for (index, option) in production.iter().enumerate() {
                 let first_set = grammar.sentence_first(option);
-                for terminal in first_set.iter().filter(|x| matches!(x, Symbol::Terminal(_)) || matches!(x, Symbol::Eos)) {
-                    table.get_mut(&symbol).unwrap().insert(terminal.clone(), index);
+                for terminal in first_set
+                    .iter()
+                    .filter(|x| matches!(x, Symbol::Terminal(_)) || matches!(x, Symbol::Eos))
+                {
+                    table
+                        .get_mut(&symbol)
+                        .unwrap()
+                        .insert(terminal.clone(), index);
                 }
 
                 if first_set.contains(&Symbol::Epsilon) {
-                    for terminal in grammar.follow(symbol).iter().filter(|x| matches!(x, Symbol::Terminal(_)) || matches!(x, Symbol::Eos)) {
-                        table.get_mut(&symbol).unwrap().insert(terminal.clone(), index);
+                    for terminal in grammar
+                        .follow(symbol)
+                        .iter()
+                        .filter(|x| matches!(x, Symbol::Terminal(_)) || matches!(x, Symbol::Eos))
+                    {
+                        table
+                            .get_mut(&symbol)
+                            .unwrap()
+                            .insert(terminal.clone(), index);
                     }
                 }
             }
         }
 
-        ParseTable {
-            table
-        }
+        ParseTable { table }
     }
 
     pub fn contains(&self, non_terminal: &Symbol, terminal: &Symbol) -> bool {

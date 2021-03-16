@@ -3,10 +3,10 @@ mod cli_config;
 use clap::{load_yaml, App};
 use cli_config::CliConfig;
 use lexical_analyzer::{lexer::Lexer, lexical_rule::LexicalRule};
-use log::{info, error};
+use log::{error, info};
 use path;
 use simplelog::*;
-use syntactic_analyzer::{Grammar, ParseTable, parse};
+use syntactic_analyzer::{parse, Grammar, ParseTable};
 
 /// Development switch to easily turn terminal logging on or off
 const LOGGING_SWITCH: LevelFilter = LevelFilter::Info;
@@ -47,7 +47,11 @@ fn main() -> std::io::Result<()> {
     let l = Lexer::new(rules, vec![]);
     let g = Grammar::from_reader(File::open(config.grammar_file)?)?;
     let parse_table = ParseTable::from_grammar(&g);
-    parse(&mut l.lex("resources/test.src", "lex_errors.ole"), &g, &parse_table);
+    parse(
+        &mut l.lex("resources/test.src", "lex_errors.ole"),
+        &g,
+        &parse_table,
+    );
 
     Ok(())
 }

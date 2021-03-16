@@ -6,8 +6,8 @@ use lazy_static::lazy_static;
 use log::{error, trace, warn};
 use regex_automata::DFA;
 use std::fs::{File, OpenOptions};
-use std::io::Read;
 use std::io::prelude::*;
+use std::io::Read;
 
 pub struct Lexer {
     rules: Vec<LexicalRule>,
@@ -84,7 +84,7 @@ impl Lexer {
             .write(true)
             .truncate(true)
             .create(true)
-            .open(lex_error_path) 
+            .open(lex_error_path)
         {
             Ok(file) => file,
             Err(err) => {
@@ -110,24 +110,30 @@ impl<'a, T: Read> Iterator for Lex<'a, T> {
             match next_token.clone() {
                 Some(Ok(token)) => {
                     if token.error_token {
-                        match self.lex_error_file.write_all(format!("{}\n", LexingError::from(token.clone())).as_bytes()) {
+                        match self
+                            .lex_error_file
+                            .write_all(format!("{}\n", LexingError::from(token.clone())).as_bytes())
+                        {
                             Err(err) => {
                                 warn!("Failed to write to lexical error file: {}", err);
-                            },
-                            _ => {next_token = self.next_token()},
+                            }
+                            _ => next_token = self.next_token(),
                         }
                     } else {
                         return Some(token);
                     }
-                },
+                }
                 Some(Err(err)) => {
-                    match self.lex_error_file.write_all(format!("{}\n", err).as_bytes()) {
+                    match self
+                        .lex_error_file
+                        .write_all(format!("{}\n", err).as_bytes())
+                    {
                         Err(err) => {
                             warn!("Failed to write to lexical error file: {}", err);
-                        },
-                        _ => {next_token = self.next_token()},
+                        }
+                        _ => next_token = self.next_token(),
                     }
-                },
+                }
                 None => {
                     return None;
                 }
@@ -147,7 +153,7 @@ impl<'a, T: Read> Lex<'a, T> {
             column: 1,
             previous_line: 1,
             previous_column: 1,
-            lex_error_file
+            lex_error_file,
         }
     }
 

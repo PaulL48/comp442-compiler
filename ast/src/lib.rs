@@ -2,4 +2,4 @@
 // anytime an element is popped off the stack it becomes a child in the ast being built.
 mod ast;
 
-pub use ast::{Ast, Node, Data};
+pub use ast::{Ast, Data, Node};
