@@ -19,7 +19,7 @@
                     "kind": "bin"
                 }
             },
-            "args": ["-t", "resources/proto-gram-lex.txt", "-g", "resources/proto-grammar2.txt"],
+            "args": ["-t", "resources/lex_tokens.txt", "-g", "resources/LL1.paquet.grm"],
             "cwd": "${workspaceFolder}"
         },
         {

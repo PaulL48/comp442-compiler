@@ -23,13 +23,13 @@
 
 <AssignStatTail> ::= <AssignOp> <Expr>
 
-<ClassDecl> ::= 'class' 'id' <Inherit> '{' <ClassDeclBody> '}' ';' <ClassDecl>
+<ClassDecl> ::= 'class' 'id' @makenode~string@ <Inherit> '{' <ClassDeclBody> '}' ';' <ClassDecl>
 <ClassDecl> ::= EPSILON
 
 <ClassDeclBody> ::= <Visibility> <MemberDecl> <ClassDeclBody>
 <ClassDeclBody> ::= EPSILON
 
-<ClassMethod> ::= 'sr' 'id'
+<ClassMethod> ::= 'sr' 'id' @makenode~string@
 <ClassMethod> ::= EPSILON
 
 <Expr> ::= <ArithExpr> <ExprTail>
@@ -37,10 +37,10 @@
 <ExprTail> ::= <RelOp> <ArithExpr>
 <ExprTail> ::= EPSILON
 
-<FParams> ::= <Type> 'id' <ArraySizeRept> <FParamsTail>
+<FParams> ::= <Type> 'id' @makenode~string@ <ArraySizeRept> @makefamily~2@ @makesibling@ <FParamsTail>
 <FParams> ::= EPSILON
 
-<FParamsTail> ::= ',' <Type> 'id' <ArraySizeRept> <FParamsTail>
+<FParamsTail> ::= ',' <Type> 'id' @makenode~string@ <ArraySizeRept> @makefamily~2@ @makesibling@ <FParamsTail>
 <FParamsTail> ::= EPSILON
 
 <Factor> ::= <FuncOrVar>
@@ -54,7 +54,7 @@
 
 <FuncBody> ::= '{' <MethodBodyVar> <StatementList> '}'
 
-<FuncDecl> ::= 'func' 'id' '(' <FParams> ')' ':' <FuncDeclTail> ';'
+<FuncDecl> ::= 'func' 'id' @makenode~string@ '(' @makenode~list@ <FParams> @rename@ ')' ':' <FuncDeclTail> ';'
 
 <FuncDeclTail> ::= <Type>
 <FuncDeclTail> ::= 'void'
@@ -62,31 +62,31 @@
 <FuncDef> ::= <Function> <FuncDef>
 <FuncDef> ::= EPSILON
 
-<FuncHead> ::= 'func' 'id' <ClassMethod> '(' <FParams> ')' ':' <FuncDeclTail>
+<FuncHead> ::= 'func' 'id' @makenode~string@ <ClassMethod> '(' @makenode~list@ <FParams> @rename@ ')' ':' <FuncDeclTail>
 
-<FuncOrAssignStat> ::= 'id' <FuncOrAssignStatIdnest>
+<FuncOrAssignStat> ::= 'id' @makenode~string@ <FuncOrAssignStatIdnest>
 
 <FuncOrAssignStatIdnest> ::= <IndiceRep> <FuncOrAssignStatIdnestVarTail>
 <FuncOrAssignStatIdnest> ::= '(' <AParams> ')' <FuncOrAssignStatIdnestFuncTail>
 
-<FuncOrAssignStatIdnestFuncTail> ::= '.' 'id' <FuncStatTail>
+<FuncOrAssignStatIdnestFuncTail> ::= '.' 'id' @makenode~string@ <FuncStatTail>
 <FuncOrAssignStatIdnestFuncTail> ::= EPSILON
 
-<FuncStatTail> ::= <IndiceRep> '.' 'id' <FuncStatTail>
+<FuncStatTail> ::= <IndiceRep> '.' 'id' @makenode~string@ <FuncStatTail>
 <FuncStatTail> ::= '(' <AParams> ')' <FuncStatTailIdnest>
 
-<FuncStatTailIdnest> ::= '.' 'id' <FuncStatTail>
+<FuncStatTailIdnest> ::= '.' 'id' @makenode~string@ <FuncStatTail>
 <FuncStatTailIdnest> ::= EPSILON
 
-<FuncOrAssignStatIdnestVarTail> ::= '.' 'id' <FuncOrAssignStatIdnest>
+<FuncOrAssignStatIdnestVarTail> ::= '.' 'id' @makenode~string@ <FuncOrAssignStatIdnest>
 <FuncOrAssignStatIdnestVarTail> ::= <AssignStatTail>
 
-<FuncOrVar> ::= 'id' <FuncOrVarIdnest>
+<FuncOrVar> ::= 'id' @makenode~string@ <FuncOrVarIdnest>
 
 <FuncOrVarIdnest> ::= <IndiceRep> <FuncOrVarIdnestTail>
 <FuncOrVarIdnest> ::= '(' <AParams> ')' <FuncOrVarIdnestTail>
 
-<FuncOrVarIdnestTail> ::= '.' 'id' <FuncOrVarIdnest>
+<FuncOrVarIdnestTail> ::= '.' 'id' @makenode~string@ <FuncOrVarIdnest>
 <FuncOrVarIdnestTail> ::= EPSILON
 
 <Function> ::= <FuncHead> <FuncBody>
@@ -94,7 +94,7 @@
 <IndiceRep> ::= '[' <Expr> ']' <IndiceRep>
 <IndiceRep> ::= EPSILON
 
-<Inherit> ::= 'inherits' 'id' <NestedId>
+<Inherit> ::= 'inherits' 'id' @makenode~string@ <NestedId>
 <Inherit> ::= EPSILON
 
 <IntNum> ::= 'intnum'
@@ -110,7 +110,7 @@
 <MultOp> ::= '/'
 <MultOp> ::= 'and'
 
-<NestedId> ::= ',' 'id' <NestedId>
+<NestedId> ::= ',' 'id' @makenode~string@ <NestedId>
 <NestedId> ::= EPSILON
 
 
@@ -146,21 +146,21 @@
 <TermTail> ::= <MultOp> <Factor> <TermTail>
 <TermTail> ::= EPSILON
 
-<Type> ::= 'integer'
-<Type> ::= 'float'
-<Type> ::= 'string'
-<Type> ::= 'id'
+<Type> ::= 'integer' @makenode~string@
+<Type> ::= 'float' @makenode~string@
+<Type> ::= 'string' @makenode~string@
+<Type> ::= 'id' @makenode~string@
 
-<VarDecl> ::= <Type> 'id' <ArraySizeRept> ';'
+<VarDecl> ::= <Type> 'id' @makenode~string@ <ArraySizeRept> ';'
 
 <VarDeclRep> ::= <VarDecl> <VarDeclRep>
 <VarDeclRep> ::= EPSILON
 
-<Variable> ::= 'id' <VariableIdnest>
+<Variable> ::= 'id' @makenode~string@ <VariableIdnest>
 
 <VariableIdnest> ::= <IndiceRep> <VariableIdnestTail>
 
-<VariableIdnestTail> ::= '.' 'id' <VariableIdnest>
+<VariableIdnestTail> ::= '.' 'id' @makenode~string@ <VariableIdnest>
 <VariableIdnestTail> ::= EPSILON
 
 <Visibility> ::= 'public'

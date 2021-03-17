@@ -73,7 +73,7 @@ pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &Pa
             }
             Symbol::SemanticAction(action) => {
                 action.execute(&mut semantic_stack, previous_token.clone().unwrap(), previous_grammar_lhs.clone());
-                trace!("Semantic Stack {:?}", semantic_stack);
+                info!("Semantic Stack {:?}", semantic_stack);
                 previous_grammar_lhs = symbol_stack_top.clone();
                 symbol_stack.pop();
             }
@@ -91,6 +91,9 @@ pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &Pa
     } else if !semantic_stack.is_empty() {
         // AST Should be good so print to graph
         let top = semantic_stack.last().unwrap();
+        // for disjoint in &semantic_stack {
+        //     disjoint.dot_graph(&mut output_config.ast_file);
+        // }
         top.dot_graph(&mut output_config.ast_file);
     }
 }
@@ -123,7 +126,6 @@ fn skip_errors(
             || grammar.first(top).contains(&Symbol::Epsilon)
                 && grammar.follow(top).contains(&lookahead)) && !current_token.is_none()
         {
-            println!("{}, {:?}", current_token.is_none(), current_token);
             *current_token = lexer.next();
             lookahead = Symbol::from_token(current_token);
         }
