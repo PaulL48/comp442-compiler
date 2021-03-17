@@ -31,10 +31,10 @@ impl ParseTable {
                     let i = 0;
                 }
             }
-            println!("Processing {:?}", symbol);
+            trace!("Processing {:?}", symbol);
             table.insert(symbol.clone(), HashMap::new());
             for (index, option) in production.iter().enumerate() {
-                println!("Processing RHS {:?}", option);
+                trace!("Processing RHS {:?}", option);
                 let first_set = grammar.sentence_first(option);
                 for terminal in first_set
                     .iter()
