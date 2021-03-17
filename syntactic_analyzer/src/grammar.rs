@@ -173,6 +173,17 @@ fn first(productions: &HashMap<Symbol, Vec<Sentence>>, s: &Symbol) -> HashSet<Sy
     first_internal(productions, s, &mut HashSet::new())
 }
 
+// The description of the algorithm:
+// first(A)
+// if A is a terminal or A is epsilon
+//      first(A) includes {A}
+// if A is a non-terminal
+//      for each RHS of A's productions (ex. A -> S1 S2 ... Sn)
+//          first(A) includes (first(S1) - epsilon)
+//          for every Si whose first(Si) includes epsilon
+//              first(A) includes first(Si+1)
+//          if all first(S1), first(S2), ..., first(Sn) include epsilon
+//              first(A) includes epsilon
 fn first_internal(
     productions: &HashMap<Symbol, Vec<Sentence>>,
     s: &Symbol,
@@ -194,10 +205,17 @@ fn first_internal(
     match s {
         Symbol::NonTerminal(_) => {
             result.extend(non_terminal_first(productions, s, visited));
+        },
+        Symbol::Terminal(_) => {
+            result.insert(s.clone());
+        },
+        Symbol::Epsilon => {
+            result.insert(s.clone());
+        },
+        Symbol::Eos => {
+            result.insert(s.clone());
         }
-        other => {
-            result.insert(other.clone());
-        }
+        _ => ()
     }
 
     result
@@ -211,11 +229,11 @@ fn non_terminal_first(
     let mut result = HashSet::new();
     for option in productions.get(s).unwrap() {
         result
-            .extend(&first_internal(productions, option.first().unwrap(), visited) - &EPSILON_SET);
+            .extend(&first(productions, option.first().unwrap()) - &EPSILON_SET);
         let mut all_epsilons = true;
-        for pair in option.windows(2) {
+        for pair in option.iter().filter(|x| !matches!(x, Symbol::SemanticAction(_))).collect::<Vec<_>>().windows(2) {
             if first(productions, &pair[0]).contains(&Symbol::Epsilon) {
-                result.extend(first_internal(productions, &pair[1], visited))
+                result.extend(first(productions, &pair[1]));
             } else {
                 all_epsilons = false;
                 break;
@@ -242,6 +260,15 @@ fn follow_sets(
     expand_follow(&follow_sets)
 }
 
+// Description of the algorithm
+// follow(A)
+// If A is the start symbol
+//      follow(A) includes Eos
+// For every RHS in all the grammar's productions
+//      if the RHS contains A followed by some sentence C
+//          follow(A) includes (first(C) - epsilon)
+//      if the RHS contains A followed by some sentence C that can produce epsilon OR A is the last symbol
+//          follow(A) includes follow(LHS)
 fn unexpanded_follow(
     productions: &HashMap<Symbol, Vec<Sentence>>,
     start_symbol: &Symbol,
@@ -254,11 +281,12 @@ fn unexpanded_follow(
 
     for (producing_symbol, production) in productions {
         for option in production {
-            for symbol_pair in option.windows(2) {
-                if symbol_pair[0] == *s {
+            for symbol_pair in option.iter().filter(|x| !matches!(x, Symbol::SemanticAction(_))).collect::<Vec<_>>().windows(2) {
+                if *symbol_pair[0] == *s {
                     if first(productions, &symbol_pair[1]).contains(&Symbol::Epsilon) {
                         result.extend(&first(productions, &symbol_pair[1]) - &EPSILON_SET);
                         result.insert(producing_symbol.clone());
+                        // TODO: This might too aggressively include follow(B) since the condition is if the following SENTENCE can produce epsilon, not the following symbol
                     } else {
                         result.insert(symbol_pair[1].clone());
                     }

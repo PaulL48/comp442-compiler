@@ -10,6 +10,7 @@ pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &Pa
     let mut current_token = lexer.next();
     let mut previous_token = current_token.clone();
     let mut error = false;
+    let mut previous_grammar_lhs = Symbol::Eos;
 
     println!("Parse table {:?}", parse_table);
     println!("Starting Stack: {:?}", symbol_stack);
@@ -21,6 +22,7 @@ pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &Pa
         match &symbol_stack_top {
             Symbol::Terminal(symbol) => {
                 if token_symbol == symbol_stack_top {
+                    previous_grammar_lhs = symbol_stack_top.clone();
                     symbol_stack.pop();
                     previous_token = current_token;
                     current_token = lexer.next();
@@ -40,6 +42,7 @@ pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &Pa
                         "Using production: {:?} -> {:?}",
                         symbol_stack_top, production
                     );
+                    previous_grammar_lhs = symbol_stack_top.clone();
                     symbol_stack.pop();
                     symbol_stack.extend(
                         production
@@ -55,8 +58,9 @@ pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &Pa
                 }
             }
             Symbol::SemanticAction(action) => {
-                action.execute(&mut semantic_stack, previous_token.clone().unwrap());
+                action.execute(&mut semantic_stack, previous_token.clone().unwrap(), previous_grammar_lhs.clone());
                 println!("Semantic Stack {:?}", semantic_stack);
+                previous_grammar_lhs = symbol_stack_top.clone();
                 symbol_stack.pop();
             }
             _ => (),
