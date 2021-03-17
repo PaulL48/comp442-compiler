@@ -6,7 +6,7 @@ use lexical_analyzer::{lexer::Lexer, lexical_rule::LexicalRule};
 use log::{error, info};
 use path;
 use simplelog::*;
-use syntactic_analyzer::{parse, Grammar, ParseTable, Symbol, unexpanded_follow};
+use syntactic_analyzer::{parse, Grammar, ParseTable};
 use output_manager::OutputConfig;
 
 /// Development switch to easily turn terminal logging on or off
@@ -64,7 +64,6 @@ fn main() -> std::io::Result<()> {
             &mut oc
         );
     }
-
 
     Ok(())
 }

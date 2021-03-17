@@ -18,6 +18,9 @@ checksum = "23ac7c30002a5accbf7e8987d0632fa6de155b7c3d39d0067317a391e00a2ef6"
 [[package]]
 name = "ast"
 version = "0.1.0"
+dependencies = [
+ "output_manager",
+]
 
 [[package]]
 name = "atty"

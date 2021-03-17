@@ -5,6 +5,7 @@ use lexical_analyzer::{Lex, Token};
 use log::{info, warn, trace};
 use output_manager::{OutputConfig, warn_write, write_list, write_array};
 use std::io::Write;
+use ast::Node;
 
 pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &ParseTable, output_config: &mut OutputConfig) {
     let eos_stack = vec![Symbol::Eos];
@@ -87,6 +88,10 @@ pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &Pa
         // Ran out of file before end of productions
         warn_write(&mut output_config.syntax_error_file, &output_config.syntax_error_path, &format!("Syntax error: unexpected end of file, but was expecting one of "));
         write_array(&mut output_config.syntax_error_file, &output_config.syntax_error_path, &parse_table.table.get(&symbol_stack.last().unwrap().clone()).unwrap().iter().map(|x| x.0).collect());
+    } else if !semantic_stack.is_empty() {
+        // AST Should be good so print to graph
+        let top = semantic_stack.last().unwrap();
+        top.dot_graph(&mut output_config.ast_file);
     }
 }
 
