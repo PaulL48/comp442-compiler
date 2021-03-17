@@ -5,7 +5,7 @@ use crate::utilities::is_start_of_codepoint;
 use lazy_static::lazy_static;
 use log::{error, trace, warn};
 use regex_automata::DFA;
-use std::fs::{File, OpenOptions};
+use std::fs::File;
 use std::io::prelude::*;
 use std::io::Read;
 

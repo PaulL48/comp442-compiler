@@ -1,5 +1,5 @@
 use crate::symbol::{Symbol, EPSILON_SET};
-use log::{error, info, warn, trace};
+use log::{error, info, warn};
 use std::collections::{HashMap, HashSet};
 use std::io::Read;
 use std::io::{BufRead, BufReader};
@@ -450,27 +450,27 @@ fn expand_follow_once(
     result
 }
 
-fn remove_recursive(
-    follow_sets: &HashMap<Symbol, HashSet<Symbol>>,
-) -> HashMap<Symbol, HashSet<Symbol>> {
-    let mut result = follow_sets.clone();
+// fn remove_recursive(
+//     follow_sets: &HashMap<Symbol, HashSet<Symbol>>,
+// ) -> HashMap<Symbol, HashSet<Symbol>> {
+//     let mut result = follow_sets.clone();
 
-    for (symbol, follow_set) in follow_sets {
-        let non_terminals: Vec<Symbol> = follow_set
-            .iter()
-            .filter(|x| matches!(x, Symbol::NonTerminal(_)))
-            .cloned().collect();
-        for non_terminal in non_terminals {
-            if non_terminal == *symbol {
-                // Remove recursive relations
-                trace!("Removing recursive relation {:?}, {:?}", symbol, non_terminal);
-                result.get_mut(symbol).unwrap().remove(&non_terminal);
-                continue;
-            }
-        }
-    }
-    result
-}
+//     for (symbol, follow_set) in follow_sets {
+//         let non_terminals: Vec<Symbol> = follow_set
+//             .iter()
+//             .filter(|x| matches!(x, Symbol::NonTerminal(_)))
+//             .cloned().collect();
+//         for non_terminal in non_terminals {
+//             if non_terminal == *symbol {
+//                 // Remove recursive relations
+//                 trace!("Removing recursive relation {:?}, {:?}", symbol, non_terminal);
+//                 result.get_mut(symbol).unwrap().remove(&non_terminal);
+//                 continue;
+//             }
+//         }
+//     }
+//     result
+// }
 
 fn remove_non_terminals(
     follow_sets: &HashMap<Symbol, HashSet<Symbol>>,

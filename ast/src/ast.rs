@@ -8,9 +8,9 @@ use output_manager::warn_write;
 // Ability to reach leftmost child (start) from any sibling (This could be achieved albeit at a performance cost in a function that peeks children of a node)
 // Ability to reach parent from any child (Same as above)
 
-pub struct Ast {
-    root: Option<Node>,
-}
+// pub struct Ast {
+//     root: Option<Node>,
+// }
 
 #[derive(Debug, PartialEq)]
 pub struct Node {
@@ -24,13 +24,14 @@ pub enum Data {
     Integer(i64),
     Float(f64),
     String(String),
+    Epsilon
 }
 
-impl Ast {
-    pub fn new() -> Self {
-        Ast { root: None }
-    }
-}
+// impl Ast {
+//     pub fn new() -> Self {
+//         Ast { root: None }
+//     }
+// }
 
 impl Node {
     pub fn new(node_type: &str, data: Data) -> Self {
@@ -38,6 +39,14 @@ impl Node {
             node_type: node_type.to_string(),
             data,
         }
+    }
+
+    pub fn data(&self) -> &Data {
+        return &self.data;
+    }
+
+    pub fn name(&self) -> &String {
+        return &self.node_type;
     }
 
     pub fn data_mut(&mut self) -> &mut Data {
@@ -100,7 +109,11 @@ impl Node {
             },
             Data::Children(_) => {
                 label.push_str(&format!(r#" [shape=ellipse label="{}"]"#, self.node_type));
+            },
+            Data::Epsilon => {
+                label.push_str(&format!(r#" [shape=diamond label="epsilon"]"#));
             }
+            
         }
         label.push_str("\n");
         label

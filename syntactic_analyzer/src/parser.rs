@@ -2,10 +2,9 @@ use crate::grammar::Grammar;
 use crate::parse_table::ParseTable;
 use crate::symbol::Symbol;
 use lexical_analyzer::{Lex, Token};
-use log::{info, warn, trace};
+use log::{info, trace};
 use output_manager::{OutputConfig, warn_write, write_list, write_array};
 use std::io::Write;
-use ast::Node;
 
 pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &ParseTable, output_config: &mut OutputConfig) {
     let eos_stack = vec![Symbol::Eos];
@@ -13,7 +12,7 @@ pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &Pa
     let mut semantic_stack = Vec::new();
     let mut current_token = lexer.next();
     let mut previous_token = current_token.clone();
-    let mut error = false;
+    // let mut error = false;
     let mut previous_grammar_lhs = Symbol::Eos;
 
     if let Some(token) = current_token.clone() {
@@ -39,7 +38,7 @@ pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &Pa
                     trace!("Processing terminal {:?}", symbol);
                     trace!("Stack: {:?}", symbol_stack);
                 } else {
-                    error = true;
+                    // error = true;
                     skip_errors(grammar, lexer, &mut current_token, &mut symbol_stack, parse_table, output_config);
                 }
             }
@@ -67,7 +66,7 @@ pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &Pa
                     write_list(&mut output_config.derivation_file, &output_config.derivation_path, &symbol_stack);
                     trace!("Stack: {:?}", symbol_stack);
                 } else {
-                    error = true;
+                    // error = true;
                     skip_errors(grammar, lexer, &mut current_token, &mut symbol_stack, parse_table, output_config);
                 }
             }
