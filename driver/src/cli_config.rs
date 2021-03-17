@@ -13,7 +13,7 @@ pub struct CliConfig<'a> {
 impl<'a> CliConfig<'a> {
     pub fn new(matches: &'a ArgMatches) -> CliConfig<'a> {
         CliConfig {
-            source_folder: matches.value_of("INPUT").unwrap_or("test_input"),
+            source_folder: matches.value_of("INPUT").unwrap_or("test_sources"),
             output_folder: matches.value_of("output").unwrap_or("test_output"),
             lex_tokens_file: matches
                 .value_of("tokens")

@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 lexical_analyzer = {path="../lexical_analyzer"}
+output_manager = {path = "../output_manager"}
 ast = {path="../ast"}
 lazy_static = "1.4.0"
 log = "0.4.13"

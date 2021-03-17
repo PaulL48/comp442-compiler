@@ -26,11 +26,6 @@ impl ParseTable {
         let mut table: HashMap<Symbol, HashMap<Symbol, usize>> = HashMap::new();
 
         for (symbol, production) in grammar.productions() {
-            if let Symbol::NonTerminal(mm) = symbol.clone() {
-                if mm == "IndiceRep" {
-                    let i = 0;
-                }
-            }
             trace!("Processing {:?}", symbol);
             table.insert(symbol.clone(), HashMap::new());
             for (index, option) in production.iter().enumerate() {

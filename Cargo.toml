@@ -6,4 +6,5 @@ members = [
     "syntactic_analyzer",
     "path",
     "ast",
+    "output_manager",
 ]

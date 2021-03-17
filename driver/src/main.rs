@@ -7,9 +7,10 @@ use log::{error, info};
 use path;
 use simplelog::*;
 use syntactic_analyzer::{parse, Grammar, ParseTable, Symbol, unexpanded_follow};
+use output_manager::OutputConfig;
 
 /// Development switch to easily turn terminal logging on or off
-const LOGGING_SWITCH: LevelFilter = LevelFilter::Warn;
+const LOGGING_SWITCH: LevelFilter = LevelFilter::Info;
 
 fn init_logging(level: LevelFilter) {
     TermLogger::init(level, Config::default(), TerminalMode::Mixed)
@@ -53,12 +54,17 @@ fn main() -> std::io::Result<()> {
     info!("Extracting grammar productions from file \"{}\"", config.grammar_file);
     let g = Grammar::from_reader(File::open(config.grammar_file)?)?;
     let parse_table = ParseTable::from_grammar(&g);
-    
-    parse(
-        &mut l.lex("resources/bubblesort.src", "lex_errors.ole"),
-        &g,
-        &parse_table,
-    );
+
+    for source_file in path::directory(config.source_folder).filter(|x| path::is_file(x) && path::extension(x).unwrap_or("") == "src") {
+        let mut oc = OutputConfig::new(&source_file, config.output_folder);
+        parse(
+            &mut l.lex(&source_file, &oc.lex_error_path),
+            &g,
+            &parse_table,
+            &mut oc
+        );
+    }
+
 
     Ok(())
 }

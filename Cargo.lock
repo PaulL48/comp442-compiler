@@ -100,6 +100,7 @@ dependencies = [
  "clap",
  "lexical_analyzer",
  "log",
+ "output_manager",
  "path",
  "simplelog",
  "syntactic_analyzer",
@@ -184,6 +185,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "af8b08b04175473088b46763e51ee54da5f9a164bc162f615b91bc179dbf15a3"
 
 [[package]]
+name = "output_manager"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "path",
+]
+
+[[package]]
 name = "path"
 version = "0.1.0"
 dependencies = [
@@ -245,6 +254,7 @@ dependencies = [
  "lexical_analyzer",
  "log",
  "maplit",
+ "output_manager",
  "regex",
 ]
 

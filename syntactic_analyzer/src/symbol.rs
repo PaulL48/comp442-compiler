@@ -7,6 +7,7 @@ use regex::Regex;
 use std::collections::HashSet;
 use std::hash::Hash;
 use std::str::FromStr;
+use std::fmt;
 
 // From what I can tell the semantic action will
 // either create a node or amalgamate n node elements
@@ -67,6 +68,18 @@ impl FromStr for Symbol {
         } else {
             error!("Unexpected symbol in grammar {:?}", s);
             panic!();
+        }
+    }
+}
+
+impl fmt::Display for Symbol {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Symbol::Terminal(name) => write!(f, "'{}'", name),
+            Symbol::NonTerminal(name) => write!(f, "<{}>", name),
+            Symbol::Eos => write!(f, "EOS"),
+            Symbol::Epsilon => write!(f, "EPSILON"),
+            Symbol::SemanticAction(action) => write!(f, "@{}@", action),
         }
     }
 }

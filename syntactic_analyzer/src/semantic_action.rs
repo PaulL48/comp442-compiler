@@ -5,6 +5,7 @@ use log::error;
 use regex::Regex;
 use std::str::FromStr;
 use crate::symbol::Symbol;
+use std::fmt;
 
 #[derive(Debug, PartialEq, Hash, Clone)]
 pub enum Action {
@@ -167,6 +168,18 @@ impl Action {
                 error!("Renaming node based on semantic action {:?}. This likely isn't what was intended", action);
                 panic!();
             }
+        }
+    }
+}
+
+impl fmt::Display for Action {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Action::MakeNode(data_type) => write!(f, "make_node"),
+            Action::MakeFamily(size) => write!(f, "make_family({})", size),
+            Action::MakeSibling => write!(f, "make_sibling"),
+            Action::AdoptChildren => write!(f, "adopt_children"),
+            Action::Rename => write!(f, "rename_node"),
         }
     }
 }

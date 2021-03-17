@@ -22,8 +22,32 @@ pub fn extension(path: &str) -> Option<&str> {
     }
 }
 
+pub fn replace_extension(path: &str, new_extension: &str) -> Option<String> {
+    let p = Path::new(path).with_extension(new_extension);
+    match p.into_os_string().into_string() {
+        Ok(s) => return Some(s),
+        Err(_) => return None,
+    };
+}
+
 pub fn is_file(path: &str) -> bool {
     Path::new(path).is_file()
+}
+
+pub fn touch_dir(path: &str) {
+    let output_dir = std::path::Path::new(path);
+    if !output_dir.exists() {
+        match std::fs::create_dir_all(output_dir) {
+            Err(err) => {
+                error!(
+                    "Could not create output directory \"{:?}\": {}",
+                    output_dir, err
+                );
+                panic!();
+            }
+            _ => (),
+        }
+    }
 }
 
 pub fn file_name(path: &str) -> Option<&str> {
