@@ -1,5 +1,5 @@
 use crate::symbol::{Symbol, EPSILON_SET};
-use log::error;
+use log::{error, info, warn, trace};
 use std::collections::{HashMap, HashSet};
 use std::io::Read;
 use std::io::{BufRead, BufReader};
@@ -75,20 +75,7 @@ impl Grammar {
     }
 
     pub fn sentence_first(&self, sentence: &Sentence) -> HashSet<Symbol> {
-        let mut result = HashSet::new();
-        if sentence.is_empty() {
-            return result;
-        }
-
-        // is_empty guards unwrap of first
-        result.extend(first(&self.productions, sentence.first().unwrap()));
-        for pair in sentence
-            .windows(2)
-            .take_while(|pair| first(&self.productions, &pair[0]).contains(&Symbol::Epsilon))
-        {
-            result.extend(first(&self.productions, &pair[1]));
-        }
-        result
+        sentence_first(&self.productions, sentence)
     }
 
     pub fn production(&self, non_terminal: &Symbol, option: usize) -> &Sentence {
@@ -100,6 +87,7 @@ impl Grammar {
         let mut productions: HashMap<Symbol, Vec<Sentence>> = HashMap::new();
         let mut first = true;
         let mut start_symbol = Symbol::Eos;
+        let mut production_count = 0;
 
         for line in buf_reader.lines() {
             let line = match line {
@@ -113,6 +101,7 @@ impl Grammar {
             if line.len() == 0 {
                 continue;
             }
+
 
             // Split the line at the equals
             let parts: Vec<&str> = line.split("::=").map(|x| x.trim()).collect();
@@ -158,9 +147,11 @@ impl Grammar {
                         _ => (),
                     }
                 }
+
+                production_count += 1;
             }
         }
-
+        info!("Successfully read {} productions from the grammar file", production_count);
         Ok(Grammar::new(&productions, &start_symbol))
     }
 }
@@ -171,6 +162,23 @@ fn first(productions: &HashMap<Symbol, Vec<Sentence>>, s: &Symbol) -> HashSet<Sy
         panic!();
     }
     first_internal(productions, s, &mut HashSet::new())
+}
+
+fn sentence_first(productions: &HashMap<Symbol, Vec<Sentence>>, sentence: &Vec<Symbol>) -> HashSet<Symbol> {
+    let mut result = HashSet::new();
+    if sentence.is_empty() {
+        return result;
+    }
+
+    // is_empty guards unwrap of first
+    result.extend(first(productions, sentence.first().unwrap()));
+    for pair in sentence
+        .windows(2)
+        .take_while(|pair| first(productions, &pair[0]).contains(&Symbol::Epsilon))
+    {
+        result.extend(first(productions, &pair[1]));
+    }
+    result
 }
 
 // The description of the algorithm:
@@ -224,7 +232,7 @@ fn first_internal(
 fn non_terminal_first(
     productions: &HashMap<Symbol, Vec<Sentence>>,
     s: &Symbol,
-    visited: &mut HashSet<Symbol>,
+    _: &mut HashSet<Symbol>,
 ) -> HashSet<Symbol> {
     let mut result = HashSet::new();
     for option in productions.get(s).unwrap() {
@@ -269,7 +277,7 @@ fn follow_sets(
 //          follow(A) includes (first(C) - epsilon)
 //      if the RHS contains A followed by some sentence C that can produce epsilon OR A is the last symbol
 //          follow(A) includes follow(LHS)
-fn unexpanded_follow(
+pub fn unexpanded_follow(
     productions: &HashMap<Symbol, Vec<Sentence>>,
     start_symbol: &Symbol,
     s: &Symbol,
@@ -281,15 +289,29 @@ fn unexpanded_follow(
 
     for (producing_symbol, production) in productions {
         for option in production {
-            for symbol_pair in option.iter().filter(|x| !matches!(x, Symbol::SemanticAction(_))).collect::<Vec<_>>().windows(2) {
+            for (n, symbol_pair) in option.iter().filter(|x| !matches!(x, Symbol::SemanticAction(_))).collect::<Vec<_>>().windows(2).enumerate() {
                 if *symbol_pair[0] == *s {
-                    if first(productions, &symbol_pair[1]).contains(&Symbol::Epsilon) {
-                        result.extend(&first(productions, &symbol_pair[1]) - &EPSILON_SET);
+                    
+                    
+                    let remainder: Vec<Symbol> = option.iter().filter(|x| !matches!(x, Symbol::SemanticAction(_))).skip(n + 1).cloned().collect();
+                    let add_first = sentence_first(productions, &remainder);
+                    result.extend(&add_first - &EPSILON_SET);
+                    if add_first.contains(&Symbol::Epsilon) {
                         result.insert(producing_symbol.clone());
-                        // TODO: This might too aggressively include follow(B) since the condition is if the following SENTENCE can produce epsilon, not the following symbol
-                    } else {
-                        result.insert(symbol_pair[1].clone());
                     }
+
+
+
+
+                    // let remainder: Vec<Symbol> = option.iter().filter(|x| !matches!(x, Symbol::SemanticAction(_))).skip(n + 1).cloned().collect();
+                    // //if first(productions, &symbol_pair[1]).contains(&Symbol::Epsilon) {
+                    // if sentence_first(productions, &remainder).contains(&Symbol::Epsilon) {
+                    //     result.extend(&first(productions, &symbol_pair[1]) - &EPSILON_SET);
+                    //     result.insert(producing_symbol.clone());
+                    //     // TODO: This might too aggressively include follow(B) since the condition is if the following SENTENCE can produce epsilon, not the following symbol
+                    // } else {
+                    //     result.insert(symbol_pair[1].clone());
+                    // }
                 }
             }
 
@@ -313,8 +335,92 @@ fn expand_follow(
         next = expand_follow_once(&current);
         iterations += 1;
     }
-    next
+
+    if iterations == MAX_FOLLOW_EXPANSIONS {
+        warn!("Follow sets required more than {} expansions of nonterminal follow sets. This is likely an error", MAX_FOLLOW_EXPANSIONS);
+    }
+
+
+    // next
+
+    remove_non_terminals(&next)
 }
+// fn expand_follow_once(
+//     follow_sets: &HashMap<Symbol, HashSet<Symbol>>,
+// ) -> HashMap<Symbol, HashSet<Symbol>> {
+//     let mut result = follow_sets.clone();
+//     for (symbol, follow_set) in follow_sets {
+//         let non_terminals = follow_set
+//             .iter()
+//             .filter(|x| matches!(x, Symbol::NonTerminal(_)))
+//             .cloned();
+//         for non_terminal in non_terminals {
+//             result.get_mut(symbol).unwrap().remove(&non_terminal);
+//             if non_terminal != *symbol {
+//                 result
+//                     .get_mut(symbol)
+//                     .unwrap()
+//                     .extend(follow_sets.get(&non_terminal).unwrap().iter().cloned());
+//             }
+//         }
+//     }
+//     result
+// }
+// fn expand_follow_once(
+//     follow_sets: &HashMap<Symbol, HashSet<Symbol>>,
+// ) -> HashMap<Symbol, HashSet<Symbol>> {
+//     let mut result = follow_sets.clone();
+//     let mut expanded = false;
+//     for (symbol, follow_set) in follow_sets {
+//         let non_terminals: Vec<Symbol> = follow_set
+//             .iter()
+//             .filter(|x| matches!(x, Symbol::NonTerminal(_)))
+//             .cloned().collect();
+//         for non_terminal in non_terminals {
+//             if non_terminal == *symbol {
+//                 // Remove recursive relations
+//                 trace!("Removing recursive relation {:?}, {:?}", symbol, non_terminal);
+//                 result.get_mut(symbol).unwrap().remove(&non_terminal);
+//                 continue;
+//             }
+
+//             // find a non_terminal that has no nonterminals in its follow
+//             if follow_sets.get(&non_terminal).unwrap().iter().all(|x| !matches!(x, Symbol::NonTerminal(_))) {
+//                 trace!("Found non terminal with only terminal follow elements: {:?}", non_terminal);
+//                 trace!("follow({:?}) = {:?}", non_terminal, follow_sets.get(&non_terminal).unwrap());
+//                 result.get_mut(symbol).unwrap().remove(&non_terminal);
+//                 result
+//                     .get_mut(symbol)
+//                     .unwrap()
+//                     .extend(follow_sets.get(&non_terminal).unwrap().iter().filter(|x| *x != symbol).cloned());
+//                 expanded = true;
+//             }
+//         }
+//     }
+
+//     if !expanded {
+//         'outer: for (symbol, follow_set) in follow_sets {
+//             let non_terminals: Vec<Symbol> = follow_set
+//                 .iter()
+//                 .filter(|x| matches!(x, Symbol::NonTerminal(_)))
+//                 .cloned().collect();
+//             for non_terminal in non_terminals {    
+//                 trace!("Breaking cycle by expanding {:?} into {:?}", non_terminal, follow_sets.get(&non_terminal).unwrap());
+//                 result.get_mut(symbol).unwrap().remove(&non_terminal);
+//                 if result.get(&non_terminal).unwrap().contains(symbol) {
+//                     result.get_mut(&non_terminal).unwrap().remove(symbol);
+//                 }
+//                 result
+//                     .get_mut(symbol)
+//                     .unwrap()
+//                     .extend(follow_sets.get(&non_terminal).unwrap().iter().filter(|x| *x != symbol).cloned());
+//                 break 'outer;
+//             }
+//         }
+//     }
+
+//     result
+// }
 
 fn expand_follow_once(
     follow_sets: &HashMap<Symbol, HashSet<Symbol>>,
@@ -326,13 +432,58 @@ fn expand_follow_once(
             .filter(|x| matches!(x, Symbol::NonTerminal(_)))
             .cloned();
         for non_terminal in non_terminals {
-            result.get_mut(symbol).unwrap().remove(&non_terminal);
+            // if non_terminal == *symbol {
+            //     // Remove recursive relations
+            //     trace!("Removing recursive relation {:?}, {:?}", symbol, non_terminal);
+            //     result.get_mut(symbol).unwrap().remove(&non_terminal);
+            // }
+
+            //result.get_mut(symbol).unwrap().remove(&non_terminal);
             if non_terminal != *symbol {
                 result
                     .get_mut(symbol)
                     .unwrap()
                     .extend(follow_sets.get(&non_terminal).unwrap().iter().cloned());
             }
+        }
+    }
+    result
+}
+
+fn remove_recursive(
+    follow_sets: &HashMap<Symbol, HashSet<Symbol>>,
+) -> HashMap<Symbol, HashSet<Symbol>> {
+    let mut result = follow_sets.clone();
+
+    for (symbol, follow_set) in follow_sets {
+        let non_terminals: Vec<Symbol> = follow_set
+            .iter()
+            .filter(|x| matches!(x, Symbol::NonTerminal(_)))
+            .cloned().collect();
+        for non_terminal in non_terminals {
+            if non_terminal == *symbol {
+                // Remove recursive relations
+                trace!("Removing recursive relation {:?}, {:?}", symbol, non_terminal);
+                result.get_mut(symbol).unwrap().remove(&non_terminal);
+                continue;
+            }
+        }
+    }
+    result
+}
+
+fn remove_non_terminals(
+    follow_sets: &HashMap<Symbol, HashSet<Symbol>>,
+) -> HashMap<Symbol, HashSet<Symbol>> {
+    let mut result = follow_sets.clone();
+    for (symbol, follow_set) in follow_sets {
+        // The fact that the iterator is still an iterator rather than a static collection of non terminals here might be a problem
+        for non_terminal in follow_set
+            .iter()
+            .filter(|x| matches!(x, Symbol::NonTerminal(_)))
+            .cloned() 
+        {
+            result.get_mut(symbol).unwrap().remove(&non_terminal);
         }
     }
     result

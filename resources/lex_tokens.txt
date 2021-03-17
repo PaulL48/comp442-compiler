@@ -44,27 +44,27 @@ _[0-9]*[a-zA-Z_]+[a-zA-Z0-9]* @ true @ false @ invalidid
 <= @ false @ false @ leq
 >= @ false @ false @ geq
 <> @ false @ false @ noteq
-\+ @ false @ false @ plus
--  @ false @ false @ minus
-\* @ false @ false @ mult
-/  @ false @ false @ div
+\+ @ false @ false @ +
+-  @ false @ false @ -
+\* @ false @ false @ *
+/  @ false @ false @ /
 =  @ false @ false @ assign
 == @ false @ false @ eq
 \| @ false @ false @ or
 &  @ false @ false @ and
 !  @ false @ false @ not
-\? @ false @ false @ qmark
-\( @ false @ false @ openpar
-\) @ false @ false @ closepar
-\{ @ false @ false @ opencubr
-\} @ false @ false @ closecubr
-\[ @ false @ false @ opensqbr
-\] @ false @ false @ closesqbr
-;  @ false @ false @ semi
-,  @ false @ false @ comma
-\. @ false @ false @ dot
-:  @ false @ false @ colon
-:: @ false @ false @ coloncolon
+\? @ false @ false @ qm
+\( @ false @ false @ (
+\) @ false @ false @ )
+\{ @ false @ false @ {
+\} @ false @ false @ }
+\[ @ false @ false @ [
+\] @ false @ false @ ]
+;  @ false @ false @ ;
+,  @ false @ false @ ,
+\. @ false @ false @ .
+:  @ false @ false @ :
+:: @ false @ false @ sr
 
 # The following multiline block comment regex was inspired from 
 # https://stackoverflow.com/questions/13014947/regex-to-match-a-c-style-multiline-comment

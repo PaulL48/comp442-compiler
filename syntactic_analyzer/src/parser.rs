@@ -2,6 +2,7 @@ use crate::grammar::Grammar;
 use crate::parse_table::ParseTable;
 use crate::symbol::Symbol;
 use lexical_analyzer::{Lex, Token};
+use log::{info, warn};
 
 pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &ParseTable) {
     let eos_stack = vec![Symbol::Eos];
@@ -12,11 +13,9 @@ pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &Pa
     let mut error = false;
     let mut previous_grammar_lhs = Symbol::Eos;
 
-    println!("Parse table {:?}", parse_table);
-    println!("Starting Stack: {:?}", symbol_stack);
-    println!("Starting token {:?}", current_token);
-
+    // TODO: If tokens run out, stop the parsing and signal an unexpected end of file
     while symbol_stack != eos_stack {
+        info!("Active token: {:?}", current_token);
         let symbol_stack_top = symbol_stack.last().unwrap().clone();
         let token_symbol = Symbol::from_token(&current_token);
         match &symbol_stack_top {
@@ -34,7 +33,7 @@ pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &Pa
                 }
             }
             Symbol::NonTerminal(_) => {
-                println!("{:?}, {:?}", symbol_stack_top, token_symbol);
+                // println!("{:?}, {:?}", symbol_stack_top, token_symbol);
                 if parse_table.contains(&symbol_stack_top, &token_symbol) {
                     let option_index = parse_table.get(&symbol_stack_top, &token_symbol);
                     let production = grammar.production(&symbol_stack_top, option_index);
@@ -82,7 +81,7 @@ fn skip_errors(
     let lex_token = current_token.clone().unwrap();
     let mut lookahead = Symbol::from_token(current_token);
     let top = symbol_stack.last().unwrap();
-    println!(
+    warn!(
         "Syntax error at line {}, col {}",
         lex_token.line, lex_token.column
     );
@@ -98,6 +97,10 @@ fn skip_errors(
         {
             *current_token = lexer.next();
             lookahead = Symbol::from_token(current_token);
+
+            if let None = current_token.clone() {
+                break;
+            }
         }
     }
 }

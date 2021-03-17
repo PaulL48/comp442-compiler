@@ -109,7 +109,7 @@ impl<'a, T: Read> Iterator for Lex<'a, T> {
         loop {
             match next_token.clone() {
                 Some(Ok(token)) => {
-                    if token.error_token {
+                    if token.error_token || token.token_type == "blockcmt" || token.token_type == "inlinecmt" {
                         match self
                             .lex_error_file
                             .write_all(format!("{}\n", LexingError::from(token.clone())).as_bytes())

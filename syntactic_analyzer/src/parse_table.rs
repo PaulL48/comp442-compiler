@@ -1,10 +1,11 @@
 use crate::grammar::Grammar;
 use crate::symbol::Symbol;
 use std::collections::HashMap;
+use log::trace;
 
 #[derive(Debug)]
 pub struct ParseTable {
-    table: HashMap<Symbol, HashMap<Symbol, usize>>,
+    pub table: HashMap<Symbol, HashMap<Symbol, usize>>,
 }
 
 impl ParseTable {
@@ -14,10 +15,22 @@ impl ParseTable {
         }
     }
 
+    // The description of the algorithm
+    // For every production (A -> x) where x is a sentence
+    //      for every terminal t in first(x)
+    //          add (A -> x) to table[A, t]
+    //      if epsilon is in first(x)
+    //          for every terminal t in follow(A)
+    //              add (A -> x) to table[A, t]
     pub fn from_grammar(grammar: &Grammar) -> Self {
         let mut table: HashMap<Symbol, HashMap<Symbol, usize>> = HashMap::new();
 
         for (symbol, production) in grammar.productions() {
+            if let Symbol::NonTerminal(mm) = symbol.clone() {
+                if mm == "IndiceRep" {
+                    let i = 0;
+                }
+            }
             println!("Processing {:?}", symbol);
             table.insert(symbol.clone(), HashMap::new());
             for (index, option) in production.iter().enumerate() {
@@ -39,6 +52,7 @@ impl ParseTable {
                         .iter()
                         .filter(|x| matches!(x, Symbol::Terminal(_)) || matches!(x, Symbol::Eos))
                     {
+                        trace!("Inserting table entry [{:?}, {:?}] <- {}", symbol, terminal, index);
                         table
                             .get_mut(&symbol)
                             .unwrap()
@@ -64,7 +78,7 @@ impl ParseTable {
 mod tests {
     use super::*;
     use lazy_static::lazy_static;
-    use maplit::{hashmap, hashset};
+    use maplit::hashmap;
 
     lazy_static! {
         static ref TEST_GRAMMAR: Grammar = Grammar::new(
