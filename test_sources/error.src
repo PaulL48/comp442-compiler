@@ -1,3 +1,4 @@
+// ====== Class declarations ====== //
 class POLYNOMIAL {
 	public func evaluate(float x) : float;
 };
@@ -8,7 +9,7 @@ class LINEAR inherits POLYNOMIAL {
 	
 	public func build(float A, float B) : LINEAR;
 	public func evaluate(float x) : float;
-};
+}
 
 class QUADRATIC inherits POLYNOMIAL {
 	private float a;
@@ -17,8 +18,37 @@ class QUADRATIC inherits POLYNOMIAL {
 	
 	public func build(float A, float B, float C) : QUADRATIC;
 	public func evaluate(float x) : float;
-};
+}
 
+// ====== Function Definitions ====== //
+func POLYNOMIAL::evaluate(float x) : float
+{
+  return (0);
+}
+
+func LINEAR::evaluate(float x) : float 
+{
+  var
+  {
+    float result;
+  }
+  result = 0.0;
+  result = a * x + b;
+  return (result);
+}
+  
+func QUADRATIC::evaluate(float x) : float
+{
+  var    
+  {
+    float result;
+  }
+  //Using Horner's method
+  result = a;
+  result = result * x + b;
+  result = result * x + c;
+  return (result);
+}
   
 func LINEAR::build(float A, float B) : LINEAR 
 {
@@ -30,34 +60,58 @@ func LINEAR::build(float A, float B) : LINEAR
   new_function.b = B;
   return (new_function);
 }
-
-
-// main funtion to test above
-main 
+  
+func QUADRATIC::build(float A, float B, float C) : QUADRATIC
 {
-  printarray(arr, 7); 
-  bubbleSort(arr, 7);
-  printarray(arr, 7); 
+  var
+  {
+    QUADRATIC new_function;
+  }
+  new_function.a = A;
+  new_function.b = B;
+  new_function.c = C;
+  return (new_function);
 }
+  
 
+// ====== main ====== //
+main
+{
+  var
+  {
+    linear f1;
+    quadratic f2;
+    integer counter;
+  }
+  f1 = f1.build(2, 3.5);
+  f2 = f2.build(-2.0, 1.0, 0.0);
+  counter = 1;
+	
+  while(counter <= 10)
+  {
+    write(counter);
+    write(f1.evaluate(counter));
+    write(f2.evaluate(counter));
+  };
+}
 /*
     classes
     --------------------------------------
-|X| no class declaration
+| | no class declaration
 | | class declaration
-| | multiple class declarations
-| | no data member declaration
-| | data member declaration
-| | multiple data member declaration
+|X| multiple class declarations
+|X| no data member declaration
+|X| data member declaration
+|X| multiple data member declaration
 | | no member function declaration
-| | member function declaration
-| | multiple member function declaration
+|X| member function declaration
+|X| multiple member function declaration
 | | no member
-| | no inherited class
-| | one inherited class
+|X| no inherited class
+|X| one inherited class
 | | multiple inherited classes
-| | private member specifier
-| | public member specifier
+|X| private member specifier
+|X| public member specifier
 | | absence of member specifier
 
     functions: definitions
@@ -65,56 +119,56 @@ main
 | | no main function definition (not allowed)
 |X| main function definition
 | | multiple main function definitions (not allowed)
-| | no free function definition
-|X| free function definition
-|X| multiple free function definitions
-|X| no member function definition
-| | member function definition
-| | multiple member function definitions
-|X| return type: void
+|X| no free function definition
+| | free function definition
+| | multiple free function definitions
+| | no member function definition
+|X| member function definition
+|X| multiple member function definitions
+| | return type: void
 | | return type: integer
-| | return type: float
+|X| return type: float
 | | return type: string
-| | return type: id
+|X| return type: id
 | | return type: array (not allowed)
 
 
     functions: formal parameters
     --------------------------------------
-|X| type: integer
-| | type: float
+| | type: integer
+|X| type: float
 | | type: string
 | | type: id
-|X| type: 1-dim array 
+| | type: 1-dim array 
 | | type: n-dim array
 | | type: array (with size)
-|X| type: array (without size)
+| | type: array (without size)
 
     functions: calls
     --------------------------------------
-|X| free function call
-| | member function call
+| | free function call
+|X| member function call
 | | parameters:0
-| | parameters:1
+|X| parameters:1
 |X| parameters:n
-|X| array parameter - 1-dim
+| | array parameter - 1-dim
 | | array parameter - n-dim
 | | array parameter - with size
 | | array parameter - without size
 | | function call as statement
-| | function call as expression factor
+|X| function call as expression factor
 | | expression as parameter
 
     variable declaration
     --------------------------------------
-|X| type: integer
+| | type: integer
 | | type: float
 | | type: string
-| | type: id
-|X| type: 1-dim array 
+|X| type: id
+| | type: 1-dim array 
 | | type: n-dim array
-|X| type: array (with size)
-| | type: array (without size) (not allowed)
+| | type: array (with size)
+| | type: array (without size)
 
     function body: local variable declaration block
     --------------------------------------
@@ -130,10 +184,10 @@ main
 | | no statement
 | | 1 statement
 |X| n statements
-|X| if statement
-|X| if: empty then or else blocks
+| | if statement
+| | if: empty then or else blocks
 | | if: 1-statement then or else blocks
-|X| if: n-statements then or else blocks
+| | if: n-statements then or else blocks
 |X| while statement
 | | while: empty block
 | | while: 1-statement block
@@ -148,8 +202,8 @@ main
     variable + idnest
     --------------------------------------
 |X| id
-| | id.id
-| | id.id(id)
+|X| id.id
+|X| id.id(id)
 | | id(id).id
 | | id(id).id()
 | | id.id[id]
@@ -164,20 +218,20 @@ main
 
     expressions
     --------------------------------------
-|X| single variable
-|X| involving addop
+| | single variable
+| | involving addop
 | | involving multop
-|X| involving relop
-| | involving addop + multop
-|X| involving multop + relop
+| | involving relop
+|X| involving addop + multop
+| | involving multop + relop
 | | involving addop + multop + relop
 | | involving parentheses
-| | involving nested parentheses
+| | involving nested parenhteses
 | | involving ternary operator
 | | involving not
 | | involving sign
-|X| involving literals
-| | involving variable + idnest
+| | involving literals
+|X| involving variable + idnest
 |X| involving function calls
 | | involving all the above in one expression
 */

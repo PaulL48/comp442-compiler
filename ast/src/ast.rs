@@ -105,7 +105,8 @@ impl Node {
                 label.push_str(&format!(r#" [shape=box label="{}\n{}"]"#, self.node_type, int));
             },
             Data::String(s) => {
-                label.push_str(&format!(r#" [shape=box label="{}\n{}"]"#, self.node_type, s));
+                let a = s.replace("\"", r#"\""#);
+                label.push_str(&format!(r#" [shape=box label="{}\n{}"]"#, self.node_type, a));
             },
             Data::Children(_) => {
                 label.push_str(&format!(r#" [shape=ellipse label="{}"]"#, self.node_type));

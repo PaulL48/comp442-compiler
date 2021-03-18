@@ -2,7 +2,7 @@ use crate::grammar::Grammar;
 use crate::parse_table::ParseTable;
 use crate::symbol::Symbol;
 use lexical_analyzer::{Lex, Token};
-use log::{info, trace};
+use log::{info, trace, error};
 use output_manager::{OutputConfig, warn_write, write_list, write_array};
 use std::io::{Seek, Write, SeekFrom};
 
@@ -12,7 +12,7 @@ pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &Pa
     let mut semantic_stack: Vec<ast::Node> = Vec::new();
     let mut current_token = lexer.next();
     let mut previous_token = current_token.clone();
-    // let mut error = false;
+    let mut error = false;
     let mut previous_grammar_lhs = Symbol::Eos;
 
     if let Some(token) = current_token.clone() {
@@ -25,7 +25,7 @@ pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &Pa
         trace!("Active token: {:?}", current_token);
 
         if let Some(token) = current_token.clone() {
-            if token.line == 27 {
+            if token.line == 180 {
                 let i = 0;
             }
         }
@@ -45,7 +45,7 @@ pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &Pa
                     trace!("Processing terminal {:?}", symbol);
                     trace!("Stack: {:?}", symbol_stack);
                 } else {
-                    // error = true;
+                    error = true;
                     skip_errors(grammar, lexer, &mut current_token, &mut symbol_stack, parse_table, output_config);
                 }
             }
@@ -73,13 +73,13 @@ pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &Pa
                     write_list(&mut output_config.derivation_file, &output_config.derivation_path, &symbol_stack);
                     trace!("Stack: {:?}", symbol_stack);
                 } else {
-                    // error = true;
+                    error = true;
                     skip_errors(grammar, lexer, &mut current_token, &mut symbol_stack, parse_table, output_config);
                 }
             }
             Symbol::SemanticAction(action) => {
                 action.execute(&mut semantic_stack, previous_token.clone().unwrap(), previous_grammar_lhs.clone());
-                info!("Semantic Stack {:?}", semantic_stack);
+                trace!("Semantic Stack {:?}", semantic_stack);
                 previous_grammar_lhs = symbol_stack_top.clone();
                 symbol_stack.pop();
             }
@@ -87,10 +87,14 @@ pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &Pa
         }
     }
 
-    info!("Exiting parse");
-    info!("Semantic stack: {:?}", semantic_stack);
-    info!("Symbol stack: {:?}", symbol_stack);
-    info!("Current Token: {:?}", current_token);
+    if error {
+        error!("Parsing encountered errors, see the associated outsyntaxerrors files");
+    }
+
+    // trace!("Exiting parse");
+    // info!("Semantic stack: {:?}", semantic_stack);
+    // info!("Symbol stack: {:?}", symbol_stack);
+    // info!("Current Token: {:?}", current_token);
 
     if symbol_stack.last().is_none() {
         // Ran out of productions before end of tokens
@@ -117,28 +121,44 @@ fn skip_errors(
     parse_table: &ParseTable,
     output_config: &mut OutputConfig,
 ) {
-    let lex_token = current_token.clone().unwrap();
+    // let lex_token = current_token.clone().unwrap();
     let mut lookahead = Symbol::from_token(current_token);
+
+    match current_token.clone() {
+        Some(lex_token) => {
+            match &symbol_stack.last().clone().unwrap() {
+                Symbol::Terminal(c) => {
+                    warn_write(&mut output_config.syntax_error_file, &output_config.syntax_error_path, &format!("Syntax error at line {}, col {}: encountered {}, but was expecting {}\n", lex_token.line, lex_token.column, lex_token.lexeme, c));
+                }
+                Symbol::NonTerminal(nt) => {
+                    warn_write(&mut output_config.syntax_error_file, &output_config.syntax_error_path, &format!("Syntax error at line {}, col {}: encountered {}, but was expecting a {} which begins with one of ", lex_token.line, lex_token.column, nt, lex_token.lexeme));
+                    write_array(&mut output_config.syntax_error_file, &output_config.syntax_error_path, &parse_table.table.get(symbol_stack.last().clone().unwrap()).unwrap().iter().map(|x| x.0).collect());        
+                    warn_write(&mut output_config.syntax_error_file, &output_config.syntax_error_path, "\n");
+                },
+                _ => (),
+            }
+        },
+        None => {
+            warn_write(&mut output_config.syntax_error_file, &output_config.syntax_error_path, &format!("Syntax error: unexpected end of file\n"));
+        }
+    }
+
+    
+    let mut reconstructed_stack = symbol_stack.clone();
+    while reconstructed_stack.len() > 0 && !matches!(reconstructed_stack.last().unwrap(), Symbol::NonTerminal(_)) {
+        reconstructed_stack.pop();
+    }
+    *symbol_stack = reconstructed_stack;
     let top = symbol_stack.last().unwrap();
 
-    match &top {
-        Symbol::Terminal(c) => {
-            warn_write(&mut output_config.syntax_error_file, &output_config.syntax_error_path, &format!("Syntax error at line {}, col {}: encountered {}, but was expecting {}", lex_token.line, lex_token.column, lex_token.lexeme, c));
-        }
-        Symbol::NonTerminal(nt) => {
-            warn_write(&mut output_config.syntax_error_file, &output_config.syntax_error_path, &format!("Syntax error at line {}, col {}: encountered {}, but was expecting a {} which begins with one of ", lex_token.line, lex_token.column, nt, lex_token.lexeme));
-            write_array(&mut output_config.syntax_error_file, &output_config.syntax_error_path, &parse_table.table.get(top).unwrap().iter().map(|x| x.0).collect());        
-        },
-        _ => (),
-    }
+
 
     // warn!(
     //     "Syntax error at line {}, col {}",
     //     lex_token.line, lex_token.column
     // );
     trace!("Stack: {:?}", symbol_stack);
-
-    if lookahead == Symbol::Eos || matches!(top, Symbol::Terminal(_)) || grammar.follow(top).contains(&lookahead) {
+    if lookahead == Symbol::Eos || grammar.follow(top).contains(&lookahead) {
         symbol_stack.pop();
         trace!("Stack: {:?}", symbol_stack);
     } else {
