@@ -2,9 +2,9 @@ use crate::grammar::Grammar;
 use crate::parse_table::ParseTable;
 use crate::symbol::Symbol;
 use lexical_analyzer::{Lex, Token};
-use log::{info, trace, error};
+use log::{trace, error};
 use output_manager::{OutputConfig, warn_write, write_list, write_array};
-use std::io::{Seek, Write, SeekFrom};
+use std::io::Write;
 
 pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &ParseTable, output_config: &mut OutputConfig) {
     let eos_stack = vec![Symbol::Eos];
@@ -23,13 +23,6 @@ pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &Pa
     while symbol_stack != eos_stack {
         output_config.derivation_file.flush().unwrap(); // TODO: Remove before submission
         trace!("Active token: {:?}", current_token);
-
-        if let Some(token) = current_token.clone() {
-            if token.line == 180 {
-                let i = 0;
-            }
-        }
-
         let symbol_stack_top = symbol_stack.last().unwrap().clone();
         let token_symbol = Symbol::from_token(&current_token);
         match &symbol_stack_top {

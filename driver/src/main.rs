@@ -8,7 +8,6 @@ use path;
 use simplelog::*;
 use syntactic_analyzer::{parse, Grammar, ParseTable};
 use output_manager::OutputConfig;
-use syntactic_analyzer::Symbol;
 
 /// Development switch to easily turn terminal logging on or off
 const LOGGING_SWITCH: LevelFilter = LevelFilter::Info;

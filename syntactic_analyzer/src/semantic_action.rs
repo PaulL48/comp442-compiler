@@ -74,7 +74,7 @@ impl FromStr for Action {
 }
 
 impl Action {
-    pub fn execute(&self, semantic_stack: &mut Vec<Node>, previous_token: Token, previous_production: Symbol) {
+    pub fn execute(&self, semantic_stack: &mut Vec<Node>, previous_token: Token, _: Symbol) {
         match self {
             Action::MakeNode(data_type, name) => {
                 self.make_node(semantic_stack, previous_token, data_type, name)
