@@ -44,7 +44,7 @@
 <FParamsTail> ::= ',' <Type> 'id' @makenode~string~id@ @makenode~list~dimlist@ <ArraySizeRept> @makefamily~3~fparam@ @makesibling@ <FParamsTail>
 <FParamsTail> ::= EPSILON
 
-<Factor> ::= <FuncOrVar>
+<Factor> ::= @makenode~list~var@ <FuncOrVar>
 <Factor> ::= 'intnum' @makenode~integer~factor@
 <Factor> ::= 'floatnum' @makenode~float~factor@
 <Factor> ::= 'stringlit' @makenode~string~factor@
@@ -67,14 +67,14 @@
 
 <FuncOrAssignStat> ::= 'id' @makenode~string~id@ <FuncOrAssignStatIdnest>
 
-<FuncOrAssignStatIdnest> ::= @makenode~list~indexList@ <IndiceRep> @makefamily~2~dataMember@ <FuncOrAssignStatIdnestVarTail>
-<FuncOrAssignStatIdnest> ::= '(' @makenode~list~aParams@ <AParams> ')' @makefamily~2~fCall@ <FuncOrAssignStatIdnestFuncTail>
+<FuncOrAssignStatIdnest> ::= @makenode~list~indexList@ <IndiceRep> @makefamily~2~dataMember@ @makesibling@ <FuncOrAssignStatIdnestVarTail>
+<FuncOrAssignStatIdnest> ::= '(' @makenode~list~aParams@ <AParams> ')' @makefamily~2~fCall@ @makesibling@ <FuncOrAssignStatIdnestFuncTail>
 
 <FuncOrAssignStatIdnestFuncTail> ::= '.' 'id' @makenode~string~id@ <FuncStatTail>
 <FuncOrAssignStatIdnestFuncTail> ::= EPSILON
 
-<FuncStatTail> ::= @makenode~list~indexList@ <IndiceRep> @makefamily~2~dataMember@ '.' 'id' @makenode~string~id@ <FuncStatTail>
-<FuncStatTail> ::= '(' @makenode~list~aParams@ <AParams> ')' @makefamily~2~fCall@ <FuncStatTailIdnest>
+<FuncStatTail> ::= @makenode~list~indexList@ <IndiceRep> @makefamily~2~dataMember@ @makesibling@ '.' 'id' @makenode~string~id@ <FuncStatTail>
+<FuncStatTail> ::= '(' @makenode~list~aParams@ <AParams> ')' @makefamily~2~fCall@ @makesibling@ <FuncStatTailIdnest>
 
 <FuncStatTailIdnest> ::= '.' 'id' @makenode~string~id@ <FuncStatTail>
 <FuncStatTailIdnest> ::= EPSILON
@@ -84,8 +84,8 @@
 
 <FuncOrVar> ::= 'id' @makenode~string~id@ <FuncOrVarIdnest>
 
-<FuncOrVarIdnest> ::= @makenode~list~indexList@ <IndiceRep> @makefamily~2~dataMember@ <FuncOrVarIdnestTail>
-<FuncOrVarIdnest> ::= '(' @makenode~list~aParams@ <AParams> ')' @makefamily~2~fCall@ <FuncOrVarIdnestTail>
+<FuncOrVarIdnest> ::= @makenode~list~indexList@ <IndiceRep> @makefamily~2~dataMember@ @makesibling@ <FuncOrVarIdnestTail>
+<FuncOrVarIdnest> ::= '(' @makenode~list~aParams@ <AParams> ')' @makefamily~2~fCall@ @makesibling@ <FuncOrVarIdnestTail>
 
 <FuncOrVarIdnestTail> ::= '.' 'id' @makenode~string~id@ <FuncOrVarIdnest>
 <FuncOrVarIdnestTail> ::= EPSILON
@@ -130,7 +130,7 @@
 <StatBlock> ::= @makenode~list~statBlock@ <Statement>
 <StatBlock> ::= @makenode~epsilon~statBlock@ EPSILON
 
-<Statement> ::= <FuncOrAssignStat> ';'
+<Statement> ::= @makenode~list~var@ <FuncOrAssignStat> ';'
 <Statement> ::= 'if' '(' <Expr> ')' 'then' <StatBlock> 'else' <StatBlock> @makefamily~3~ifStat@ ';'
 <Statement> ::= 'while' '(' <Expr> ')' <StatBlock> @makefamily~2~whileStat@ ';'
 <Statement> ::= 'read' '(' <Variable> @makefamily~1~readStat@ ')' ';'
@@ -159,7 +159,7 @@
 
 <Variable> ::= 'id' @makenode~string~id@ <VariableIdnest>
 
-<VariableIdnest> ::= @makenode~list~indexList@ <IndiceRep> @makefamily~2~dataMember@ <VariableIdnestTail>
+<VariableIdnest> ::= @makenode~list~indexList@ <IndiceRep> @makefamily~2~dataMember@ @makesibling@ <VariableIdnestTail>
 
 <VariableIdnestTail> ::= '.' 'id' @makenode~string~id@ <VariableIdnest>
 <VariableIdnestTail> ::= EPSILON
