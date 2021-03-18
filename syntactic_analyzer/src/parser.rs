@@ -25,7 +25,7 @@ pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &Pa
         trace!("Active token: {:?}", current_token);
 
         if let Some(token) = current_token.clone() {
-            if token.line == 14 {
+            if token.line == 6 {
                 let i = 0;
             }
         }

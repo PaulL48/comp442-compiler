@@ -111,7 +111,7 @@ impl Node {
                 label.push_str(&format!(r#" [shape=ellipse label="{}"]"#, self.node_type));
             },
             Data::Epsilon => {
-                label.push_str(&format!(r#" [shape=diamond label="epsilon"]"#));
+                label.push_str(&format!(r#" [shape=diamond label="{}\nepsilon"]"#, self.node_type));
             }
             
         }

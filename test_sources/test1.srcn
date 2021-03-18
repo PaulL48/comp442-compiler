@@ -1,16 +1,10 @@
-func t(integer i) : void
-{
-  i = i * 0;
-}
 
 // main funtion to test above
 main 
 {
-  var 
-  {
-    integer i; 
-  }
-  i = 0;
+  printarray(arr, 7); 
+  bubbleSort(arr, 7);
+  printarray(arr, 7); 
 }
 
 /*
