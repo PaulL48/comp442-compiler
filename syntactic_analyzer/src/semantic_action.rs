@@ -1,11 +1,11 @@
+use crate::symbol::Symbol;
 use ast::{Data, Node};
 use lazy_static::lazy_static;
 use lexical_analyzer::Token;
 use log::{error, trace};
 use regex::Regex;
-use std::str::FromStr;
-use crate::symbol::Symbol;
 use std::fmt;
+use std::str::FromStr;
 
 #[derive(Debug, PartialEq, Hash, Clone)]
 pub enum Action {
@@ -17,19 +17,13 @@ pub enum Action {
 
     /// Push the top stack element to the list element underneath it
     MakeSibling,
-
-    // ///
-    // AdoptChildren,
-
-    // /// Rename the top stack element based on the previously encountered token
-    // Rename(String),
 }
 
 lazy_static! {
-    static ref MAKE_NODE_RE: Regex =
-        Regex::new("makenode~(?P<type>.*)~(?P<name>.*)").expect("Regular expression failed to compile");
-    static ref MAKE_FAMILY_RE: Regex =
-        Regex::new("makefamily~(?P<size>.*)~(?P<name>.*)").expect("Regular expression failed to compile");
+    static ref MAKE_NODE_RE: Regex = Regex::new("makenode~(?P<type>.*)~(?P<name>.*)")
+        .expect("Regular expression failed to compile");
+    static ref MAKE_FAMILY_RE: Regex = Regex::new("makefamily~(?P<size>.*)~(?P<name>.*)")
+        .expect("Regular expression failed to compile");
     static ref MAKE_SIBLING_RE: Regex =
         Regex::new("makesibling").expect("Regular expression failed to compile");
     static ref ADOPT_CHILDREN_RE: Regex =
@@ -60,12 +54,6 @@ impl FromStr for Action {
             return Ok(Action::MakeFamily(number, name));
         } else if MAKE_SIBLING_RE.is_match(s) {
             return Ok(Action::MakeSibling);
-        // } else if ADOPT_CHILDREN_RE.is_match(s) {
-        //     // return Ok(Action::AdoptChildren);
-        // } else if RENAME_RE.is_match(s) {
-        //     let captures = RENAME_RE.captures(s).unwrap();
-        //     let name = captures["name"].to_string();
-        //     return Ok(Action::Rename(name));
         } else {
             error!("Unrecognized semantic action {}", s);
             panic!();
@@ -79,22 +67,20 @@ impl Action {
             Action::MakeNode(data_type, name) => {
                 self.make_node(semantic_stack, previous_token, data_type, name)
             }
-            Action::MakeFamily(size, name) => self.make_family(semantic_stack, previous_token, *size, name),
+            Action::MakeFamily(size, name) => {
+                self.make_family(semantic_stack, previous_token, *size, name)
+            }
             Action::MakeSibling => self.make_sibling(semantic_stack),
-            // Action::AdoptChildren => self.adopt_children(),
-            // Action::Rename(name) => self.rename(semantic_stack, previous_production, name),
         }
     }
 
-    fn make_node(&self, semantic_stack: &mut Vec<Node>, previous_token: Token, data_type: &str, name: &str) {
-        // It'll likely be that I'll have to determine the type based on previous_token.token_type
-        // since the production is likely to be generic for all numeric expressions
-
-        // if data_type == LIST {
-        //     semantic_stack.push(Node::new("anon-list", Data::Children(Vec::new())));
-        //     return;
-        // }
-
+    fn make_node(
+        &self,
+        semantic_stack: &mut Vec<Node>,
+        previous_token: Token,
+        data_type: &str,
+        name: &str,
+    ) {
         let data = match data_type {
             INTEGER => {
                 let int = previous_token.lexeme.parse::<i64>();
@@ -103,7 +89,7 @@ impl Action {
                         "Failed to parse lexeme {} as integer: {}",
                         previous_token.lexeme, err
                     );
-                    return; // TODO: this might have to be removed and delegated to skip_errors to recover from a parse error
+                    return;
                 } else {
                     Data::Integer(int.unwrap())
                 }
@@ -115,7 +101,7 @@ impl Action {
                         "Failed to parse lexeme {} as float: {}",
                         previous_token.lexeme, err
                     );
-                    return; // TODO: this might have to be removed and delegated to skip_errors to recover from a parse error
+                    return;
                 } else {
                     Data::Float(float.unwrap())
                 }
@@ -125,7 +111,7 @@ impl Action {
             EPSILON => Data::Epsilon,
             _ => {
                 error!("Unrecognized node type {}", data_type);
-                return; // TODO: this might have to be removed and delegated to skip_errors to recover from a parse error
+                return;
             }
         };
         semantic_stack.push(Node::new(name, data));
@@ -134,15 +120,14 @@ impl Action {
     fn make_family(&self, semantic_stack: &mut Vec<Node>, _: Token, size: usize, name: &str) {
         let mut children = Vec::new();
         for _ in 0..size {
-            let c = match semantic_stack
-                .pop() {
+            let c = match semantic_stack.pop() {
                 Some(s) => s,
                 None => {
                     trace!("Expected {} nodes on stack but underflowed", size);
                     return;
                 }
             };
-            
+
             match &c.data() {
                 Data::Children(sub_children) => {
                     if sub_children.is_empty() {
@@ -155,18 +140,9 @@ impl Action {
                     children.push(c);
                 }
             }
-
-            // children.push(
-            //     semantic_stack
-            //         .pop()
-            //         .expect(&format!("Expected {} nodes on stack but underflowed", size)),
-            // );
         }
         children.reverse();
-        semantic_stack.push(Node::new(
-            name,
-            Data::Children(children),
-        ));
+        semantic_stack.push(Node::new(name, Data::Children(children)));
     }
 
     fn make_sibling(&self, semantic_stack: &mut Vec<Node>) {
@@ -174,7 +150,7 @@ impl Action {
             None => {
                 error!("Expected a node to create as a sibling for make_sibling action");
                 return;
-            },
+            }
             Some(s) => s,
         };
 
@@ -182,35 +158,16 @@ impl Action {
             None => {
                 error!("Expected a sibling list after a make_sibling action");
                 return;
-            },
+            }
             Some(s) => s,
         };
         if let Data::Children(sibling_list) = top.data_mut() {
             sibling_list.push(sibling);
         } else {
             error!("Expected a sibling list after a make_sibling action");
-            error!("Node was {:?}", top);            
+            error!("Node was {:?}", top);
         }
     }
-
-    // fn adopt_children(&self) {}
-
-    // fn rename(&self, semantic_stack: &mut Vec<Node>, _: Symbol, name: &str) {
-    //     let top = semantic_stack
-    //         .last_mut()
-    //         .expect("Expected a sibling list after a make_sibling action");
-    //     *top.name_mut() = name.to_string();
-    //     // *top.name_mut() = match previous_production {
-    //     //     Symbol::NonTerminal(name) => name,
-    //     //     Symbol::Terminal(name) => name,
-    //     //     Symbol::Epsilon => "Epsilon".to_string(),
-    //     //     Symbol::Eos => "Eos".to_string(),
-    //     //     Symbol::SemanticAction(action) => {
-    //     //         error!("Renaming node based on semantic action {:?}. This likely isn't what was intended", action);
-    //     //         panic!();
-    //     //     }
-    //     // }
-    // }
 }
 
 impl fmt::Display for Action {
@@ -219,8 +176,6 @@ impl fmt::Display for Action {
             Action::MakeNode(data_type, name) => write!(f, "make_node({}, {})", data_type, name),
             Action::MakeFamily(size, name) => write!(f, "make_family({}, {})", size, name),
             Action::MakeSibling => write!(f, "make_sibling"),
-            // Action::AdoptChildren => write!(f, "adopt_children"),
-            // Action::Rename(name) => write!(f, "rename_node({})", name),
         }
     }
 }

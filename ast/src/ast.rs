@@ -1,16 +1,9 @@
-use std::str::FromStr;
 use output_manager::warn_write;
+use std::str::FromStr;
 
-// Data requirements
-// nested node structure
-// n children per node
-// iterability of children
-// Ability to reach leftmost child (start) from any sibling (This could be achieved albeit at a performance cost in a function that peeks children of a node)
-// Ability to reach parent from any child (Same as above)
-
-// pub struct Ast {
-//     root: Option<Node>,
-// }
+pub struct Ast {
+    root: Option<Node>,
+}
 
 #[derive(Debug, PartialEq)]
 pub struct Node {
@@ -24,14 +17,8 @@ pub enum Data {
     Integer(i64),
     Float(f64),
     String(String),
-    Epsilon
+    Epsilon,
 }
-
-// impl Ast {
-//     pub fn new() -> Self {
-//         Ast { root: None }
-//     }
-// }
 
 impl Node {
     pub fn new(node_type: &str, data: Data) -> Self {
@@ -76,7 +63,7 @@ impl Node {
                 for child in children {
                     child.dot_node_label_rec(file);
                 }
-            },
+            }
             _ => (),
         }
     }
@@ -89,7 +76,7 @@ impl Node {
                 for child in children {
                     child.dot_node_relation_rec(file);
                 }
-            },
+            }
             _ => (),
         }
     }
@@ -99,22 +86,33 @@ impl Node {
         label.push_str(&format!("a{:p}", self));
         match &self.data {
             Data::Float(float) => {
-                label.push_str(&format!(r#" [shape=box label="{}\n{}"]"#, self.node_type, float));
-            },
+                label.push_str(&format!(
+                    r#" [shape=box label="{}\n{}"]"#,
+                    self.node_type, float
+                ));
+            }
             Data::Integer(int) => {
-                label.push_str(&format!(r#" [shape=box label="{}\n{}"]"#, self.node_type, int));
-            },
+                label.push_str(&format!(
+                    r#" [shape=box label="{}\n{}"]"#,
+                    self.node_type, int
+                ));
+            }
             Data::String(s) => {
                 let a = s.replace("\"", r#"\""#);
-                label.push_str(&format!(r#" [shape=box label="{}\n{}"]"#, self.node_type, a));
-            },
+                label.push_str(&format!(
+                    r#" [shape=box label="{}\n{}"]"#,
+                    self.node_type, a
+                ));
+            }
             Data::Children(_) => {
                 label.push_str(&format!(r#" [shape=ellipse label="{}"]"#, self.node_type));
-            },
-            Data::Epsilon => {
-                label.push_str(&format!(r#" [shape=diamond label="{}\nepsilon"]"#, self.node_type));
             }
-            
+            Data::Epsilon => {
+                label.push_str(&format!(
+                    r#" [shape=diamond label="{}\nepsilon"]"#,
+                    self.node_type
+                ));
+            }
         }
         label.push_str("\n");
         label
@@ -127,7 +125,7 @@ impl Node {
                 for child in children {
                     relations.push_str(&format!("a{:p} -> a{:p}\n", self, child));
                 }
-            },
+            }
             _ => (),
         }
         return relations;
