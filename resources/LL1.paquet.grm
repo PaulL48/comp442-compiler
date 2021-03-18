@@ -1,7 +1,5 @@
 <START> ::= <Prog>
-<Prog> ::= <ClassDecl> <FuncDef> 'main' <FuncBody>
-
-<AParamsStart> ::= @makenode~list~aParams@ <AParams>
+<Prog> ::= <ClassDecl> @makenode~list~funcDefList@ <FuncDef> 'main' <FuncBody> @makefamily~2~prog@
 
 <AParams> ::= <Expr> <AParamsTail>
 <AParams> ::= EPSILON
@@ -15,15 +13,16 @@
 
 <ArithExpr> ::= <Term> <ArithExprTail>
 
-<ArithExprTail> ::= <AddOp> <Term> <ArithExprTail>
+<ArithExprTail> ::= <AddOp> <Term> @makefamily~3~addOp@ <ArithExprTail>
 <ArithExprTail> ::= EPSILON
+
 
 <ArraySizeRept> ::= '[' <IntNum> ']' <ArraySizeRept>
 <ArraySizeRept> ::= EPSILON
 
-<AssignOp> ::= 'assign' @makenode~string~assign@
+<AssignOp> ::= 'assign'
 
-<AssignStatTail> ::= <AssignOp> <Expr>
+<AssignStatTail> ::= <AssignOp> <Expr> @makefamily~2~assignOp@
 
 <ClassDecl> ::= 'class' 'id' @makenode~string~id@ <Inherit> '{' <ClassDeclBody> '}' ';' <ClassDecl>
 <ClassDecl> ::= EPSILON
@@ -36,7 +35,7 @@
 
 <Expr> ::= <ArithExpr> <ExprTail>
 
-<ExprTail> ::= <RelOp> <ArithExpr>
+<ExprTail> ::= <RelOp> <ArithExpr> @makefamily~3~relOp@
 <ExprTail> ::= EPSILON
 
 <FParams> ::= <Type> 'id' @makenode~string~id@ @makenode~list~dimlist@ <ArraySizeRept> @makefamily~3~fparam@ @makesibling@ <FParamsTail>
@@ -50,9 +49,9 @@
 <Factor> ::= 'floatnum' @makenode~float~factor@
 <Factor> ::= 'stringlit' @makenode~string~factor@
 <Factor> ::= '(' <Expr> ')'
-<Factor> ::= 'not' <Factor>
-<Factor> ::= <Sign> <Factor>
-<Factor> ::= 'qm' '[' <Expr> ':' <Expr> ':' <Expr> ']'
+<Factor> ::= 'not' <Factor> @makefamily~1~not@
+<Factor> ::= <Sign> <Factor> @makefamily~2~sign@
+<Factor> ::= 'qm' '[' <Expr> ':' <Expr> ':' <Expr> ']' @makefamily~3~ternary@
 
 <FuncBody> ::= '{' <MethodBodyVar> @makenode~list~statBlock@ <StatementList> '}' @makefamily~2~funcBody@
 
@@ -61,21 +60,21 @@
 <FuncDeclTail> ::= <Type>
 <FuncDeclTail> ::= 'void' @makenode~epsilon~type@
 
-<FuncDef> ::= <Function> <FuncDef>
+<FuncDef> ::= <Function> @makesibling@ <FuncDef>
 <FuncDef> ::= EPSILON
 
 <FuncHead> ::= 'func' 'id' @makenode~string~id@ <ClassMethod> '(' @makenode~list~fparamList@ <FParams> ')' ':' <FuncDeclTail>
 
 <FuncOrAssignStat> ::= 'id' @makenode~string~id@ <FuncOrAssignStatIdnest>
 
-<FuncOrAssignStatIdnest> ::= <IndiceRepStart> <FuncOrAssignStatIdnestVarTail>
-<FuncOrAssignStatIdnest> ::= '(' <AParamsStart> ')' <FuncOrAssignStatIdnestFuncTail>
+<FuncOrAssignStatIdnest> ::= @makenode~list~indexList@ <IndiceRep> @makefamily~2~dataMember@ <FuncOrAssignStatIdnestVarTail>
+<FuncOrAssignStatIdnest> ::= '(' @makenode~list~aParams@ <AParams> ')' <FuncOrAssignStatIdnestFuncTail>
 
 <FuncOrAssignStatIdnestFuncTail> ::= '.' 'id' @makenode~string~id@ <FuncStatTail>
 <FuncOrAssignStatIdnestFuncTail> ::= EPSILON
 
-<FuncStatTail> ::= <IndiceRepStart> '.' 'id' @makenode~string~id@ <FuncStatTail>
-<FuncStatTail> ::= '(' <AParamsStart> ')' <FuncStatTailIdnest>
+<FuncStatTail> ::= @makenode~list~indexList@ <IndiceRep> @makefamily~2~dataMember@ '.' 'id' @makenode~string~id@ <FuncStatTail>
+<FuncStatTail> ::= '(' @makenode~list~aParams@ <AParams> ')' <FuncStatTailIdnest>
 
 <FuncStatTailIdnest> ::= '.' 'id' @makenode~string~id@ <FuncStatTail>
 <FuncStatTailIdnest> ::= EPSILON
@@ -85,17 +84,15 @@
 
 <FuncOrVar> ::= 'id' @makenode~string~id@ <FuncOrVarIdnest>
 
-<FuncOrVarIdnest> ::= <IndiceRepStart> <FuncOrVarIdnestTail>
-<FuncOrVarIdnest> ::= '(' <AParamsStart> ')' <FuncOrVarIdnestTail>
+<FuncOrVarIdnest> ::= @makenode~list~indexList@ <IndiceRep> @makefamily~2~dataMember@ <FuncOrVarIdnestTail>
+<FuncOrVarIdnest> ::= '(' @makenode~list~aParams@ <AParams> ')' @makefamily~2~fCall@ <FuncOrVarIdnestTail>
 
 <FuncOrVarIdnestTail> ::= '.' 'id' @makenode~string~id@ <FuncOrVarIdnest>
 <FuncOrVarIdnestTail> ::= EPSILON
 
 <Function> ::= <FuncHead> <FuncBody> @makefamily~5~funcDef@
 
-<IndiceRepStart> ::= @makenode~list~indices@ <IndiceRep>
-
-<IndiceRep> ::= '[' <Expr> ']' <IndiceRep>
+<IndiceRep> ::= '[' <Expr> @makesibling@ ']' <IndiceRep>
 <IndiceRep> ::= EPSILON
 
 <Inherit> ::= 'inherits' 'id' @makenode~string~id@ <NestedId>
@@ -118,27 +115,27 @@
 <NestedId> ::= EPSILON
 
 
-<RelOp> ::= 'eq'
-<RelOp> ::= 'neq'
-<RelOp> ::= 'lt'
-<RelOp> ::= 'gt'
-<RelOp> ::= 'leq'
-<RelOp> ::= 'geq'
+<RelOp> ::= 'eq' @makenode~string~releq@
+<RelOp> ::= 'neq' @makenode~string~relneq@
+<RelOp> ::= 'lt' @makenode~string~lt@
+<RelOp> ::= 'gt' @makenode~string~gt@
+<RelOp> ::= 'leq' @makenode~string~leq@
+<RelOp> ::= 'geq' @makenode~string~geq@
 
 
-<Sign> ::= '+'
-<Sign> ::= '-'
+<Sign> ::= '+' @makenode~string~pos@
+<Sign> ::= '-' @makenode~string~neg@
 
 <StatBlock> ::= '{' <StatementList> '}'
 <StatBlock> ::= <Statement>
 <StatBlock> ::= EPSILON
 
 <Statement> ::= <FuncOrAssignStat> ';'
-<Statement> ::= 'if' '(' <Expr> ')' 'then' <StatBlock> 'else' <StatBlock> ';'
-<Statement> ::= 'while' '(' <Expr> ')' <StatBlock> ';'
-<Statement> ::= 'read' '(' <Variable> ')' ';'
-<Statement> ::= 'write' '(' <Expr> ')' ';'
-<Statement> ::= 'return' '(' <Expr> ')' ';'
+<Statement> ::= 'if' '(' <Expr> ')' 'then' <StatBlock> 'else' <StatBlock> @makefamily~3~ifStat@ ';'
+<Statement> ::= 'while' '(' <Expr> ')' <StatBlock> @makefamily~2~whileStat@ ';'
+<Statement> ::= 'read' '(' <Variable> @makefamily~1~readStat@ ')' ';'
+<Statement> ::= 'write' '(' <Expr> @makefamily~1~writeStat@ ')' ';'
+<Statement> ::= 'return' '(' <Expr> @makefamily~1~returnStat@ ')' ';'
 <Statement> ::= 'break' @makenode~string~breakStat@ ';'
 <Statement> ::= 'continue' @makenode~string~continueStat@ ';'
 
@@ -147,7 +144,7 @@
 
 <Term> ::= <Factor> <TermTail>
 
-<TermTail> ::= <MultOp> <Factor> <TermTail>
+<TermTail> ::= <MultOp> <Factor> @makefamily~3~mulOp@ <TermTail>
 <TermTail> ::= EPSILON
 
 <Type> ::= 'integer' @makenode~string~type@
@@ -162,7 +159,7 @@
 
 <Variable> ::= 'id' @makenode~string~id@ <VariableIdnest>
 
-<VariableIdnest> ::= <IndiceRepStart> <VariableIdnestTail>
+<VariableIdnest> ::= @makenode~list~indexList@ <IndiceRep> @makefamily~2~dataMember@ <VariableIdnestTail>
 
 <VariableIdnestTail> ::= '.' 'id' @makenode~string~id@ <VariableIdnest>
 <VariableIdnestTail> ::= EPSILON

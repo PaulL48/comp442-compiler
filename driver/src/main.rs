@@ -8,6 +8,7 @@ use path;
 use simplelog::*;
 use syntactic_analyzer::{parse, Grammar, ParseTable};
 use output_manager::OutputConfig;
+use syntactic_analyzer::Symbol;
 
 /// Development switch to easily turn terminal logging on or off
 const LOGGING_SWITCH: LevelFilter = LevelFilter::Info;
@@ -54,6 +55,8 @@ fn main() -> std::io::Result<()> {
     info!("Extracting grammar productions from file \"{}\"", config.grammar_file);
     let g = Grammar::from_reader(File::open(config.grammar_file)?)?;
     let parse_table = ParseTable::from_grammar(&g);
+
+    println!("{:?}", parse_table.table.get(&Symbol::NonTerminal("FuncOrVarIdnest".to_string())).unwrap());
 
     for source_file in path::directory(config.source_folder).filter(|x| path::is_file(x) && path::extension(x).unwrap_or("") == "src") {
         let mut oc = OutputConfig::new(&source_file, config.output_folder);

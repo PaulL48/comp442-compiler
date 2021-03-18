@@ -4,12 +4,12 @@ use crate::symbol::Symbol;
 use lexical_analyzer::{Lex, Token};
 use log::{info, trace};
 use output_manager::{OutputConfig, warn_write, write_list, write_array};
-use std::io::Write;
+use std::io::{Seek, Write, SeekFrom};
 
 pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &ParseTable, output_config: &mut OutputConfig) {
     let eos_stack = vec![Symbol::Eos];
     let mut symbol_stack = vec![Symbol::Eos, grammar.start().clone()];
-    let mut semantic_stack = Vec::new();
+    let mut semantic_stack: Vec<ast::Node> = Vec::new();
     let mut current_token = lexer.next();
     let mut previous_token = current_token.clone();
     // let mut error = false;
@@ -20,9 +20,16 @@ pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &Pa
     }
 
     // TODO: If tokens run out, stop the parsing and signal an unexpected end of file
-    while symbol_stack != eos_stack && !current_token.is_none() {
+    while symbol_stack != eos_stack {
         output_config.derivation_file.flush().unwrap(); // TODO: Remove before submission
         trace!("Active token: {:?}", current_token);
+
+        if let Some(token) = current_token.clone() {
+            if token.line == 14 {
+                let i = 0;
+            }
+        }
+
         let symbol_stack_top = symbol_stack.last().unwrap().clone();
         let token_symbol = Symbol::from_token(&current_token);
         match &symbol_stack_top {
@@ -79,6 +86,11 @@ pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &Pa
             _ => (),
         }
     }
+
+    info!("Exiting parse");
+    info!("Semantic stack: {:?}", semantic_stack);
+    info!("Symbol stack: {:?}", symbol_stack);
+    info!("Current Token: {:?}", current_token);
 
     if symbol_stack.last().is_none() {
         // Ran out of productions before end of tokens

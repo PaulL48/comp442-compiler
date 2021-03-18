@@ -58,7 +58,7 @@ impl Node {
     }
 
     pub fn dot_graph(&self, file: &mut std::fs::File) {
-        warn_write(file, "graph file", "digraph A {\n");
+        warn_write(file, "graph file", &format!("digraph a{:p} {{\n", self));
 
         // accumulate all labels
         self.dot_node_label_rec(file);
