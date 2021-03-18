@@ -25,7 +25,7 @@ pub fn parse(lexer: &mut Lex<std::fs::File>, grammar: &Grammar, parse_table: &Pa
         trace!("Active token: {:?}", current_token);
 
         if let Some(token) = current_token.clone() {
-            if token.line == 6 {
+            if token.line == 27 {
                 let i = 0;
             }
         }
@@ -120,8 +120,17 @@ fn skip_errors(
     let lex_token = current_token.clone().unwrap();
     let mut lookahead = Symbol::from_token(current_token);
     let top = symbol_stack.last().unwrap();
-    warn_write(&mut output_config.syntax_error_file, &output_config.syntax_error_path, &format!("Syntax error at line {}, col {}: encountered {}, but was expecting one of ", lex_token.line, lex_token.column, lex_token.lexeme));
-    write_array(&mut output_config.syntax_error_file, &output_config.syntax_error_path, &parse_table.table.get(top).unwrap().iter().map(|x| x.0).collect());
+
+    match &top {
+        Symbol::Terminal(c) => {
+            warn_write(&mut output_config.syntax_error_file, &output_config.syntax_error_path, &format!("Syntax error at line {}, col {}: encountered {}, but was expecting {}", lex_token.line, lex_token.column, lex_token.lexeme, c));
+        }
+        Symbol::NonTerminal(nt) => {
+            warn_write(&mut output_config.syntax_error_file, &output_config.syntax_error_path, &format!("Syntax error at line {}, col {}: encountered {}, but was expecting a {} which begins with one of ", lex_token.line, lex_token.column, nt, lex_token.lexeme));
+            write_array(&mut output_config.syntax_error_file, &output_config.syntax_error_path, &parse_table.table.get(top).unwrap().iter().map(|x| x.0).collect());        
+        },
+        _ => (),
+    }
 
     // warn!(
     //     "Syntax error at line {}, col {}",
@@ -129,7 +138,7 @@ fn skip_errors(
     // );
     trace!("Stack: {:?}", symbol_stack);
 
-    if lookahead == Symbol::Eos || grammar.follow(top).contains(&lookahead) {
+    if lookahead == Symbol::Eos || matches!(top, Symbol::Terminal(_)) || grammar.follow(top).contains(&lookahead) {
         symbol_stack.pop();
         trace!("Stack: {:?}", symbol_stack);
     } else {

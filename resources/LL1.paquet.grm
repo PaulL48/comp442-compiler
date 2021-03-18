@@ -1,5 +1,5 @@
 <START> ::= <Prog>
-<Prog> ::= <ClassDecl> @makenode~list~funcDefList@ <FuncDef> 'main' <FuncBody> @makefamily~2~prog@
+<Prog> ::= @makenode~list~classDeclList@ <ClassDecl> @makenode~list~funcDefList@ <FuncDef> 'main' <FuncBody> @makefamily~3~prog@
 
 <AParams> ::= <Expr> @makesibling@ <AParamsTail>
 <AParams> ::= @makenode~epsilon~AParamEp@ EPSILON
@@ -24,10 +24,10 @@
 
 <AssignStatTail> ::= <AssignOp> <Expr> @makefamily~2~assignOp@
 
-<ClassDecl> ::= 'class' 'id' @makenode~string~id@ <Inherit> '{' <ClassDeclBody> '}' ';' <ClassDecl>
+<ClassDecl> ::= 'class' 'id' @makenode~string~id@ <Inherit> '{' @makenode~list~membList@ <ClassDeclBody> '}' @makefamily~3~classDecl@ @makesibling@ ';' <ClassDecl>
 <ClassDecl> ::= EPSILON
 
-<ClassDeclBody> ::= <Visibility> <MemberDecl> <ClassDeclBody>
+<ClassDeclBody> ::= <Visibility> <MemberDecl> @makefamily~2~classDeclBody@ @makesibling@ <ClassDeclBody>
 <ClassDeclBody> ::= EPSILON
 
 <ClassMethod> ::= 'sr' 'id' @makenode~string~scopeSpec@
@@ -55,7 +55,7 @@
 
 <FuncBody> ::= '{' <MethodBodyVar> @makenode~list~statBlock@ <StatementList> '}' @makefamily~2~funcBody@
 
-<FuncDecl> ::= 'func' 'id' @makenode~string~id@ '(' @makenode~list~fparamList@ <FParams> ')' ':' <FuncDeclTail> ';'
+<FuncDecl> ::= 'func' 'id' @makenode~string~id@ '(' @makenode~list~fparamList@ <FParams> ')' ':' <FuncDeclTail> @makefamily~3~funcDecl@ ';'
 
 <FuncDeclTail> ::= <Type>
 <FuncDeclTail> ::= 'void' @makenode~epsilon~type@
@@ -96,7 +96,7 @@
 <IndiceRep> ::= EPSILON
 
 <Inherit> ::= 'inherits' 'id' @makenode~string~id@ <NestedId>
-<Inherit> ::= EPSILON
+<Inherit> ::= @makenode~epsilon~inherList@ EPSILON
 
 <IntNum> ::= 'intnum' @makenode~integer~num@ @makesibling@
 <IntNum> ::= EPSILON
@@ -164,7 +164,7 @@
 <VariableIdnestTail> ::= '.' 'id' @makenode~string~id@ <VariableIdnest>
 <VariableIdnestTail> ::= EPSILON
 
-<Visibility> ::= 'public'
-<Visibility> ::= 'private'
-<Visibility> ::= EPSILON
+<Visibility> ::= 'public' @makenode~string~visibility@
+<Visibility> ::= 'private' @makenode~string~visibility@
+<Visibility> ::= EPSILON @makenode~epsilon~visibility@
 

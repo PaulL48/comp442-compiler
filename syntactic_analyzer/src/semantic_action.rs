@@ -174,7 +174,10 @@ impl Action {
         if let Data::Children(sibling_list) = top.data_mut() {
             sibling_list.push(sibling);
         } else {
+            error!("Expected a sibling list after a make_sibling action");
+            error!("Node was {:?}", top);
             panic!("Expected a sibling list after a make_sibling action");
+            
         }
     }
 
