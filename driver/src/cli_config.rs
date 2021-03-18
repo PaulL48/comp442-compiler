@@ -23,7 +23,7 @@ impl<'a> CliConfig<'a> {
                 .unwrap_or("resources/keywords.txt"),
             grammar_file: matches
                 .value_of("grammar")
-                .unwrap_or("resources/grammar.txt"),
+                .unwrap_or("resources/LL1.paquet.grm"),
         }
     }
 }

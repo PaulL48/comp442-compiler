@@ -12,6 +12,7 @@ pub struct Grammar {
     start: Symbol,
     productions: HashMap<Symbol, Vec<Sentence>>,
     follow_sets: HashMap<Symbol, HashSet<Symbol>>,
+    production_without_semantics: HashMap<Symbol, Vec<Sentence>>,
 }
 
 impl Grammar {
@@ -45,10 +46,36 @@ impl Grammar {
             }
         }
 
-        let follow_sets = follow_sets(productions, start_symbol);
+        let mut productions_without_semantics: HashMap<Symbol, Vec<Sentence>> = HashMap::new();
+        for (producing_symbol, options) in productions
+            .iter()
+            .filter(|(s, _)| !matches!(s, Symbol::SemanticAction(_)))
+        {
+            productions_without_semantics.insert(producing_symbol.clone(), Vec::new());
+            for sentence in options {
+                productions_without_semantics
+                    .get_mut(producing_symbol)
+                    .unwrap()
+                    .push(Vec::new());
+                for symbol in sentence
+                    .iter()
+                    .filter(|s| !matches!(s, Symbol::SemanticAction(_)))
+                {
+                    productions_without_semantics
+                        .get_mut(producing_symbol)
+                        .unwrap()
+                        .last_mut()
+                        .unwrap()
+                        .push(symbol.clone());
+                }
+            }
+        }
+
+        let follow_sets = follow_sets(&productions_without_semantics, start_symbol);
 
         Grammar {
             productions: productions.clone(),
+            production_without_semantics: productions_without_semantics.clone(),
             start: start_symbol.clone(),
             follow_sets,
         }
@@ -63,6 +90,10 @@ impl Grammar {
     }
 
     pub fn follow(&self, s: &Symbol) -> &HashSet<Symbol> {
+        if matches!(s, Symbol::SemanticAction(_)) {
+            error!("Follow set requested for semantic action");
+        }
+
         if matches!(s, Symbol::NonTerminal(_)) && !self.productions.contains_key(s) {
             error!("Requested follow set of symbol outside the grammar {:?}", s);
             panic!();
@@ -71,11 +102,14 @@ impl Grammar {
     }
 
     pub fn first(&self, s: &Symbol) -> HashSet<Symbol> {
-        first(&self.productions, s)
+        if matches!(s, Symbol::SemanticAction(_)) {
+            error!("Follow set requested for semantic action");
+        }
+        first(&self.production_without_semantics, s)
     }
 
     pub fn sentence_first(&self, sentence: &Sentence) -> HashSet<Symbol> {
-        sentence_first(&self.productions, sentence)
+        sentence_first(&self.production_without_semantics, sentence)
     }
 
     pub fn production(&self, non_terminal: &Symbol, option: usize) -> &Sentence {
@@ -101,7 +135,6 @@ impl Grammar {
             if line.len() == 0 {
                 continue;
             }
-
 
             // Split the line at the equals
             let parts: Vec<&str> = line.split("::=").map(|x| x.trim()).collect();
@@ -151,12 +184,19 @@ impl Grammar {
                 production_count += 1;
             }
         }
-        info!("Successfully read {} productions from the grammar file", production_count);
+        info!(
+            "Successfully read {} productions from the grammar file",
+            production_count
+        );
         Ok(Grammar::new(&productions, &start_symbol))
     }
 }
 
 fn first(productions: &HashMap<Symbol, Vec<Sentence>>, s: &Symbol) -> HashSet<Symbol> {
+    if matches!(s, Symbol::SemanticAction(_)) {
+        error!("Follow set requested for semantic action");
+    }
+
     if matches!(s, Symbol::NonTerminal(_)) && !productions.contains_key(s) {
         error!("Requested first set of symbol outside the grammar {:?}", s);
         panic!();
@@ -164,15 +204,34 @@ fn first(productions: &HashMap<Symbol, Vec<Sentence>>, s: &Symbol) -> HashSet<Sy
     first_internal(productions, s, &mut HashSet::new())
 }
 
-fn sentence_first(productions: &HashMap<Symbol, Vec<Sentence>>, sentence: &Vec<Symbol>) -> HashSet<Symbol> {
+fn sentence_first(
+    productions: &HashMap<Symbol, Vec<Sentence>>,
+    sentence: &Vec<Symbol>,
+) -> HashSet<Symbol> {
     let mut result = HashSet::new();
-    if sentence.is_empty() {
+    if sentence
+        .iter()
+        .filter(|x| !matches!(x, Symbol::SemanticAction(_)))
+        .collect::<Vec<_>>()
+        .is_empty()
+    {
         return result;
     }
 
     // is_empty guards unwrap of first
-    result.extend(first(productions, sentence.first().unwrap()));
+    result.extend(first(
+        productions,
+        sentence
+            .iter()
+            .filter(|x| !matches!(x, Symbol::SemanticAction(_)))
+            .collect::<Vec<_>>()
+            .first()
+            .unwrap(),
+    ));
     for pair in sentence
+        .iter()
+        .filter(|x| !matches!(x, Symbol::SemanticAction(_)))
+        .collect::<Vec<_>>()
         .windows(2)
         .take_while(|pair| first(productions, &pair[0]).contains(&Symbol::Epsilon))
     {
@@ -197,6 +256,10 @@ fn first_internal(
     s: &Symbol,
     visited: &mut HashSet<Symbol>,
 ) -> HashSet<Symbol> {
+    if matches!(s, Symbol::SemanticAction(_)) {
+        error!("Follow set requested for semantic action");
+    }
+
     if matches!(s, Symbol::NonTerminal(_)) && !productions.contains_key(s) {
         error!(
             "Requested first set of non terminal outside the grammar {:?}",
@@ -213,17 +276,17 @@ fn first_internal(
     match s {
         Symbol::NonTerminal(_) => {
             result.extend(non_terminal_first(productions, s, visited));
-        },
+        }
         Symbol::Terminal(_) => {
             result.insert(s.clone());
-        },
+        }
         Symbol::Epsilon => {
             result.insert(s.clone());
-        },
+        }
         Symbol::Eos => {
             result.insert(s.clone());
         }
-        _ => ()
+        _ => (),
     }
 
     result
@@ -234,12 +297,30 @@ fn non_terminal_first(
     s: &Symbol,
     _: &mut HashSet<Symbol>,
 ) -> HashSet<Symbol> {
+    if matches!(s, Symbol::SemanticAction(_)) {
+        error!("Follow set requested for semantic action");
+    }
+
     let mut result = HashSet::new();
     for option in productions.get(s).unwrap() {
-        result
-            .extend(&first(productions, option.first().unwrap()) - &EPSILON_SET);
+        result.extend(
+            &first(
+                productions,
+                option
+                    .iter()
+                    .filter(|x| !matches!(x, Symbol::SemanticAction(_)))
+                    .collect::<Vec<_>>()
+                    .first()
+                    .unwrap(),
+            ) - &EPSILON_SET,
+        );
         let mut all_epsilons = true;
-        for pair in option.iter().filter(|x| !matches!(x, Symbol::SemanticAction(_))).collect::<Vec<_>>().windows(2) {
+        for pair in option
+            .iter()
+            .filter(|x| !matches!(x, Symbol::SemanticAction(_)))
+            .collect::<Vec<_>>()
+            .windows(2)
+        {
             if first(productions, &pair[0]).contains(&Symbol::Epsilon) {
                 result.extend(first(productions, &pair[1]));
             } else {
@@ -247,7 +328,18 @@ fn non_terminal_first(
                 break;
             }
         }
-        if all_epsilons && first(productions, option.last().unwrap()).contains(&Symbol::Epsilon) {
+        if all_epsilons
+            && first(
+                productions,
+                option
+                    .iter()
+                    .filter(|x| !matches!(x, Symbol::SemanticAction(_)))
+                    .collect::<Vec<_>>()
+                    .last()
+                    .unwrap(),
+            )
+            .contains(&Symbol::Epsilon)
+        {
             result.insert(Symbol::Epsilon);
         }
     }
@@ -282,6 +374,10 @@ pub fn unexpanded_follow(
     start_symbol: &Symbol,
     s: &Symbol,
 ) -> HashSet<Symbol> {
+    if matches!(s, Symbol::SemanticAction(_)) {
+        error!("Follow set requested for semantic action");
+    }
+
     let mut result = HashSet::new();
     if s == start_symbol {
         result.insert(Symbol::Eos);
@@ -289,19 +385,25 @@ pub fn unexpanded_follow(
 
     for (producing_symbol, production) in productions {
         for option in production {
-            for (n, symbol_pair) in option.iter().filter(|x| !matches!(x, Symbol::SemanticAction(_))).collect::<Vec<_>>().windows(2).enumerate() {
+            for (n, symbol_pair) in option
+                .iter()
+                .filter(|x| !matches!(x, Symbol::SemanticAction(_)))
+                .collect::<Vec<_>>()
+                .windows(2)
+                .enumerate()
+            {
                 if *symbol_pair[0] == *s {
-                    
-                    
-                    let remainder: Vec<Symbol> = option.iter().filter(|x| !matches!(x, Symbol::SemanticAction(_))).skip(n + 1).cloned().collect();
+                    let remainder: Vec<Symbol> = option
+                        .iter()
+                        .filter(|x| !matches!(x, Symbol::SemanticAction(_)))
+                        .skip(n + 1)
+                        .cloned()
+                        .collect();
                     let add_first = sentence_first(productions, &remainder);
                     result.extend(&add_first - &EPSILON_SET);
                     if add_first.contains(&Symbol::Epsilon) {
                         result.insert(producing_symbol.clone());
                     }
-
-
-
 
                     // let remainder: Vec<Symbol> = option.iter().filter(|x| !matches!(x, Symbol::SemanticAction(_))).skip(n + 1).cloned().collect();
                     // //if first(productions, &symbol_pair[1]).contains(&Symbol::Epsilon) {
@@ -339,7 +441,6 @@ fn expand_follow(
     if iterations == MAX_FOLLOW_EXPANSIONS {
         warn!("Follow sets required more than {} expansions of nonterminal follow sets. This is likely an error", MAX_FOLLOW_EXPANSIONS);
     }
-
 
     // next
 
@@ -404,7 +505,7 @@ fn expand_follow(
 //                 .iter()
 //                 .filter(|x| matches!(x, Symbol::NonTerminal(_)))
 //                 .cloned().collect();
-//             for non_terminal in non_terminals {    
+//             for non_terminal in non_terminals {
 //                 trace!("Breaking cycle by expanding {:?} into {:?}", non_terminal, follow_sets.get(&non_terminal).unwrap());
 //                 result.get_mut(symbol).unwrap().remove(&non_terminal);
 //                 if result.get(&non_terminal).unwrap().contains(symbol) {
@@ -481,7 +582,7 @@ fn remove_non_terminals(
         for non_terminal in follow_set
             .iter()
             .filter(|x| matches!(x, Symbol::NonTerminal(_)))
-            .cloned() 
+            .cloned()
         {
             result.get_mut(symbol).unwrap().remove(&non_terminal);
         }

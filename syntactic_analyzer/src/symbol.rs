@@ -5,12 +5,9 @@ use log::error;
 use maplit::hashset;
 use regex::Regex;
 use std::collections::HashSet;
+use std::fmt;
 use std::hash::Hash;
 use std::str::FromStr;
-use std::fmt;
-
-// From what I can tell the semantic action will
-// either create a node or amalgamate n node elements
 
 #[derive(Debug, PartialEq, Hash, Clone)]
 pub enum Symbol {
@@ -31,7 +28,6 @@ impl Symbol {
     pub fn from_token(token: &Option<Token>) -> Symbol {
         match token {
             Some(token) => return Symbol::Terminal(token.token_type.clone()),
-            // Some(token) => return Symbol::Terminal(token.lexeme.clone()),
             None => return Symbol::Eos,
         }
     }

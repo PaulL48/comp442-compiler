@@ -1,7 +1,7 @@
 use crate::grammar::Grammar;
 use crate::symbol::Symbol;
-use std::collections::HashMap;
 use log::trace;
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct ParseTable {
@@ -47,7 +47,12 @@ impl ParseTable {
                         .iter()
                         .filter(|x| matches!(x, Symbol::Terminal(_)) || matches!(x, Symbol::Eos))
                     {
-                        trace!("Inserting table entry [{:?}, {:?}] <- {}", symbol, terminal, index);
+                        trace!(
+                            "Inserting table entry [{:?}, {:?}] <- {}",
+                            symbol,
+                            terminal,
+                            index
+                        );
                         table
                             .get_mut(&symbol)
                             .unwrap()

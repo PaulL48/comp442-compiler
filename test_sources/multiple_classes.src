@@ -1,0 +1,364 @@
+class LINEAR {
+	public func build(float A, float B) : LINEAR;
+	public func evaluate(float x) : float;
+};
+
+class SUPERLINEAR {
+	public func foo(float x) : float;
+};
+
+class QUINTIC inherits LINEAR {
+	private float bar;
+};
+
+class QUADRATIC inherits LINEAR, QUINTIC {
+	private float a;
+	private float b;
+	float c;
+};
+
+class EMPTY {
+};
+
+func LINEAR::evaluate(float x) : float 
+{
+  var
+  {
+    float result;
+  }
+  result = 0.0;
+  result = a * x + b;
+  return (result);
+}
+
+func LINEAR::build(float A, float B) : LINEAR 
+{
+  var 
+  {
+    LINEAR new_function;
+  }
+  new_function.a = A;
+  new_function.b = B;
+  return (new_function);
+}
+
+func SUPERLINEAR::foo(float x) : float
+{
+    var 
+    {
+        integer ijk;
+        integer abc;
+    }
+    ijk = abc * (ijk);
+    return (ijk);
+}
+
+
+/* Print the array */
+func printArray(integer arr[], integer size) : void 
+{
+  var
+  {
+    integer n;
+    integer i; 
+  }
+  n = size;
+  i = 0; 
+  while (i<n) { 
+    write(arr[i]);
+      i = i+1;
+  };
+} 
+
+func returns_void(string a) : void
+{
+    a = a + 1;
+}
+
+func returns_int(integer a) : integer
+{
+    return (0);
+}
+
+func returns_float(float a) : float
+{
+    return (a);
+}
+
+func returns_string(float a) : string
+{
+    return ("Hello World");
+}
+
+func returns_superlinear(SUPERLINEAR a) : SUPLERLINEAR
+{
+    var
+    {
+    }
+    return (a);
+}
+
+func arrays(float arr[][][], integer i, integer j, integer k, integer matrix[3][3]) : void
+{
+    var
+    {
+        string a;
+    }
+    a = "good day";
+}
+
+func say_something() : void
+{
+    var
+    {
+        string a;
+    }
+    a = "good day again";
+}
+
+func nothing() : void
+{
+}
+
+func control_flow() : void
+{
+    var
+    {
+        float a;
+    }
+    a = 0;
+
+    if (a) then
+    {
+        a = 1.2;
+        a = a * 2 + (a * a);
+    } else ;
+
+    if (a) then
+    {
+        a = 1.2;
+    } else {
+        a = a * 2 + (a * a);
+    };
+
+    while (a * return_float(1.2) == 42.5)
+    {
+
+    };
+    while (a * return_float(1.2) == 42.5)
+    {
+        a = a * a;
+    };
+    while (a * return_float(1.2) == 42.5)
+    {
+        a = a * a;
+        a = a * a * a * a;
+    };
+
+    break;
+    continue;
+}
+
+main
+{
+    var
+    {
+        SUPLERLINEAR a;
+        float vec[2][2][2];
+        int matrix[3][3];
+        float i;
+    }
+    vec[0][0][0] = 1.1;
+    vec[0][0][1] = 1.1;
+    vec[0][1][0] = 1.1;
+    vec[0][1][1] = 1.1;
+    vec[1][0][0] = 1.1;
+    vec[1][0][1] = 1.1;
+    vec[1][1][0] = 1.1;
+    vec[1][1][1] = 1.1;
+
+    a.foo(1.23);
+    say_something();
+    arrays(vec, matrix);
+
+    i = returns_float(1.2) + 1;
+    returns_float(1.5 + 1.5);
+    read(vec[1][1][1]);
+
+    name1.name2 = 1;
+    name1.name2(some, parameters);
+    name0 = name1(param).name2;
+    name1(param).name2();
+    name1.name2[1] = 1;
+    name1[1].name2 = 1;
+    name1[1].name2[2] = 1;
+    name1.name2[1][2] = 1;
+    name1[1][2].name2 = 1;
+    name1[1][2].name2[1][2] = 1;
+    name0 = name1(param1).name2[2];
+    name0 = name1(param1).name2[1][2];
+    name1[1 + 1] = 1;
+
+    res = 1 + 1 * 2;
+
+    while (1 + 1 * 2 < 4) {
+        break;
+    };
+
+    while (!1) {
+        break;
+    };
+
+    while (-1) {
+        break;
+    };
+
+    res = (2 + 2) * 3;
+    res = 1 + (5 * (2 + 2) * 3);
+    res = ? [1 : 2 : 3];
+
+    res = res + ? [1 : 2 : 3] * 2 * (1 + 2 + (3 * 3)) + return_float(3.3);
+}
+
+
+/*
+    classes
+    --------------------------------------
+| | no class declaration
+| | class declaration
+|X| multiple class declarations
+|X| no data member declaration
+|X| data member declaration
+|X| multiple data member declaration
+|X| no member function declaration
+|X| member function declaration
+|X| multiple member function declaration
+|X| no member
+|X| no inherited class
+|X| one inherited class
+|X| multiple inherited classes
+|X| private member specifier
+|X| public member specifier
+|X| absence of member specifier
+
+    functions: definitions
+    --------------------------------------
+| | no main function definition (not allowed)
+|X| main function definition
+| | multiple main function definitions (not allowed)
+| | no free function definition
+|X| free function definition
+|X| multiple free function definitions
+| | no member function definition
+| | member function definition
+|X| multiple member function definitions
+|X| return type: void
+|X| return type: integer
+|X| return type: float
+|X| return type: string
+|X| return type: id
+| | return type: array (not allowed)
+
+
+    functions: formal parameters
+    --------------------------------------
+|X| type: integer
+|X| type: float
+|X| type: string
+|X| type: id
+|X| type: 1-dim array 
+|X| type: n-dim array
+|X| type: array (with size)
+|X| type: array (without size)
+
+    functions: calls
+    --------------------------------------
+|X| free function call
+|X| member function call
+|X| parameters:0
+|X| parameters:1
+|X| parameters:n
+|X| array parameter - 1-dim
+|X| array parameter - n-dim
+|X| array parameter - with size
+|X| array parameter - without size
+|X| function call as statement
+|X| function call as expression factor
+|X| expression as parameter
+
+    variable declaration
+    --------------------------------------
+|X| type: integer
+|X| type: float
+|X| type: string
+|X| type: id
+|X| type: 1-dim array 
+|X| type: n-dim array
+|X| type: array (with size)
+| | type: array (without size) (not allowed)
+
+    function body: local variable declaration block
+    --------------------------------------
+|X| no local variable declarations block
+|X| local variable declaration block
+| | multiple local variable declarations block (not allowed)
+|X| no variables in block
+|X| 1 variable declared in block
+|X| multiple variables declared in block
+
+    function body: statements
+    --------------------------------------
+|X| no statement
+|X| 1 statement
+|X| n statements
+|X| if statement
+|X| if: empty then or else blocks
+|X| if: 1-statement then or else blocks
+|X| if: n-statements then or else blocks
+|X| while statement
+|X| while: empty block
+|X| while: 1-statement block
+|X| while: n-statement block
+|X| read(<variable>) statement
+|X| write(<expr>) statement
+|X| return(<expr>) statement
+|X| break statement
+|X| continue statement
+|X| assignment statement
+
+    variable + idnest
+    --------------------------------------
+|X| id
+|X| id.id
+|X| id.id(id)
+|X| id(id).id
+|X| id(id).id()
+|X| id.id[id]
+|X| id[id].id
+|X| id[id].id[id]
+|X| id.id[id][id]
+|X| id[id][id].id
+|X| id[id][id].id[id][id]
+|X| id(id).id[id]
+|X| id(id).id[id][id]
+|X| expression as array index
+
+    expressions
+    --------------------------------------
+|X| single variable
+|X| involving addop
+|X| involving multop
+|X| involving relop
+|X| involving addop + multop
+|X| involving multop + relop
+|X| involving addop + multop + relop
+|X| involving parentheses
+|X| involving nested parentheses
+|X| involving ternary operator
+|X| involving not
+|X| involving sign
+|X| involving literals
+|X| involving variable + idnest
+|X| involving function calls
+|X| involving all the above in one expression
+*/

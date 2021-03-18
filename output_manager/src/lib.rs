@@ -1,6 +1,6 @@
-use std::fs::File;
+use log::{error, info, warn};
 use path;
-use log::{error, warn, info};
+use std::fs::File;
 use std::io::prelude::*;
 
 const DERIVATION_EXT: &str = "outderivation";
@@ -11,7 +11,7 @@ const LEX_ERROR_EXT: &str = "outlexerrors";
 pub struct OutputConfig {
     pub derivation_path: String,
     pub derivation_file: File,
-    
+
     pub ast_path: String,
     pub ast_file: File,
 
@@ -23,10 +23,10 @@ pub struct OutputConfig {
 
 fn panic_open(path: &str) -> File {
     match std::fs::OpenOptions::new()
-            .write(true)
-            .truncate(true)
-            .create(true)
-            .open(path)
+        .write(true)
+        .truncate(true)
+        .create(true)
+        .open(path)
     {
         Ok(file) => file,
         Err(err) => {
@@ -41,7 +41,7 @@ pub fn warn_write(file: &mut File, path: &str, message: &str) {
         Err(err) => {
             warn!("Warning: Failed to write to file \"{}\": {}", path, err);
         }
-        _ => ()
+        _ => (),
     }
 }
 
@@ -104,9 +104,7 @@ impl OutputConfig {
             ast_path,
             syntax_error_file,
             syntax_error_path,
-            lex_error_path
+            lex_error_path,
         }
     }
 }
-
-
