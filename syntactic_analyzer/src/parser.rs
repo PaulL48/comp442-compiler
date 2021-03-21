@@ -10,7 +10,7 @@ pub fn parse(
     grammar: &Grammar,
     parse_table: &ParseTable,
     output_config: &mut OutputConfig,
-) {
+) -> ast::Node {
     let eos_stack = vec![Symbol::Eos];
     let mut symbol_stack = vec![Symbol::Eos, grammar.start().clone()];
     let mut semantic_stack: Vec<ast::Node> = Vec::new();
@@ -138,6 +138,7 @@ pub fn parse(
                 current_token.unwrap()
             ),
         );
+        panic!();
     } else if !current_token.is_none() || symbol_stack.last() != Some(&Symbol::Eos) {
         // Ran out of file before end of productions
         warn_write(
@@ -156,10 +157,13 @@ pub fn parse(
                 .map(|x| x.0)
                 .collect(),
         );
+        panic!();
     } else if !semantic_stack.is_empty() {
         let top = semantic_stack.last().unwrap();
         top.dot_graph(&mut output_config.ast_file);
+        return *top;
     }
+    panic!();
 }
 
 fn skip_errors(
