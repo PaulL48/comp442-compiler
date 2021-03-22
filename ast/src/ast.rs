@@ -1,10 +1,6 @@
 use output_manager::warn_write;
 use std::str::FromStr;
 
-pub struct Ast {
-    root: Option<Node>,
-}
-
 #[derive(Debug, PartialEq)]
 pub struct Node {
     node_type: String,

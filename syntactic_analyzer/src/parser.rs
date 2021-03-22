@@ -159,9 +159,9 @@ pub fn parse(
         );
         panic!();
     } else if !semantic_stack.is_empty() {
-        let top = semantic_stack.last().unwrap();
+        let top = semantic_stack.pop().unwrap();
         top.dot_graph(&mut output_config.ast_file);
-        return *top;
+        return top;
     }
     panic!();
 }
