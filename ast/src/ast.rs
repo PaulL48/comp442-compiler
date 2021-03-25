@@ -40,6 +40,12 @@ impl Node {
         return &mut self.node_type;
     }
 
+    pub fn dft(&self) -> DepthFirstIterator {
+        DepthFirstIterator {
+            to_visit: vec![self],
+        }
+    }
+
     pub fn dot_graph(&self, file: &mut std::fs::File) {
         warn_write(file, "graph file", &format!("digraph a{:p} {{\n", self));
 
@@ -125,5 +131,178 @@ impl Node {
             _ => (),
         }
         return relations;
+    }
+}
+
+pub struct DepthFirstIterator<'a> {
+    to_visit: Vec<&'a Node>,
+}
+
+impl<'a> Iterator for DepthFirstIterator<'a> {
+    type Item = &'a Node;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.to_visit.pop() {
+            Some(current) => {
+                match &current {
+                    Node {
+                        data: Data::Children(children),
+                        ..
+                    } => {
+                        self.to_visit.extend(children.iter().rev());
+                    }
+                    _ => (),
+                }
+                Some(current)
+            }
+            None => None,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use lazy_static::lazy_static;
+
+    lazy_static! {
+        static ref TEST_AST: Node = Node {
+            node_type: "root".to_string(),
+            data: Data::Children(vec![
+                Node {
+                    node_type: "n1".to_string(),
+                    data: Data::Children(vec![
+                        Node {
+                            node_type: "leaf1".to_string(),
+                            data: Data::Integer(1)
+                        },
+                        Node {
+                            node_type: "leaf2".to_string(),
+                            data: Data::Float(2f64)
+                        }
+                    ])
+                },
+                Node {
+                    node_type: "n2".to_string(),
+                    data: Data::Children(vec![
+                        Node {
+                            node_type: "leaf3".to_string(),
+                            data: Data::String("3".to_string())
+                        },
+                        Node {
+                            node_type: "leaf4".to_string(),
+                            data: Data::Integer(4)
+                        }
+                    ])
+                },
+            ])
+        };
+    }
+
+    #[test]
+    fn test_dfs() {
+        let mut dfti = TEST_AST.dft();
+        assert_eq!(
+            dfti.next(),
+            Some(&Node {
+                node_type: "root".to_string(),
+                data: Data::Children(vec![
+                    Node {
+                        node_type: "n1".to_string(),
+                        data: Data::Children(vec![
+                            Node {
+                                node_type: "leaf1".to_string(),
+                                data: Data::Integer(1)
+                            },
+                            Node {
+                                node_type: "leaf2".to_string(),
+                                data: Data::Float(2f64)
+                            }
+                        ])
+                    },
+                    Node {
+                        node_type: "n2".to_string(),
+                        data: Data::Children(vec![
+                            Node {
+                                node_type: "leaf3".to_string(),
+                                data: Data::String("3".to_string())
+                            },
+                            Node {
+                                node_type: "leaf4".to_string(),
+                                data: Data::Integer(4)
+                            }
+                        ])
+                    },
+                ])
+            })
+        );
+
+        assert_eq!(
+            dfti.next(),
+            Some(&Node {
+                node_type: "n1".to_string(),
+                data: Data::Children(vec![
+                    Node {
+                        node_type: "leaf1".to_string(),
+                        data: Data::Integer(1)
+                    },
+                    Node {
+                        node_type: "leaf2".to_string(),
+                        data: Data::Float(2f64)
+                    }
+                ])
+            })
+        );
+
+        assert_eq!(
+            dfti.next(),
+            Some(&Node {
+                node_type: "leaf1".to_string(),
+                data: Data::Integer(1)
+            })
+        );
+
+        assert_eq!(
+            dfti.next(),
+            Some(&Node {
+                node_type: "leaf2".to_string(),
+                data: Data::Float(2f64)
+            })
+        );
+
+        assert_eq!(
+            dfti.next(),
+            Some(&Node {
+                node_type: "n2".to_string(),
+                data: Data::Children(vec![
+                    Node {
+                        node_type: "leaf3".to_string(),
+                        data: Data::String("3".to_string())
+                    },
+                    Node {
+                        node_type: "leaf4".to_string(),
+                        data: Data::Integer(4)
+                    }
+                ])
+            })
+        );
+
+        assert_eq!(
+            dfti.next(),
+            Some(&Node {
+                node_type: "leaf3".to_string(),
+                data: Data::String("3".to_string())
+            })
+        );
+
+        assert_eq!(
+            dfti.next(),
+            Some(&Node {
+                node_type: "leaf4".to_string(),
+                data: Data::Integer(4)
+            })
+        );
+
+        assert_eq!(dfti.next(), None);
     }
 }

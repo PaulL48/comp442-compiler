@@ -19,6 +19,8 @@ checksum = "23ac7c30002a5accbf7e8987d0632fa6de155b7c3d39d0067317a391e00a2ef6"
 name = "ast"
 version = "0.1.0"
 dependencies = [
+ "lazy_static",
+ "maplit",
  "output_manager",
 ]
 
@@ -230,6 +232,10 @@ name = "regex-syntax"
 version = "0.6.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5eb417147ba9860a96cfe72a0b93bf88fee1744b5636ec99ab20c1aa9376581"
+
+[[package]]
+name = "semantic_analyzer"
+version = "0.1.0"
 
 [[package]]
 name = "simplelog"

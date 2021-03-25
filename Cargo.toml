@@ -7,4 +7,5 @@ members = [
     "path",
     "ast",
     "output_manager",
+    "semantic_analyzer",
 ]
