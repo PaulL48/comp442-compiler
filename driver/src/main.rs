@@ -8,6 +8,7 @@ use output_manager::OutputConfig;
 use path;
 use simplelog::*;
 use syntactic_analyzer::{parse, Grammar, ParseTable};
+use semantic_analyzer::{SymbolTable, SymbolTableEntry, class::Class, data::Data, local::Local, Visibility, function::Function};
 
 /// Development switch to easily turn terminal logging on or off
 const LOGGING_SWITCH: LevelFilter = LevelFilter::Info;
@@ -24,6 +25,96 @@ fn init_logging(level: LevelFilter) {
 use std::fs::File;
 
 fn main() -> std::io::Result<()> {
+    let st = SymbolTable {
+        name: "global".to_string(),
+        parent_scopes: vec![],
+        values: vec![
+            SymbolTableEntry::Data(Data {
+                name: "d1".to_string(),
+                data_type: "float".to_string(),
+                visibility: Visibility::Public,
+            }),
+            SymbolTableEntry::Local( Local {
+                name: "l1".to_string(),
+                data_type: "integer".to_string()
+            }),
+            SymbolTableEntry::Function( Function {
+                name: "f1".to_string(),
+                parameter_types: vec!["float".to_string(), "integer".to_string()],
+                return_type: "void".to_string(),
+                visibility: None,
+                symbol_table: SymbolTable {
+                    name: "f1".to_string(),
+                    parent_scopes: vec!["".to_string()],
+                    values: vec![
+                        SymbolTableEntry::Data(Data {
+                            name: "d1".to_string(),
+                            data_type: "float".to_string(),
+                            visibility: Visibility::Public,
+                        }),
+                        SymbolTableEntry::Local( Local {
+                            name: "l1".to_string(),
+                            data_type: "integer".to_string()
+                        })
+                    ]
+                }
+            }),
+            SymbolTableEntry::Class( Class {
+                name: "c1".to_string(),
+                symbol_table: SymbolTable {
+                    name: "c1".to_string(),
+                    parent_scopes: vec![],
+                    values: vec![
+                        SymbolTableEntry::Data(Data {
+                            name: "d1".to_string(),
+                            data_type: "float".to_string(),
+                            visibility: Visibility::Public,
+                        }),
+                        SymbolTableEntry::Data(Data {
+                            name: "d2".to_string(),
+                            data_type: "string".to_string(),
+                            visibility: Visibility::Private,
+                        }),
+                        SymbolTableEntry::Function( Function {
+                            name: "f1".to_string(),
+                            parameter_types: vec!["float".to_string(), "integer".to_string()],
+                            return_type: "void".to_string(),
+                            visibility: None,
+                            symbol_table: SymbolTable {
+                                name: "f1".to_string(),
+                                parent_scopes: vec!["c1".to_string()],
+                                values: vec![
+                                    SymbolTableEntry::Local( Local {
+                                        name: "l1".to_string(),
+                                        data_type: "integer".to_string()
+                                    })
+                                ]
+                            }
+                        }),
+                        SymbolTableEntry::Function( Function {
+                            name: "f1".to_string(),
+                            parameter_types: vec!["float".to_string(), "integer".to_string()],
+                            return_type: "void".to_string(),
+                            visibility: None,
+                            symbol_table: SymbolTable {
+                                name: "f1".to_string(),
+                                parent_scopes: vec!["c1".to_string()],
+                                values: vec![
+                                    SymbolTableEntry::Local( Local {
+                                        name: "l1".to_string(),
+                                        data_type: "integer".to_string()
+                                    })
+                                ]
+                            }
+                        })
+                    ]
+                }
+            })
+        ]
+    };
+    println!("{}", st);
+    return Ok(());
+
     // CLI args processing ====================================================
     let cli_config = load_yaml!("cli.yml");
     let matches = App::from_yaml(cli_config).get_matches();
