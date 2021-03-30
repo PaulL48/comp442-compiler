@@ -99,7 +99,7 @@
 <Inherit> ::= EPSILON
 
 <IntNum> ::= 'intnum' @makenode~integer~num@ @makesibling@
-<IntNum> ::= EPSILON
+<IntNum> ::= EPSILON @makenode~epsilon~num@ @makesibling@
 
 <MemberDecl> ::= <FuncDecl>
 <MemberDecl> ::= <VarDecl>

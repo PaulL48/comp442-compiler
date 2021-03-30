@@ -1,7 +1,8 @@
 use crate::format_table::FormatTable;
 use crate::utils::separated_list;
+use std::default::Default;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Inherit {
     names: Vec<String>,
 }

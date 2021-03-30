@@ -1,6 +1,7 @@
 use crate::format_table::{FormatTable};
 use crate::semantic_components::*;
 use std::fmt;
+use std::default::Default;
 
 #[derive(Debug, Clone)]
 pub enum SymbolTableEntry {
@@ -10,6 +11,12 @@ pub enum SymbolTableEntry {
     Param(param::Param),
     Local(local::Local),
     Data(data::Data),
+}
+
+impl Default for SymbolTableEntry {
+    fn default() -> Self {
+        SymbolTableEntry::Local(local::Local::default())
+    }
 }
 
 impl FormatTable for SymbolTableEntry {
@@ -25,12 +32,16 @@ impl FormatTable for SymbolTableEntry {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct SymbolTable {
     pub name: String,
     pub values: Vec<SymbolTableEntry>,
     pub parent_scopes: Vec<String>,
 }
+
+// During the AST tree traversal for symbol table creation
+// pass a mutable table down to each each node which it will modify
+// based on the type of the node being visited
 
 impl FormatTable for SymbolTable {
     fn lines(&self, width: usize) -> Vec<String> {
@@ -67,4 +78,14 @@ impl SymbolTable {
     fn header_bar(&self, table_width: usize) -> String {
         format!("{:=<1$}", "", table_width)
     }
+
+    pub fn new(name: &str, parent_scopes: &[String]) -> Self {
+        SymbolTable {
+            name: name.to_string(),
+            parent_scopes: parent_scopes.to_vec(),
+            values: Vec::new()
+        }
+    }
+
+    
 }

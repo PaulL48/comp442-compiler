@@ -3,6 +3,7 @@ mod utils;
 mod format_table;
 mod symbol_table;
 mod visibility;
+mod symbol_table_creator;
 mod semantic_components {
     pub mod class;
     pub mod data;

@@ -1,6 +1,7 @@
 use crate::format_table::FormatTable;
+use std::default::Default;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Param {
     name: String,
     data_type: String,

@@ -1,7 +1,8 @@
 use crate::format_table::FormatTable;
 use crate::symbol_table::SymbolTable;
+use std::default::Default;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Class {
     pub name: String,
     pub symbol_table: SymbolTable,
@@ -15,5 +16,14 @@ impl FormatTable for Class {
             result.push(format!("   {}", l));
         }
         result
+    }
+}
+
+impl Class {
+    pub fn new(name: &str, parent_scopes: &[String]) -> Self {
+        Class {
+            name: name.to_string(),
+            symbol_table: SymbolTable::new(name, parent_scopes),
+        }
     }
 }

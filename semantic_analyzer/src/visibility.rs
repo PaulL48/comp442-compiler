@@ -15,3 +15,8 @@ impl fmt::Display for Visibility {
     }
 }
 
+impl Default for Visibility {
+    fn default() -> Self {
+        Visibility::Private
+    }
+}

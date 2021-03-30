@@ -1,6 +1,7 @@
 use crate::format_table::FormatTable;
+use std::default::Default;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Local {
     pub name: String,
     pub data_type: String,
