@@ -1,6 +1,8 @@
-use crate::ast_validation::{ViewAs, ValidatorError, NodeValidator, InheritanceList, ClassMemberList};
-use derive_getters::Getters;
+use crate::ast_validation::{
+    ClassMemberList, InheritanceList, NodeValidator, ValidatorError, ViewAs,
+};
 use ast::Node;
+use derive_getters::Getters;
 
 #[derive(Getters)]
 pub struct ClassDeclaration<'a> {
@@ -28,7 +30,3 @@ impl<'a> ViewAs<'a> for ClassDeclaration<'a> {
         })
     }
 }
-
-
-
-

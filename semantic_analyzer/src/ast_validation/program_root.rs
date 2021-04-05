@@ -1,6 +1,6 @@
-use ast::Node;
-use crate::ast_validation::{NodeValidator, ValidatorError, FunctionBody};
 use crate::ast_validation::view_as::ViewAs;
+use crate::ast_validation::{FunctionBody, NodeValidator, ValidatorError};
+use ast::Node;
 use derive_getters::Getters;
 
 #[derive(Getters)]
@@ -21,8 +21,7 @@ impl<'a> ViewAs<'a> for ProgramRoot<'a> {
         Ok(ProgramRoot {
             class_declaration_list,
             function_definition_list,
-            main
+            main,
         })
     }
 }
-

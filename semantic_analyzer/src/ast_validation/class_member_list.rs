@@ -1,4 +1,4 @@
-use crate::ast_validation::{NodeValidator, ValidatorError, ViewAs, ClassMember};
+use crate::ast_validation::{ClassMember, NodeValidator, ValidatorError, ViewAs};
 use ast::Node;
 use derive_getters::Getters;
 
@@ -15,8 +15,6 @@ impl<'a> ViewAs<'a> for ClassMemberList<'a> {
 
         let members = validator.then_list_of()?;
 
-        Ok(ClassMemberList {
-            members
-        })
+        Ok(ClassMemberList { members })
     }
 }

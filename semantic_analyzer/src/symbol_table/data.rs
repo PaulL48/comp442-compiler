@@ -35,7 +35,7 @@ impl Data {
         Data {
             id: id.to_string(),
             data_type: data_type.to_string(),
-            visibility: *visibility
+            visibility: *visibility,
         }
     }
 }

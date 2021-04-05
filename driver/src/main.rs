@@ -6,11 +6,11 @@ use lexical_analyzer::{lexer::Lexer, lexical_rule::LexicalRule};
 use log::{error, info};
 use output_manager::OutputConfig;
 use path;
+use semantic_analyzer;
 use semantic_analyzer::symbol_table::{
     class::Class, data::Data, function::Function, local::Local, symbol_table::SymbolTable,
     symbol_table::SymbolTableEntry,
 };
-use semantic_analyzer;
 use simplelog::*;
 use syntactic_analyzer::{parse, Grammar, ParseTable};
 
@@ -173,7 +173,6 @@ fn main() -> std::io::Result<()> {
             let result = semantic_analyzer::analyze(&ast);
             println!("{}", result.symbol_table);
         }
-
     }
 
     Ok(())

@@ -1,11 +1,11 @@
+use crate::ast_validation::{ClassDeclaration, ClassMember};
 use crate::format_table::FormatTable;
 use crate::symbol_table::symbol_table::{SymbolTable, SymbolTableEntry};
+use crate::symbol_table::{Data, Function, Inherit};
+use crate::SemanticError;
 use derive_getters::Getters;
 use std::default::Default;
 use std::fmt;
-use crate::ast_validation::{ClassDeclaration, ClassMember};
-use crate::SemanticError;
-use crate::symbol_table::{Data, Function, Inherit};
 
 #[derive(Debug, Clone, Default, Getters)]
 pub struct Class {
@@ -28,7 +28,7 @@ impl Class {
     pub fn new(id: &str) -> Self {
         Class {
             id: id.to_string(),
-            symbol_table: SymbolTable::new(id, &None)
+            symbol_table: SymbolTable::new(id, &None),
         }
     }
 
@@ -36,21 +36,25 @@ impl Class {
         &mut self.symbol_table
     }
 
-    pub fn convert(validated_node: &ClassDeclaration, global_table: &mut SymbolTable) -> Result<(), SemanticError> {
+    pub fn convert(
+        validated_node: &ClassDeclaration,
+        global_table: &mut SymbolTable,
+    ) -> Result<(), SemanticError> {
         // Create a class entry in the global symbol table
-            // check global table for an entry with this ID
+        // check global table for an entry with this ID
         if global_table.contains(validated_node.id()) {
             return Err(SemanticError::IdentifierRedefinition(format!(
                 "{}:{} Identifier \"{}\" is already defined in this scope",
                 validated_node.line(),
                 validated_node.column(),
                 validated_node.id(),
-            )))
+            )));
         }
 
         let mut active_entry = Class::new(validated_node.id());
 
-        let inheritance_entry = SymbolTableEntry::Inherit(Inherit::new(validated_node.inheritance_list().id_list()));
+        let inheritance_entry =
+            SymbolTableEntry::Inherit(Inherit::new(validated_node.inheritance_list().id_list()));
         active_entry.symbol_table_mut().add_entry(inheritance_entry);
 
         // For each variable create a data member
@@ -63,13 +67,17 @@ impl Class {
                         function_declaration.id(),
                         &Some(validated_node.id()),
                         &Some(function_declaration.return_type()),
-                        Some(*function_declaration.visibility())
+                        Some(*function_declaration.visibility()),
                     ));
                     active_entry.symbol_table_mut().add_entry(entry);
-                },
+                }
                 ClassMember::Variable(variable) => {
                     // Create a variable enrty in this class' symbol table
-                    let entry = SymbolTableEntry::Data(Data::new(variable.id(), variable.data_type(), variable.visibility()));
+                    let entry = SymbolTableEntry::Data(Data::new(
+                        variable.id(),
+                        variable.data_type(),
+                        variable.visibility(),
+                    ));
                     active_entry.symbol_table_mut().add_entry(entry);
                 }
             }

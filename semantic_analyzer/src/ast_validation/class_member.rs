@@ -1,6 +1,6 @@
-use crate::ast_validation::{ViewAs, ValidatorError, NodeValidator, DimensionList, ParameterList};
-use ast::Node;
+use crate::ast_validation::{DimensionList, NodeValidator, ParameterList, ValidatorError, ViewAs};
 use crate::Visibility;
+use ast::Node;
 use derive_getters::Getters;
 
 #[derive(Getters)]
@@ -16,7 +16,7 @@ pub struct ClassVariable<'a> {
     visibility: Visibility,
     data_type: &'a str,
     id: &'a str,
-    dimension_list: DimensionList
+    dimension_list: DimensionList,
 }
 
 pub enum ClassMember<'a> {
@@ -41,32 +41,35 @@ impl<'a> ViewAs<'a> for ClassMember<'a> {
                         return Err(ValidatorError::MalformedAst(format!(
                             "Visibility node should be \"public\" or \"private\", found \"{}\"",
                             s
-                        )))
+                        )));
                     }
                 }
-            },
-            None => Visibility::Private
+            }
+            None => Visibility::Private,
         };
 
         // This is the only node I'm aware of that needs to disambiguate based on the
         // node name itself
         match interior_node.name().as_str() {
-            "varDecl" => { // the internal varDecl will generate a 'data' symbol table entry
-                let mut internal_validator = NodeValidator::new(interior_node, "Class variable").has_children(3)?;
-            
+            "varDecl" => {
+                // the internal varDecl will generate a 'data' symbol table entry
+                let mut internal_validator =
+                    NodeValidator::new(interior_node, "Class variable").has_children(3)?;
+
                 let data_type = internal_validator.then_string()?;
-                let id  = internal_validator.then_string()?;
+                let id = internal_validator.then_string()?;
                 let dimension_list = internal_validator.then()?;
 
                 return Ok(ClassMember::Variable(ClassVariable {
                     visibility,
                     data_type,
                     id,
-                    dimension_list
-                }))
-            },
+                    dimension_list,
+                }));
+            }
             "funcDecl" => {
-                let mut internal_validator = NodeValidator::new(interior_node, "Class variable").has_children(3)?;
+                let mut internal_validator =
+                    NodeValidator::new(interior_node, "Class variable").has_children(3)?;
 
                 let id = internal_validator.then_string()?;
                 let parameter_list = internal_validator.then()?;
@@ -77,8 +80,8 @@ impl<'a> ViewAs<'a> for ClassMember<'a> {
                     id,
                     parameter_list,
                     return_type,
-                }))
-            },
+                }));
+            }
             _ => {
                 return Err(ValidatorError::MalformedAst(format!(
                     "{} node requires second child to be a varDecl or a funcDecl, found {:?}",
@@ -87,7 +90,5 @@ impl<'a> ViewAs<'a> for ClassMember<'a> {
                 )))
             }
         }
-
     }
 }
-

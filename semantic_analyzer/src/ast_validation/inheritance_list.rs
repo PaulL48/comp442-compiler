@@ -1,4 +1,4 @@
-use crate::ast_validation::{ViewAs, ValidatorError, NodeValidator};
+use crate::ast_validation::{NodeValidator, ValidatorError, ViewAs};
 use ast::Node;
 use derive_getters::Getters;
 
@@ -13,10 +13,6 @@ impl<'a> ViewAs<'a> for InheritanceList<'a> {
 
         let id_list = validator.then_list_of_strings()?;
 
-        Ok(InheritanceList {
-            id_list
-        })
+        Ok(InheritanceList { id_list })
     }
 }
-
-

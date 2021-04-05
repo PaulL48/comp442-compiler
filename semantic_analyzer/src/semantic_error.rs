@@ -5,7 +5,7 @@ pub enum SemanticError {
     InvalidScopeIdentifier(String),
     IdentifierIsNotAMemberFunction(String),
     UndefinedIdentifier(String),
-    IdentifierRedefinition(String)
+    IdentifierRedefinition(String),
 }
 
 impl fmt::Display for SemanticError {

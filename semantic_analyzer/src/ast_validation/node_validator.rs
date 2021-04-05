@@ -143,21 +143,20 @@ impl<'a> NodeValidator<'a> {
         match self.node.data() {
             Data::Epsilon => {
                 return Ok(result);
-            },
+            }
             Data::Children(children) => {
                 for child in children {
                     match child.data() {
-                        Data::String(s) => {result.push(s)},
+                        Data::String(s) => result.push(s),
                         _ => {
                             return Err(ValidatorError::MalformedAst(format!(
                                 "{} node requires all children nodes to be strings, found {:?}",
-                                self.node_name,
-                                child
+                                self.node_name, child
                             )));
                         }
                     }
                 }
-            },
+            }
             _ => {
                 return Err(ValidatorError::MalformedAst(format!(
                     "{} node must either be an epsilon node or have children, found {:?}",
