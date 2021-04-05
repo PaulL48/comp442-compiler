@@ -1,8 +1,4 @@
-use crate::ast_validation::FunctionParameter;
 use crate::format_table::FormatTable;
-use crate::semantic_error::SemanticError;
-use crate::symbol_table::function::Function;
-use crate::symbol_table::symbol_table::SymbolTable;
 use derive_getters::Getters;
 use std::default::Default;
 use std::fmt;
@@ -36,11 +32,3 @@ impl Param {
         }
     }
 }
-
-// impl Param {
-//     pub fn convert(validated_node: &FunctionParameter, function_entry: &mut Function) -> Result<(), SemanticError> {
-//         // We need to reach further down to get the string value of the dimension list
-//         // for the datatype
-
-//     }
-// }

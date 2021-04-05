@@ -15,8 +15,9 @@ pub struct Class {
 
 impl FormatTable for Class {
     fn lines(&self, width: usize) -> Vec<String> {
-        let mut result = Vec::new();
-        result.push(format!("class | {}", self.id));
+        let mut result = vec![
+            format!("class | {}", self.id)
+        ];
         for l in self.symbol_table.lines(width - 8) {
             result.push(format!("   {}", l));
         }

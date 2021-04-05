@@ -1,6 +1,5 @@
 use crate::symbol_table;
 use crate::symbol_table::symbol_table::SymbolTable;
-use ast;
 
 pub struct SemanticAnalysisResults {
     pub symbol_table: SymbolTable,

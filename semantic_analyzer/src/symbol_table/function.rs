@@ -36,9 +36,8 @@ impl FormatTable for Function {
     fn lines(&self, width: usize) -> Vec<String> {
         let mut result = Vec::new();
         let mut line = format!("{:10}| {:12}| {:34}", "function", self.id, self.signature());
-        match self.visibility {
-            Some(visibility) => line.push_str(&format!("| {}", visibility)),
-            _ => (),
+        if let Some(visibility) = self.visibility {
+            line.push_str(&format!("| {}", visibility))
         }
         result.push(line);
         for l in self.symbol_table.lines(width - 8) {

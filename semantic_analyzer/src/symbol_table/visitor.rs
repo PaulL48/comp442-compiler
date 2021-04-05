@@ -1,7 +1,7 @@
 //! Given an AST node, build a symbol table
 
 use crate::ast_validation::{
-    ClassDeclaration, FunctionBody, FunctionDefinition, ProgramRoot, ValidatorError, ViewAs,
+    ClassDeclaration, FunctionDefinition, ProgramRoot, ValidatorError, ViewAs,
 };
 use crate::semantic_analyzer::SemanticAnalysisResults;
 use crate::semantic_error::SemanticError;

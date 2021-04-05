@@ -5,12 +5,6 @@ use cli_config::CliConfig;
 use lexical_analyzer::{lexer::Lexer, lexical_rule::LexicalRule};
 use log::{error, info};
 use output_manager::OutputConfig;
-use path;
-use semantic_analyzer;
-use semantic_analyzer::symbol_table::{
-    class::Class, data::Data, function::Function, local::Local, symbol_table::SymbolTable,
-    symbol_table::SymbolTableEntry,
-};
 use simplelog::*;
 use syntactic_analyzer::{parse, Grammar, ParseTable};
 
@@ -132,15 +126,12 @@ fn main() -> std::io::Result<()> {
 
     let output_dir = std::path::Path::new(config.output_folder);
     if !output_dir.exists() {
-        match std::fs::create_dir_all(output_dir) {
-            Err(err) => {
-                error!(
-                    "Could not create output directory \"{:?}\": {}",
-                    output_dir, err
-                );
-                panic!();
-            }
-            _ => (),
+        if let Err(err) = std::fs::create_dir_all(output_dir) {
+            error!(
+                "Could not create output directory \"{:?}\": {}",
+                output_dir, err
+            );
+            panic!();
         }
     }
 

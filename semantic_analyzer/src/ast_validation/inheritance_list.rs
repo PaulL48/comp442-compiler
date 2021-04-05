@@ -9,7 +9,7 @@ pub struct InheritanceList<'a> {
 
 impl<'a> ViewAs<'a> for InheritanceList<'a> {
     fn view_as(node: &'a Node) -> Result<Self, ValidatorError> {
-        let mut validator = NodeValidator::new(node, "Inheritance list");
+        let validator = NodeValidator::new(node, "Inheritance list");
 
         let id_list = validator.then_list_of_strings()?;
 

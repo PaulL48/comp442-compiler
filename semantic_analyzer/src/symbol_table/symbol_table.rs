@@ -86,7 +86,7 @@ impl FormatTable for SymbolTable {
 impl fmt::Display for SymbolTable {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for l in self.lines(83) {
-            write!(f, "{}\n", l)?;
+            writeln!(f, "{}", l)?;
         }
         Ok(())
     }
@@ -149,6 +149,6 @@ impl SymbolTable {
                 }
             }
         }
-        return false;
+        false
     }
 }
