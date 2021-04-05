@@ -17,6 +17,14 @@ pub mod symbol_table {
     pub mod symbol_table;
     pub mod visitor;
     pub mod entrypoint;
+
+    pub use class::Class;
+    pub use data::Data;
+    pub use function::Function;
+    pub use inherit::Inherit;
+    pub use local::Local;
+    pub use param::Param;
+    pub use symbol_table::SymbolTable;
 }
 
 mod ast_validation {
@@ -30,6 +38,10 @@ mod ast_validation {
     pub mod variable_list;
     pub mod view_as;
     pub mod program_root;
+    pub mod class_declaration;
+    pub mod class_member_list;
+    pub mod inheritance_list;
+    pub mod class_member;
 
     pub use dimension_list::DimensionList;
     pub use function_body::FunctionBody;
@@ -42,6 +54,10 @@ mod ast_validation {
     pub use variable_list::VariableList;
     pub use program_root::ProgramRoot;
     pub use view_as::ViewAs;
+    pub use class_declaration::ClassDeclaration;
+    pub use class_member::{ClassFunctionDeclaration, ClassVariable, ClassMember};
+    pub use class_member_list::ClassMemberList;
+    pub use inheritance_list::InheritanceList;
 }
 
 pub use symbol_table::*;

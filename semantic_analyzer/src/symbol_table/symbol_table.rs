@@ -140,4 +140,15 @@ impl SymbolTable {
         }
         None
     }
+
+    pub fn contains(&self, id: &str) -> bool {
+        for entry in &self.values {
+            if let Some(entry_id) = entry.id() {
+                if entry_id == id {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }

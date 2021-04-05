@@ -5,6 +5,7 @@ pub enum SemanticError {
     InvalidScopeIdentifier(String),
     IdentifierIsNotAMemberFunction(String),
     UndefinedIdentifier(String),
+    IdentifierRedefinition(String)
 }
 
 impl fmt::Display for SemanticError {
@@ -13,6 +14,7 @@ impl fmt::Display for SemanticError {
             SemanticError::InvalidScopeIdentifier(message) => message,
             SemanticError::IdentifierIsNotAMemberFunction(message) => message,
             SemanticError::UndefinedIdentifier(message) => message,
+            SemanticError::IdentifierRedefinition(message) => message,
         };
 
         write!(f, "Semantic error: {}", message)

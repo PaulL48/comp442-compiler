@@ -35,3 +35,11 @@ impl FormatTable for Inherit {
         }
     }
 }
+
+impl Inherit {
+    pub fn new(id_list: &[&str]) -> Self {
+        Inherit {
+            names: id_list.iter().map(|x| x.to_string()).collect(),
+        }
+    }
+}

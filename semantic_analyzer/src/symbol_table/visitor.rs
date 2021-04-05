@@ -1,6 +1,6 @@
 //! Given an AST node, build a symbol table
 
-use crate::ast_validation::{FunctionDefinition, FunctionBody, ProgramRoot, ViewAs, ValidatorError};
+use crate::ast_validation::{FunctionDefinition, ClassDeclaration, FunctionBody, ProgramRoot, ViewAs, ValidatorError};
 use crate::semantic_error::SemanticError;
 use crate::symbol_table::function;
 use crate::symbol_table::entrypoint;
@@ -8,6 +8,7 @@ use crate::symbol_table::symbol_table::SymbolTable;
 use ast::Node;
 use log::error;
 use crate::semantic_analyzer::SemanticAnalysisResults;
+use crate::symbol_table::Class;
 
 pub fn visit(node: &Node, current_data: &mut SemanticAnalysisResults) {
     match node.name().as_str() {
@@ -22,6 +23,11 @@ pub fn visit(node: &Node, current_data: &mut SemanticAnalysisResults) {
                 error!("{}", err);
             }
         },
+        "classDecl" => {
+            if let Err(err) = class_declaration(node, &mut current_data.symbol_table) {
+                error!("{}", err);
+            }
+        }
         _ => {}
     }
 }
@@ -63,4 +69,21 @@ pub fn function_definition(
     Ok(())
 }
 
+
+pub fn class_declaration(
+    node: &ast::Node,
+    global_table: &mut SymbolTable,
+) -> Result<(), SemanticError> {
+    let view: Result<ClassDeclaration, ValidatorError> = ViewAs::view_as(node);
+    match view {
+        Ok(validated_node) => {
+            Class::convert(&validated_node, global_table)?;
+        },
+        Err(validation_error) => {
+            error!("{}", validation_error);
+            panic!();
+        }
+    }
+    Ok(())
+}
 

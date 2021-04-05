@@ -137,6 +137,38 @@ impl<'a> NodeValidator<'a> {
         Ok(result)
     }
 
+    pub fn then_list_of_strings(&self) -> Result<Vec<&'a str>, ValidatorError> {
+        let mut result = Vec::new();
+
+        match self.node.data() {
+            Data::Epsilon => {
+                return Ok(result);
+            },
+            Data::Children(children) => {
+                for child in children {
+                    match child.data() {
+                        Data::String(s) => {result.push(s)},
+                        _ => {
+                            return Err(ValidatorError::MalformedAst(format!(
+                                "{} node requires all children nodes to be strings, found {:?}",
+                                self.node_name,
+                                child
+                            )));
+                        }
+                    }
+                }
+            },
+            _ => {
+                return Err(ValidatorError::MalformedAst(format!(
+                    "{} node must either be an epsilon node or have children, found {:?}",
+                    self.node_name, self.node
+                )));
+            }
+        }
+
+        Ok(result)
+    }
+
     pub fn then_list_of<T: ViewAs<'a>>(&self) -> Result<Vec<T>, ValidatorError> {
         let mut result = Vec::new();
 

@@ -29,3 +29,13 @@ impl fmt::Display for Data {
         )
     }
 }
+
+impl Data {
+    pub fn new(id: &str, data_type: &str, visibility: &Visibility) -> Self {
+        Data {
+            id: id.to_string(),
+            data_type: data_type.to_string(),
+            visibility: *visibility
+        }
+    }
+}

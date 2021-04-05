@@ -105,6 +105,7 @@ impl Function {
         validated_node: &FunctionDefinition,
         global_table: &mut SymbolTable,
     ) -> Result<(), SemanticError> {
+        // TODO: Identify duplicate function definitions
         let active_entry = Function::get_or_create_function_entry(validated_node, global_table)?;
 
         for parameter in validated_node.parameter_list().parameters() {
