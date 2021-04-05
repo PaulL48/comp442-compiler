@@ -9,14 +9,22 @@ use log::error;
 use crate::semantic_analyzer::SemanticAnalysisResults;
 
 pub fn visit(node: &Node, current_data: &mut SemanticAnalysisResults) {
-
+    match node.name().as_str() {
+        "funcDef" => {
+            if let Err(err) = function_definition(node, &mut current_data.symbol_table) {
+                // This would be where the error is logged to the file
+                error!("{}", err);
+            }
+        },
+        _ => {}
+    }
 }
 
 
 // A function definition requires the global symbol table
 // If it is a member function, it must get its visibility from the
 // class symbol table
-pub fn function_declaration(
+pub fn function_definition(
     node: &ast::Node,
     global_table: &mut SymbolTable,
 ) -> Result<(), SemanticError> {

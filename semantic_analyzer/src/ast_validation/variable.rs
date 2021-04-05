@@ -14,8 +14,8 @@ impl<'a> ViewAs<'a> for Variable<'a> {
     fn view_as(node: &'a Node) -> Result<Self, ValidatorError> {
         let mut validator = NodeValidator::new(node, "Local variable").has_children(3)?;
 
-        let id = validator.then_string()?;
         let data_type = validator.then_string()?;
+        let id = validator.then_string()?;
         let dimension_list = validator.then()?;
 
         Ok(Variable {

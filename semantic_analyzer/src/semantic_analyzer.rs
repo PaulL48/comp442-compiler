@@ -3,7 +3,7 @@ use crate::symbol_table;
 use ast;
 
 pub struct SemanticAnalysisResults {
-    symbol_table: SymbolTable,
+    pub symbol_table: SymbolTable,
 }
 
 impl SemanticAnalysisResults {
@@ -14,7 +14,7 @@ impl SemanticAnalysisResults {
     }
 }
 
-pub fn analyze(root: &ast::Node) {
+pub fn analyze(root: &ast::Node) -> SemanticAnalysisResults {
     let phases: Vec<Vec<fn(&ast::Node, &mut SemanticAnalysisResults)>> =
         vec![vec![symbol_table::visitor::visit]];
 
@@ -27,4 +27,6 @@ pub fn analyze(root: &ast::Node) {
             }
         }
     }
+
+    results
 }

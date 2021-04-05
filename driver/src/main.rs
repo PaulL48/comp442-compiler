@@ -10,6 +10,7 @@ use semantic_analyzer::symbol_table::{
     class::Class, data::Data, function::Function, local::Local, symbol_table::SymbolTable,
     symbol_table::SymbolTableEntry,
 };
+use semantic_analyzer;
 use simplelog::*;
 use syntactic_analyzer::{parse, Grammar, ParseTable};
 
@@ -161,12 +162,18 @@ fn main() -> std::io::Result<()> {
         .filter(|x| path::is_file(x) && path::extension(x).unwrap_or("") == "src")
     {
         let mut oc = OutputConfig::new(&source_file, config.output_folder);
-        parse(
+        let result = parse(
             &mut l.lex(&source_file, &oc.lex_error_path),
             &g,
             &parse_table,
             &mut oc,
         );
+
+        if let Some(ast) = result {
+            let result = semantic_analyzer::analyze(&ast);
+            println!("{}", result.symbol_table);
+        }
+
     }
 
     Ok(())

@@ -1,11 +1,11 @@
 mod format_table;
 mod semantic_analyzer;
 mod semantic_error;
-mod symbol_table_creator;
 mod utils;
 mod visibility;
 
 use semantic_error::SemanticError;
+pub use semantic_analyzer::analyze;
 
 pub mod symbol_table {
     pub mod class;
