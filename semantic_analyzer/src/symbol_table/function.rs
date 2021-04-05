@@ -16,7 +16,7 @@ pub struct Function {
     parameter_types: Vec<String>,
     return_type: String,
     visibility: Option<Visibility>,
-    symbol_table: SymbolTable,
+    pub symbol_table: SymbolTable,
 }
 
 // Right now the goal is:
@@ -49,7 +49,7 @@ impl FormatTable for Function {
 }
 
 impl Function {
-    fn new(
+    pub fn new(
         id: &str,
         scope: &Option<&str>,
         return_type: &Option<&str>,
@@ -204,8 +204,6 @@ impl Function {
                     None,
                 );
 
-                // Here we know the name and the parameters
-                // but we don't know the local variables of the function
                 if let SymbolTableEntry::Function(f) =
                     global_table.add_entry(SymbolTableEntry::Function(f))
                 {

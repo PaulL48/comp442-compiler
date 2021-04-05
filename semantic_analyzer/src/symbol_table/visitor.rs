@@ -1,8 +1,9 @@
 //! Given an AST node, build a symbol table
 
-use crate::ast_validation::FunctionDefinition;
+use crate::ast_validation::{FunctionDefinition, FunctionBody, ProgramRoot, ViewAs, ValidatorError};
 use crate::semantic_error::SemanticError;
 use crate::symbol_table::function;
+use crate::symbol_table::entrypoint;
 use crate::symbol_table::symbol_table::SymbolTable;
 use ast::Node;
 use log::error;
@@ -10,6 +11,11 @@ use crate::semantic_analyzer::SemanticAnalysisResults;
 
 pub fn visit(node: &Node, current_data: &mut SemanticAnalysisResults) {
     match node.name().as_str() {
+        "prog" => {
+            if let Err(err) = program_root(node, &mut current_data.symbol_table) {
+                error!("{}", err);
+            }
+        },
         "funcDef" => {
             if let Err(err) = function_definition(node, &mut current_data.symbol_table) {
                 // This would be where the error is logged to the file
@@ -20,6 +26,22 @@ pub fn visit(node: &Node, current_data: &mut SemanticAnalysisResults) {
     }
 }
 
+pub fn program_root(
+    node: &ast::Node,
+    global_table: &mut SymbolTable,
+) -> Result<(), SemanticError> {
+    let view: Result<ProgramRoot, ValidatorError> = ViewAs::view_as(node);
+    match view {
+        Ok(validated_node) => {
+            entrypoint::convert(&validated_node.main(), global_table)?;
+        },
+        Err(validation_error) => {
+            error!("{}", validation_error);
+            panic!();
+        }
+    }
+    Ok(())
+}
 
 // A function definition requires the global symbol table
 // If it is a member function, it must get its visibility from the
@@ -40,3 +62,5 @@ pub fn function_definition(
 
     Ok(())
 }
+
+

@@ -16,6 +16,7 @@ pub mod symbol_table {
     pub mod param;
     pub mod symbol_table;
     pub mod visitor;
+    pub mod entrypoint;
 }
 
 mod ast_validation {
@@ -28,6 +29,7 @@ mod ast_validation {
     pub mod variable;
     pub mod variable_list;
     pub mod view_as;
+    pub mod program_root;
 
     pub use dimension_list::DimensionList;
     pub use function_body::FunctionBody;
@@ -38,6 +40,8 @@ mod ast_validation {
     pub use parameter_list::ParameterList;
     pub use variable::Variable;
     pub use variable_list::VariableList;
+    pub use program_root::ProgramRoot;
+    pub use view_as::ViewAs;
 }
 
 pub use symbol_table::*;
