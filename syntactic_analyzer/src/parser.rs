@@ -2,7 +2,7 @@ use crate::grammar::Grammar;
 use crate::parse_table::ParseTable;
 use crate::symbol::Symbol;
 use lexical_analyzer::{Lex, Token};
-use log::{error, trace, info};
+use log::{error, trace};
 use output_manager::{warn_write, write_array, write_list, OutputConfig};
 
 pub fn parse(

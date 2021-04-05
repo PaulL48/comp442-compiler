@@ -5,6 +5,8 @@ use std::str::FromStr;
 pub struct Node {
     node_type: String,
     data: Data,
+    line: usize,
+    column: usize,
 }
 
 #[derive(Debug, PartialEq)]
@@ -17,10 +19,12 @@ pub enum Data {
 }
 
 impl Node {
-    pub fn new(node_type: &str, data: Data) -> Self {
+    pub fn new(node_type: &str, data: Data, line: usize, column: usize) -> Self {
         Node {
             node_type: node_type.to_string(),
             data,
+            line,
+            column,
         }
     }
 
@@ -38,6 +42,14 @@ impl Node {
 
     pub fn name_mut(&mut self) -> &mut String {
         return &mut self.node_type;
+    }
+
+    pub fn line(&self) -> &usize {
+        &self.line
+    }
+
+    pub fn column(&self) -> &usize {
+        &self.column
     }
 
     pub fn dft(&self) -> DepthFirstIterator {

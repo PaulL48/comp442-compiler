@@ -114,11 +114,18 @@ impl Action {
                 return;
             }
         };
-        semantic_stack.push(Node::new(name, data));
+        semantic_stack.push(Node::new(
+            name,
+            data,
+            previous_token.line,
+            previous_token.column,
+        ));
     }
 
     fn make_family(&self, semantic_stack: &mut Vec<Node>, _: Token, size: usize, name: &str) {
         let mut children = Vec::new();
+        let mut min_line = usize::max_value();
+        let mut min_column = usize::max_value();
         for _ in 0..size {
             let c = match semantic_stack.pop() {
                 Some(s) => s,
@@ -128,10 +135,18 @@ impl Action {
                 }
             };
 
+            if *c.line() < min_line {
+                min_line = *c.line();
+                min_column = *c.column();
+            } else if *c.line() == min_line && *c.column() < min_column {
+                min_column = *c.column();
+            }
+
+            // If a node being made family is a non-leaf that has no children, change it to an epsilon node
             match &c.data() {
                 Data::Children(sub_children) => {
                     if sub_children.is_empty() {
-                        children.push(Node::new(c.name(), Data::Epsilon));
+                        children.push(Node::new(c.name(), Data::Epsilon, *c.line(), *c.column()));
                     } else {
                         children.push(c);
                     }
@@ -142,7 +157,12 @@ impl Action {
             }
         }
         children.reverse();
-        semantic_stack.push(Node::new(name, Data::Children(children)));
+        semantic_stack.push(Node::new(
+            name,
+            Data::Children(children),
+            min_line,
+            min_column,
+        ));
     }
 
     fn make_sibling(&self, semantic_stack: &mut Vec<Node>) {

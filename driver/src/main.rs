@@ -6,9 +6,12 @@ use lexical_analyzer::{lexer::Lexer, lexical_rule::LexicalRule};
 use log::{error, info};
 use output_manager::OutputConfig;
 use path;
+use semantic_analyzer::symbol_table::{
+    class::Class, data::Data, function::Function, local::Local, symbol_table::SymbolTable,
+    symbol_table::SymbolTableEntry,
+};
 use simplelog::*;
 use syntactic_analyzer::{parse, Grammar, ParseTable};
-use semantic_analyzer::{SymbolTable, SymbolTableEntry, class::Class, data::Data, local::Local, Visibility, function::Function};
 
 /// Development switch to easily turn terminal logging on or off
 const LOGGING_SWITCH: LevelFilter = LevelFilter::Info;
