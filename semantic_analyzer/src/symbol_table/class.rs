@@ -1,7 +1,7 @@
 use crate::ast_validation::{ClassDeclaration, ClassMember};
 use crate::format_table::FormatTable;
 use crate::symbol_table::symbol_table::{SymbolTable, SymbolTableEntry};
-use crate::symbol_table::{Data, Function, Inherit};
+use crate::symbol_table::{Data, Function, Inherit, Param};
 use crate::SemanticError;
 use derive_getters::Getters;
 use std::default::Default;
@@ -80,23 +80,43 @@ impl Class {
         for member in validated_node.member_list().members() {
             match member {
                 ClassMember::FunctionDeclaration(function_declaration) => {
-                    if active_entry.symbol_table().contains(function_declaration.id()) {
-                        SemanticError::IdentifierRedefinition(format!(
-                            "{}:{} Identifier \"{}\" is already defined in this scope",
-                            function_declaration.line(),
-                            function_declaration.column(),
-                            function_declaration.id(),
-                        )).write(output_config);
-                    }
+                    // if active_entry.symbol_table().contains(function_declaration.id()) {
+                    //     SemanticError::IdentifierRedefinition(format!(
+                    //         "{}:{} Identifier \"{}\" is already defined in this scope",
+                    //         function_declaration.line(),
+                    //         function_declaration.column(),
+                    //         function_declaration.id(),
+                    //     )).write(output_config);
+                    // }
+                    // println!("{:?}", function_declaration);
 
                     // Create a Function entry in this class' symbol table
-                    let entry = SymbolTableEntry::Function(Function::new(
-                        function_declaration.id(),
-                        &Some(validated_node.id()),
-                        function_declaration.return_type(),
-                        Some(*function_declaration.visibility()),
-                    ));
-                    active_entry.symbol_table_mut().add_entry(entry);
+                    let function_entry = active_entry.symbol_table_mut().function_can_be_declared(function_declaration.id(), function_declaration.parameter_list(), validated_node.id(), function_declaration.visibility(), &format!("{}::{}", validated_node.id(), function_declaration.id()), function_declaration, output_config)?;
+                    for parameter in function_declaration.parameter_list().parameters() {
+                        if function_entry.symbol_table.contains(parameter.id()) {
+                            SemanticError::IdentifierRedefinition(format!(
+                                "{}:{} Identifier \"{}\" is already defined in this scope",
+                                parameter.line(),
+                                parameter.column(),
+                                parameter.id(),
+                            )).write(output_config);
+                        }
+            
+                        function_entry
+                            .parameter_types
+                            .push(parameter.as_symbol_string());
+                        let entry =
+                            SymbolTableEntry::Param(Param::new(parameter.id(), &parameter.as_symbol_string()));
+                        function_entry.symbol_table.add_entry(entry);
+                    }
+        
+                    // let entry = SymbolTableEntry::Function(Function::new(
+                    //     function_declaration.id(),
+                    //     &Some(validated_node.id()),
+                    //     function_declaration.return_type(),
+                    //     Some(*function_declaration.visibility()),
+                    // ));
+                    // active_entry.symbol_table_mut().add_entry(entry);
                 }
                 ClassMember::Variable(variable) => {
                     if active_entry.symbol_table().contains(variable.id()) {

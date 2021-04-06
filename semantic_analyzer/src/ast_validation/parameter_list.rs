@@ -4,7 +4,7 @@ use crate::ast_validation::view_as::ViewAs;
 use ast::Node;
 use derive_getters::Getters;
 
-#[derive(Getters)]
+#[derive(Getters, Debug)]
 pub struct ParameterList<'a> {
     parameters: Vec<FunctionParameter<'a>>,
     line: usize,
@@ -33,6 +33,13 @@ impl<'a> ParameterList<'a> {
     }
 
     pub fn same_as(&self, string_list: &Vec<String>) -> bool {
-        self.parameters.iter().zip(string_list).all(|(lhs, rhs)| lhs.as_symbol_string() == *rhs)
+        if self.parameters.len() != string_list.len() {
+            println!("Lists have different length {:?}, {:?}", self.parameters, string_list);
+            return false;
+        }
+
+        self.parameters.iter().zip(string_list).all(|(lhs, rhs)| {println!("{} == {}", lhs.as_symbol_string(), rhs); return lhs.as_symbol_string() == *rhs;})
+    
+        
     }
 }

@@ -3,7 +3,7 @@ use crate::Visibility;
 use ast::Node;
 use derive_getters::Getters;
 
-#[derive(Getters)]
+#[derive(Getters, Debug)]
 pub struct ClassFunctionDeclaration<'a> {
     visibility: Visibility,
     id: &'a str,

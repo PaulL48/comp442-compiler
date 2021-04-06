@@ -64,42 +64,7 @@ impl<'a> NodeValidator<'a> {
             )));
         }
     }
-    /*
-        pub fn then_list_of_optional_ints(&self, list: &mut Vec<Option<i64>>) -> Result<(), ValidatorError> {
-            // This is only used to processes dimension lists
-            // so if it should be that lists can't mix epsilon and non epsilon dimensions, then
-            // change the validation here. Actually no because that's a SEMANTIC error not some internal error
 
-            // node can be epsilon for an empty list, or it can have zero or more children
-            match self.node.data() {
-                Data::Epsilon => {return Ok(());},
-                Data::Children(children) => {
-                    for child in children {
-                        match child.data() {
-                            Data::Epsilon => {list.push(None)},
-                            Data::Integer(int) => {list.push(Some(*int))},
-                            _ => {
-                                return Err(ValidatorError::MalformedAst(format!(
-                                    "{} node requires all children nodes to be epsilon or integers, found {:?}",
-                                    self.node_name,
-                                    child
-                                )))
-                            }
-                        }
-                    }
-                },
-                _ => {
-                    return Err(ValidatorError::MalformedAst(format!(
-                        "{} node must either be an epsilon node or have children, found {:?}",
-                        self.node_name,
-                        self.node
-                    )))
-                }
-            }
-
-            Ok(())
-        }
-    */
     pub fn then_list_of_optional_ints(&self) -> Result<Vec<Option<i64>>, ValidatorError> {
         // This is only used to processes dimension lists
         // so if it should be that lists can't mix epsilon and non epsilon dimensions, then

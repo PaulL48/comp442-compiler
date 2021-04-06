@@ -43,7 +43,7 @@ func printArray(integer arr[], integer size) : void
   };
 }
 
-func printArray(int arr[3], integer size) : void 
+func printArray(integer arr[3], integer size) : void 
 {
   var
   {

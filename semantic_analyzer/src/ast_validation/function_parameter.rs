@@ -4,7 +4,7 @@ use crate::ast_validation::view_as::ViewAs;
 use ast::Node;
 use derive_getters::Getters;
 
-#[derive(Getters)]
+#[derive(Getters, Debug)]
 pub struct FunctionParameter<'a> {
     id: &'a str,
     data_type: &'a str,
