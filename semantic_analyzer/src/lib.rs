@@ -24,7 +24,7 @@ pub mod symbol_table {
     pub use inherit::Inherit;
     pub use local::Local;
     pub use param::Param;
-    pub use symbol_table::SymbolTable;
+    pub use symbol_table::{SymbolTable, SymbolTableEntry};
 }
 
 mod ast_validation {
@@ -59,6 +59,13 @@ mod ast_validation {
     pub use variable_list::VariableList;
     pub use view_as::ViewAs;
 }
+
+mod type_checking {
+    pub mod typing;
+    pub mod visitor;
+
+    pub use visitor::visit;
+} 
 
 pub use symbol_table::*;
 pub use visibility::Visibility;

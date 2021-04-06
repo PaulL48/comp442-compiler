@@ -23,10 +23,12 @@ pub fn convert(
     let mut entrypoint = Function::new("main", &None, &None, None);
 
     for local_variable in validated_node.local_variable_list().variables() {
-        let entry = SymbolTableEntry::Local(Local::new(
-            local_variable.id(),
-            &local_variable.type_as_symbol_string(),
-        ));
+        // let entry = SymbolTableEntry::Local(Local::new(
+        //     local_variable.id(),
+        //     &local_variable.type_as_symbol_string(),
+        // ));
+
+        let entry = SymbolTableEntry::Local(Local::from(local_variable));
         entrypoint.symbol_table.add_entry(entry);
     }
 

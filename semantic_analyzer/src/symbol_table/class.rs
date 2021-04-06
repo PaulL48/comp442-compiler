@@ -1,7 +1,7 @@
 use crate::ast_validation::{ClassDeclaration, ClassMember};
 use crate::format_table::FormatTable;
 use crate::symbol_table::symbol_table::{SymbolTable, SymbolTableEntry};
-use crate::symbol_table::{Data, Function, Inherit, Param};
+use crate::symbol_table::{Data, Inherit, Param};
 use crate::SemanticError;
 use derive_getters::Getters;
 use std::default::Default;
@@ -13,6 +13,8 @@ use output_manager::OutputConfig;
 pub struct Class {
     id: String,
     symbol_table: SymbolTable,
+
+    inheritance_list: Vec<String>,
 }
 
 impl FormatTable for Class {
@@ -28,11 +30,23 @@ impl FormatTable for Class {
 }
 
 impl Class {
-    pub fn new(id: &str) -> Self {
+    // pub fn new(id: &str) -> Self {
+    //     Class {
+    //         id: id.to_string(),
+    //         symbol_table: SymbolTable::new(id, &None),
+    //     }
+    // }
+
+    pub fn from(class_declaration: &ClassDeclaration) -> Self {
         Class {
-            id: id.to_string(),
-            symbol_table: SymbolTable::new(id, &None),
+            id: class_declaration.id().to_string(),
+            symbol_table: SymbolTable::new(class_declaration.id(), &None),
+            inheritance_list: class_declaration.inheritance_list().id_list().iter().map(|x| x.to_string()).collect(),
         }
+    }
+
+    pub fn resultant_type(&self) -> &str {
+        self.id()
     }
 
     pub fn symbol_table_mut(&mut self) -> &mut SymbolTable {
@@ -55,7 +69,7 @@ impl Class {
             )).write(output_config);
         }
 
-        let mut active_entry = Class::new(validated_node.id());
+        let mut active_entry = Class::from(validated_node);
         
         let mut inherited_ids = HashSet::new();
         for id in validated_node.inheritance_list().id_list() {
@@ -118,72 +132,6 @@ impl Class {
                         }
                     }
                     
-
-
-
-                    // for inherited in validated_node.inheritance_list().id_list() {
-                    //     match global_table.get(inherited){
-                    //         Some(inherited_table) => {
-                    //             if let SymbolTableEntry::Class(class) = inherited_table {
-                    //                 let overriding = class.symbol_table.recursive_get_function_with_signature(function_declaration.id(), function_declaration.parameter_list(), global_table);
-                    //                 for over in overriding {
-                    //                     SemanticError::FunctionOverload(format!(
-                    //                         "{}:{} Member function \"{}::{}\" is overriding inherited method from {}",
-                    //                         function_declaration.line(),
-                    //                         function_declaration.column(),
-                    //                         validated_node.id(),
-                    //                         function_declaration.id(),
-                    //                         over
-                    //                     )).write(output_config);
-                    //                 }
-
-                    //                 let shadowing = class.symbol_table.recursive_get_shadowing(function_declaration.id(), global_table);
-                    //                 for shadow in shadowing {
-                    //                     SemanticError::FunctionOverload(format!(
-                    //                         "{}:{} Member function \"{}::{}\" is shadowing inherited identifier from {}",
-                    //                         function_declaration.line(),
-                    //                         function_declaration.column(),
-                    //                         validated_node.id(),
-                    //                         function_declaration.id(),
-                    //                         inherited
-                    //                     )).write(output_config);
-                    //                 }
-
-                    //                 // match class.symbol_table.recursive_get_function_with_signature(function_declaration.id(), function_declaration.parameter_list(), global_table) {
-                    //                 //     Some(_) => {
-                    //                 //         // it is OVERLOADING the function
-                    //                 //         SemanticError::FunctionOverload(format!(
-                    //                 //             "{}:{} Member function \"{}::{}\" is overriding inherited method from {}",
-                    //                 //             function_declaration.line(),
-                    //                 //             function_declaration.column(),
-                    //                 //             validated_node.id(),
-                    //                 //             function_declaration.id(),
-                    //                 //             inherited
-                    //                 //         )).write(output_config);
-                    //                 //     },
-                    //                 //     None => {
-                    //                 //         // Check for shadowing
-                    //                 //         match class.symbol_table.get(function_declaration.id()) {
-                    //                 //             Some(entry) => {
-                    //                 //                 SemanticError::FunctionOverload(format!(
-                    //                 //                     "{}:{} Member function \"{}::{}\" is shadowing inherited identifier from {}",
-                    //                 //                     function_declaration.line(),
-                    //                 //                     function_declaration.column(),
-                    //                 //                     validated_node.id(),
-                    //                 //                     function_declaration.id(),
-                    //                 //                     inherited
-                    //                 //                 )).write(output_config);
-                    //                 //             },
-                    //                 //             _ => {}
-                    //                 //         }
-                    //                 //     }
-                    //                 //}
-                    //             }
-                    //         },
-                    //         None => {/* inherited identifier does not yet exist */}
-                    //     }
-                    // }
-
                     let function_entry = active_entry.symbol_table_mut().function_can_be_declared(function_declaration.id(), function_declaration.parameter_list(), validated_node.id(), function_declaration.visibility(), &format!("{}::{}", validated_node.id(), function_declaration.id()), function_declaration, output_config)?;
                     for parameter in function_declaration.parameter_list().parameters() {
                         if function_entry.symbol_table.contains(parameter.id()) {
@@ -198,8 +146,10 @@ impl Class {
                         function_entry
                             .parameter_types
                             .push(parameter.as_symbol_string());
-                        let entry =
-                            SymbolTableEntry::Param(Param::new(parameter.id(), &parameter.as_symbol_string()));
+                        // let entry =
+                        //     SymbolTableEntry::Param(Param::new(parameter.id(), &parameter.as_symbol_string()));
+                        let entry = SymbolTableEntry::Param(Param::from(parameter));
+                    
                         function_entry.symbol_table.add_entry(entry);
                     }
                 }
@@ -217,30 +167,6 @@ impl Class {
                         )).write(output_config);
                     }
 
-                    // for inherited in validated_node.inheritance_list().id_list() {
-                    //     match global_table.get(inherited){
-                    //         Some(inherited_table) => {
-                    //             if let SymbolTableEntry::Class(class) = inherited_table {
-                    //                 match class.symbol_table.get(variable.id()) {
-                    //                     Some(entry) => {
-                    //                         SemanticError::FunctionOverload(format!(
-                    //                             "{}:{} Member variable \"{}::{}\" is shadowing inherited identifier from {}",
-                    //                             variable.line(),
-                    //                             variable.column(),
-                    //                             validated_node.id(),
-                    //                             variable.id(),
-                    //                             inherited
-                    //                         )).write(output_config);
-                    //                     },
-                    //                     _ => {}
-                    //                 }
-                    //             }
-                    //         },
-                    //         None => {
-                    //         }
-                    //     }
-                    // }
-
                     if active_entry.symbol_table().contains(variable.id()) {
                         SemanticError::IdentifierRedefinition(format!(
                             "{}:{} Identifier \"{}\" is already defined in this scope",
@@ -250,12 +176,14 @@ impl Class {
                         )).write(output_config);
                     }
 
+
                     // Create a variable enrty in this class' symbol table
-                    let entry = SymbolTableEntry::Data(Data::new(
-                        variable.id(),
-                        variable.data_type(),
-                        variable.visibility(),
-                    ));
+                    // let entry = SymbolTableEntry::Data(Data::new(
+                    //     variable.id(),
+                    //     variable.data_type(),
+                    //     variable.visibility(),
+                    // ));
+                    let entry = SymbolTableEntry::Data(Data::from(variable));
                     active_entry.symbol_table_mut().add_entry(entry);
                 }
             }

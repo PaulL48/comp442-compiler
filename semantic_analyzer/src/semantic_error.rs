@@ -11,6 +11,8 @@ pub enum SemanticError {
     DeclaredButNotDefined(String),
     DefinedButNotDeclared(String),
     FunctionOverload(String), // This isn't really an error,
+    BinaryMismatchedTypes(String),
+    UndefinedType(String),
 }
 
 impl fmt::Display for SemanticError {
@@ -23,6 +25,8 @@ impl fmt::Display for SemanticError {
             SemanticError::DuplicateInheritance(message) => message,
             SemanticError::DeclaredButNotDefined(message) => message,
             SemanticError::DefinedButNotDeclared(message) => message,
+            SemanticError::BinaryMismatchedTypes(message) => message,
+            SemanticError::UndefinedType(message) => message,
 
             SemanticError::FunctionOverload(message) => {
                 return write!(f, "Semantic warning: {}", message);

@@ -19,6 +19,9 @@ pub struct Function {
     visibility: Option<Visibility>,
     pub symbol_table: SymbolTable,
     pub defined: bool,
+
+    // actual return type
+    // return type
 }
 
 // Right now the goal is:
@@ -108,8 +111,10 @@ impl Function {
                 active_entry
                     .parameter_types
                     .push(parameter.as_symbol_string());
-                let entry =
-                    SymbolTableEntry::Param(Param::new(parameter.id(), &parameter.as_symbol_string()));
+                // let entry =
+                //     SymbolTableEntry::Param(Param::new(parameter.id(), &parameter.as_symbol_string()));
+                let entry = SymbolTableEntry::Param(Param::from(parameter));
+
                 active_entry.symbol_table.add_entry(entry);
             }
     
@@ -130,10 +135,11 @@ impl Function {
                 )).write(output_config);
             }
 
-            let entry = SymbolTableEntry::Local(Local::new(
-                local_variable.id(),
-                &local_variable.type_as_symbol_string(),
-            ));
+            // let entry = SymbolTableEntry::Local(Local::new(
+            //     local_variable.id(),
+            //     &local_variable.type_as_symbol_string(),
+            // ));
+            let entry = SymbolTableEntry::Local(Local::from(local_variable));
             active_entry.symbol_table.add_entry(entry);
         }
 

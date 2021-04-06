@@ -1,6 +1,8 @@
 use crate::symbol_table;
 use crate::symbol_table::symbol_table::SymbolTable;
+use crate::type_checking;
 use output_manager::{OutputConfig, warn_write};
+use std::ptr;
 
 pub struct SemanticAnalysisResults {
     pub symbol_table: SymbolTable,
@@ -15,15 +17,61 @@ impl SemanticAnalysisResults {
 }
 
 pub fn analyze(root: &ast::Node, output_config: &mut OutputConfig) -> SemanticAnalysisResults {
-    let phases: Vec<Vec<fn(&ast::Node, &mut SemanticAnalysisResults, &mut OutputConfig)>> =
-        vec![vec![symbol_table::visitor::visit]];
+    let phases: Vec<Vec<fn(&ast::Node, &mut SemanticAnalysisResults, &mut OutputConfig, &Vec<String>)>> =
+        vec![vec![symbol_table::visitor::visit],
+        vec![type_checking::visit]];
 
     let mut results: SemanticAnalysisResults = SemanticAnalysisResults::new();
+    let mut current_scope = Vec::new();
+
+    let main_node = match root.data() {
+        ast::Data::Children(children) => {
+            &children[2]
+        }
+        _ => {
+            panic!("No main in AST");
+        }
+    };
 
     for phase in phases {
         for visitor in phase {
             for node in root.dft() {
-                visitor(node, &mut results, output_config);
+                // Scan for particular nodes to adjust current_scope
+                match node.name().as_str() {
+                    "funcDef" => {
+                        // if it has a scope,
+                        match node.data() {
+                            ast::Data::Children(children) => {
+                                match children[0].data() {
+                                    ast::Data::String(id) => {
+                                        current_scope = vec![id.clone()]
+                                    },
+                                    _ => ()
+                                }
+                                match children[1].data() {
+                                    ast::Data::String(scope) => {
+                                        current_scope.push(scope.clone());
+                                    },
+                                    _ => (),
+                                }
+                            }
+                            _ => ()
+                        }
+                    }
+                    _=>()
+                }
+
+                if ptr::eq(main_node, node) {
+                    current_scope = vec!["main".to_string()];
+                }
+
+
+                // Somehow we need to identify when we're in the main block
+                // we could check if the pointer to the FuncBody is equal to the third child of the root
+
+                // Somehow the assumption can be made that if the scope 
+
+                visitor(node, &mut results, output_config, &current_scope);
             }
         }
     }

@@ -1,4 +1,6 @@
 class LINEAR {
+    private float a;
+    private float b;
 	public func build(float A, float B) : LINEAR;
 	public func evaluate(float x) : float;
 };
@@ -70,7 +72,7 @@ func printArray(integer arr[], integer size) : void
   };
 } 
 
-func returns_void(string a) : void
+func returns_void(integer a) : void
 {
     a = a + 1;
 }
@@ -131,14 +133,14 @@ func control_flow() : void
     if (a) then
     {
         a = 1.2;
-        a = a * 2 + (a * a);
+        a = a * 2.1 + (a * a);
     } else ;
 
     if (a) then
     {
         a = 1.2;
     } else {
-        a = a * 2 + (a * a);
+        a = a * 2.1 + (a * a);
     };
 
     while (a * return_float(1.2) == 42.5)
@@ -167,6 +169,7 @@ main
         float vec[2][2][2];
         int matrix[3][3];
         float i;
+        integer res;
     }
     vec[0][0][0] = 1.1;
     vec[0][0][1] = 1.1;
@@ -181,23 +184,9 @@ main
     say_something();
     arrays(vec, matrix);
 
-    i = returns_float(1.2) + 1;
+    // i = returns_float(1.2) + 1;
     returns_float(1.5 + 1.5);
     read(vec[1][1][1]);
-
-    name1.name2 = 1;
-    name1.name2(some, parameters);
-    name0 = name1(param).name2;
-    name1(param).name2();
-    name1.name2[1] = 1;
-    name1[1].name2 = 1;
-    name1[1].name2[2] = 1;
-    name1.name2[1][2] = 1;
-    name1[1][2].name2 = 1;
-    name1[1][2].name2[1][2] = 1;
-    name0 = name1(param1).name2[2];
-    name0 = name1(param1).name2[1][2];
-    name1[1 + 1] = 1;
 
     res = 1 + 1 * 2;
 
@@ -215,9 +204,8 @@ main
 
     res = (2 + 2) * 3;
     res = 1 + (5 * (2 + 2) * 3);
-    res = ? [1 : 2 : 3];
 
-    res = res + ? [1 : 2 : 3] * 2 * (1 + 2 + (3 * 3)) + return_float(3.3);
+    res = res +  2 * (1 + 2 + (3 * 3));
 }
 
 

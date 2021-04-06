@@ -1,4 +1,5 @@
 use crate::format_table::FormatTable;
+use crate::ast_validation::FunctionParameter;
 use derive_getters::Getters;
 use std::default::Default;
 use std::fmt;
@@ -7,6 +8,9 @@ use std::fmt;
 pub struct Param {
     id: String,
     data_type: String,
+
+    actual_type: String,
+    dimension: Vec<Option<i64>>,
 }
 
 impl fmt::Display for Param {
@@ -25,10 +29,21 @@ impl FormatTable for Param {
 }
 
 impl Param {
-    pub fn new(id: &str, data_type: &str) -> Self {
+    // pub fn new(id: &str, data_type: &str) -> Self {
+    //     Param {
+    //         id: id.to_string(),
+    //         data_type: data_type.to_string(),
+    //         actual_type: "".to_string(),
+
+    //     }
+    // }
+
+    pub fn from(function_parameter: &FunctionParameter) -> Self {
         Param {
-            id: id.to_string(),
-            data_type: data_type.to_string(),
+            id: function_parameter.id().to_string(),
+            data_type: function_parameter.as_symbol_string(),
+            actual_type: function_parameter.data_type().to_string(),
+            dimension: function_parameter.dimension_list().dimensions().clone(),
         }
     }
 }

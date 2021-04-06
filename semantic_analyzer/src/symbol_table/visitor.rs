@@ -13,7 +13,7 @@ use ast::Node;
 use log::error;
 use output_manager::OutputConfig;
 
-pub fn visit(node: &Node, current_data: &mut SemanticAnalysisResults, output_config: &mut OutputConfig) {
+pub fn visit(node: &Node, current_data: &mut SemanticAnalysisResults, output_config: &mut OutputConfig, _: &Vec<String>) {
     match node.name().as_str() {
         "prog" => {
             if let Err(err) = program_root(node, &mut current_data.symbol_table, output_config) {

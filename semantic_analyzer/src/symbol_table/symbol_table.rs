@@ -48,6 +48,18 @@ impl SymbolTableEntry {
             SymbolTableEntry::Data(data) => Some(data.id()),
         }
     }
+
+    // The non-array type
+    pub fn base_type(&self) -> &str {
+        match self {
+            SymbolTableEntry::Class(class) => class.id(),
+            SymbolTableEntry::Function(function) => function.return_type(),
+            SymbolTableEntry::Inherit(_) => panic!("Getting resultant type of inheritance list"),
+            SymbolTableEntry::Param(param) => param.actual_type(),
+            SymbolTableEntry::Local(local) => local.actual_type(),
+            SymbolTableEntry::Data(data) => data.actual_type(),
+        }
+    }
 }
 
 impl FormatTable for SymbolTableEntry {
@@ -143,6 +155,105 @@ impl SymbolTable {
                 }
             }
         }
+        None
+    }
+
+    pub fn get_scoped_alt<'a>(&'a self, id: &str, scope: &Vec<String>, global_table: &'a SymbolTable) -> Option<&SymbolTableEntry> {
+        // If it has no previous type that means that the identifier is either defined locally (within the function)
+        // or defined the owning class
+        // or defined in any of the parents of the owning class
+
+        // If it has a previous type, then that previous type is the only context, it must be a class
+        if scope.len() == 2 {
+            if let Some(entry) = self.get(&scope[0]) {
+                if let SymbolTableEntry::Class(class) = entry {
+                    if let Some(entry) = class.symbol_table().get(&scope[1]) {
+                        if let SymbolTableEntry::Function(function) = entry {
+                            match function.symbol_table().get(id) {
+                                Some(entry) => return Some(entry),
+                                None => ()
+                            }
+                        }
+                    }
+
+                    if let Some(entry) = class.symbol_table().get(id) {
+                        return Some(entry);
+                    }
+
+                    if let Some(entry) = self.get_first_in_inheritance(class.inheritance_list(), id, global_table) {
+                        return Some(entry)
+                    }
+                
+                
+                }
+            }
+
+            return global_table.get(id);
+        } else if scope.len() == 1 {
+            if let Some(entry) = self.get(&scope[0]) {
+                if let SymbolTableEntry::Function(function) = entry {
+                    return function.symbol_table().get(id);
+                }
+            }
+        } // else if: Bad, there's no sense in getter a global symbol
+        None
+
+    }
+
+    pub fn get_scoped<'a>(&'a self, id: &str, scope: &Vec<String>, global_table: &'a SymbolTable) -> Option<&SymbolTableEntry> {
+        // scope is <class>::<function> or just <function>
+        if scope.len() == 2 {
+            if let Some(entry) = self.get(&scope[0]) {
+                if let SymbolTableEntry::Class(class) = entry {
+                    if let Some(entry) = class.symbol_table().get(&scope[1]) {
+                        if let SymbolTableEntry::Function(function) = entry {
+                            match function.symbol_table().get(id) {
+                                Some(entry) => return Some(entry),
+                                None => ()
+                            }
+                        }
+                    }
+
+                    if let Some(entry) = class.symbol_table().get(id) {
+                        return Some(entry);
+                    }
+
+                    return self.get_first_in_inheritance(class.inheritance_list(), id, global_table)
+                }
+            }
+        } else if scope.len() == 1 {
+            if let Some(entry) = self.get(&scope[0]) {
+                if let SymbolTableEntry::Class(class) = entry {
+                    return class.symbol_table().get(id);
+                }
+            }
+        } // else if: Bad, there's no sense in getter a global symbol
+        None
+    }
+
+    pub fn get_first_in_inheritance<'a>(&'a self, inheritance_list: &Vec<String>, id: &str, global_table: &'a SymbolTable) -> Option<&SymbolTableEntry> {
+        // Scan through the current layer of inheritance
+        for inherit in inheritance_list {
+            if let Some(entry) = global_table.get(inherit) {
+                if let SymbolTableEntry::Class(class) = entry {
+                    if let Some(inner_entry) = class.symbol_table().get(id) {
+                        return Some(inner_entry);
+                    }
+                }
+            }
+        }
+
+        // If it's still not found return the recursive result for each identifier
+        for inherit in inheritance_list {
+            if let Some(entry) = global_table.get(inherit) {
+                if let SymbolTableEntry::Class(class) = entry {
+                    if let Some(inner_entry) = self.get_first_in_inheritance(class.inheritance_list(), id, global_table) {
+                        return Some(inner_entry);
+                    }
+                }
+            }
+        }
+
         None
     }
 
@@ -453,7 +564,7 @@ impl SymbolTable {
         // We know we are in a class scoped symbol table
         let result = self.get_undefined_function_in_class_scope(id, parameters, function_name, function_declaration, output_config)?;
         match result {
-            Some(f) => {panic!("Function is trying to be declared but is already declared")},
+            Some(_) => {panic!("Function is trying to be declared but is already declared")},
             None => {
                 
             }
