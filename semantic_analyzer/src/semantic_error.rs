@@ -10,7 +10,7 @@ pub enum SemanticError {
     DuplicateInheritance(String),
     DeclaredButNotDefined(String),
     DefinedButNotDeclared(String),
-    FunctionOverload(String), // This isn't really an error
+    FunctionOverload(String), // This isn't really an error,
 }
 
 impl fmt::Display for SemanticError {

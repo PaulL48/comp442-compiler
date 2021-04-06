@@ -34,11 +34,11 @@ impl<'a> ParameterList<'a> {
 
     pub fn same_as(&self, string_list: &Vec<String>) -> bool {
         if self.parameters.len() != string_list.len() {
-            println!("Lists have different length {:?}, {:?}", self.parameters, string_list);
+            // println!("Lists have different length {:?}, {:?}", self.parameters, string_list);
             return false;
         }
 
-        self.parameters.iter().zip(string_list).all(|(lhs, rhs)| {println!("{} == {}", lhs.as_symbol_string(), rhs); return lhs.as_symbol_string() == *rhs;})
+        self.parameters.iter().zip(string_list).all(|(lhs, rhs)| lhs.as_symbol_string() == *rhs)
     
         
     }

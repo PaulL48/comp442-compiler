@@ -91,6 +91,99 @@ impl Class {
                     // println!("{:?}", function_declaration);
 
                     // Create a Function entry in this class' symbol table
+                    // Manually search the inherited namespaces for 
+                    // Given a set of inherited identifiers check if those classes define identical identifiers
+                    let overriding = active_entry.symbol_table.recursive_get_function_with_signature(function_declaration.id(), function_declaration.parameter_list(), global_table);
+                    for over in &overriding {
+                        SemanticError::FunctionOverload(format!(
+                            "{}:{} Member function \"{}::{}\" is overriding inherited method from {}",
+                            function_declaration.line(),
+                            function_declaration.column(),
+                            validated_node.id(),
+                            function_declaration.id(),
+                            over
+                        )).write(output_config);
+                    }
+                    if overriding.len() == 0 {
+                        let shadowing = active_entry.symbol_table.recursive_get_shadowing(function_declaration.id(), global_table);
+                        for shadow in shadowing {
+                            SemanticError::FunctionOverload(format!(
+                                "{}:{} Member function \"{}::{}\" is shadowing inherited identifier from {}",
+                                function_declaration.line(),
+                                function_declaration.column(),
+                                validated_node.id(),
+                                function_declaration.id(),
+                                shadow
+                            )).write(output_config);
+                        }
+                    }
+                    
+
+
+
+                    // for inherited in validated_node.inheritance_list().id_list() {
+                    //     match global_table.get(inherited){
+                    //         Some(inherited_table) => {
+                    //             if let SymbolTableEntry::Class(class) = inherited_table {
+                    //                 let overriding = class.symbol_table.recursive_get_function_with_signature(function_declaration.id(), function_declaration.parameter_list(), global_table);
+                    //                 for over in overriding {
+                    //                     SemanticError::FunctionOverload(format!(
+                    //                         "{}:{} Member function \"{}::{}\" is overriding inherited method from {}",
+                    //                         function_declaration.line(),
+                    //                         function_declaration.column(),
+                    //                         validated_node.id(),
+                    //                         function_declaration.id(),
+                    //                         over
+                    //                     )).write(output_config);
+                    //                 }
+
+                    //                 let shadowing = class.symbol_table.recursive_get_shadowing(function_declaration.id(), global_table);
+                    //                 for shadow in shadowing {
+                    //                     SemanticError::FunctionOverload(format!(
+                    //                         "{}:{} Member function \"{}::{}\" is shadowing inherited identifier from {}",
+                    //                         function_declaration.line(),
+                    //                         function_declaration.column(),
+                    //                         validated_node.id(),
+                    //                         function_declaration.id(),
+                    //                         inherited
+                    //                     )).write(output_config);
+                    //                 }
+
+                    //                 // match class.symbol_table.recursive_get_function_with_signature(function_declaration.id(), function_declaration.parameter_list(), global_table) {
+                    //                 //     Some(_) => {
+                    //                 //         // it is OVERLOADING the function
+                    //                 //         SemanticError::FunctionOverload(format!(
+                    //                 //             "{}:{} Member function \"{}::{}\" is overriding inherited method from {}",
+                    //                 //             function_declaration.line(),
+                    //                 //             function_declaration.column(),
+                    //                 //             validated_node.id(),
+                    //                 //             function_declaration.id(),
+                    //                 //             inherited
+                    //                 //         )).write(output_config);
+                    //                 //     },
+                    //                 //     None => {
+                    //                 //         // Check for shadowing
+                    //                 //         match class.symbol_table.get(function_declaration.id()) {
+                    //                 //             Some(entry) => {
+                    //                 //                 SemanticError::FunctionOverload(format!(
+                    //                 //                     "{}:{} Member function \"{}::{}\" is shadowing inherited identifier from {}",
+                    //                 //                     function_declaration.line(),
+                    //                 //                     function_declaration.column(),
+                    //                 //                     validated_node.id(),
+                    //                 //                     function_declaration.id(),
+                    //                 //                     inherited
+                    //                 //                 )).write(output_config);
+                    //                 //             },
+                    //                 //             _ => {}
+                    //                 //         }
+                    //                 //     }
+                    //                 //}
+                    //             }
+                    //         },
+                    //         None => {/* inherited identifier does not yet exist */}
+                    //     }
+                    // }
+
                     let function_entry = active_entry.symbol_table_mut().function_can_be_declared(function_declaration.id(), function_declaration.parameter_list(), validated_node.id(), function_declaration.visibility(), &format!("{}::{}", validated_node.id(), function_declaration.id()), function_declaration, output_config)?;
                     for parameter in function_declaration.parameter_list().parameters() {
                         if function_entry.symbol_table.contains(parameter.id()) {
@@ -109,16 +202,45 @@ impl Class {
                             SymbolTableEntry::Param(Param::new(parameter.id(), &parameter.as_symbol_string()));
                         function_entry.symbol_table.add_entry(entry);
                     }
-        
-                    // let entry = SymbolTableEntry::Function(Function::new(
-                    //     function_declaration.id(),
-                    //     &Some(validated_node.id()),
-                    //     function_declaration.return_type(),
-                    //     Some(*function_declaration.visibility()),
-                    // ));
-                    // active_entry.symbol_table_mut().add_entry(entry);
                 }
                 ClassMember::Variable(variable) => {
+                    // Given an identifier and an inheritance list, check recursively if the name shadows 
+                    let shadowing = active_entry.symbol_table.recursive_get_shadowing(variable.id(), global_table);
+                    for shadow in shadowing {
+                        SemanticError::FunctionOverload(format!(
+                            "{}:{} Member variable \"{}::{}\" is shadowing inherited identifier from {}",
+                            variable.line(),
+                            variable.column(),
+                            validated_node.id(),
+                            variable.id(),
+                            shadow
+                        )).write(output_config);
+                    }
+
+                    // for inherited in validated_node.inheritance_list().id_list() {
+                    //     match global_table.get(inherited){
+                    //         Some(inherited_table) => {
+                    //             if let SymbolTableEntry::Class(class) = inherited_table {
+                    //                 match class.symbol_table.get(variable.id()) {
+                    //                     Some(entry) => {
+                    //                         SemanticError::FunctionOverload(format!(
+                    //                             "{}:{} Member variable \"{}::{}\" is shadowing inherited identifier from {}",
+                    //                             variable.line(),
+                    //                             variable.column(),
+                    //                             validated_node.id(),
+                    //                             variable.id(),
+                    //                             inherited
+                    //                         )).write(output_config);
+                    //                     },
+                    //                     _ => {}
+                    //                 }
+                    //             }
+                    //         },
+                    //         None => {
+                    //         }
+                    //     }
+                    // }
+
                     if active_entry.symbol_table().contains(variable.id()) {
                         SemanticError::IdentifierRedefinition(format!(
                             "{}:{} Identifier \"{}\" is already defined in this scope",

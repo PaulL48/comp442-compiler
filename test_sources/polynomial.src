@@ -1,13 +1,18 @@
 // ====== Class declarations ====== //
-class POLYNOMIAL {
+class Obj {
+  public string id;
+};
+
+class POLYNOMIAL inherits Obj {
+  public float foo;
 	public func evaluate(float x) : float;
 };
 
 class LINEAR inherits POLYNOMIAL {
 	private float a;
 	private float b;
-	
-  public func build(float AB) : LINEAR;
+  private float id;
+
 	public func build(float A, float B) : LINEAR;
 	public func evaluate(float x) : float;
 };

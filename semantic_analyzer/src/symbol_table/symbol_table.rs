@@ -135,8 +135,8 @@ impl SymbolTable {
         None
     }
 
-    pub fn get(&mut self, id: &str) -> Option<&SymbolTableEntry> {
-        for entry in &mut self.values {
+    pub fn get(&self, id: &str) -> Option<&SymbolTableEntry> {
+        for entry in &self.values {
             if let Some(entry_id) = entry.id() {
                 if entry_id == id {
                     return Some(entry);
@@ -144,6 +144,127 @@ impl SymbolTable {
             }
         }
         None
+    }
+
+    pub fn get_function_with_signature(&self, id: &str, parameter_list: &ParameterList) -> Option<&Function> {
+        for entry in &self.values {
+            match entry {
+                SymbolTableEntry::Function(function) => {
+                    if function.id() == id && parameter_list.same_as(&function.parameter_types) {
+                        return Some(function);
+                    }
+                },
+                _ => ()
+            }
+        }
+        None
+    }
+
+    pub fn recursive_get_shadowing(&self, id: &str, global_table: &SymbolTable) -> Vec<String> {
+        let mut result = Vec::new();
+
+        for inherit in self.collect_inherits() {
+            if let Some(entry) = global_table.get(&inherit) {
+                if let SymbolTableEntry::Class(class) = entry {
+                    result.extend(class.symbol_table().recursive_get_shadowing_aux(id, global_table));
+                }
+            }
+        }
+        result
+    }
+
+    fn recursive_get_shadowing_aux(&self, id: &str, global_table: &SymbolTable) -> Vec<String> {
+        let mut result = Vec::new();
+
+        for entry in &self.values {
+            if let Some(entry_id) = entry.id() {
+                if entry_id == id {
+                    result.push(self.name.clone());
+                }
+            }
+        }
+
+        for inherit in self.collect_inherits() {
+            if let Some(entry) = global_table.get(&inherit) {
+                if let SymbolTableEntry::Class(class) = entry {
+                    result.extend(class.symbol_table().recursive_get_shadowing_aux(id, global_table));
+                }
+            }
+        }
+        result
+    }
+
+    pub fn recursive_get_function_with_signature(&self, id: &str, parameter_list: &ParameterList, global_table: &SymbolTable) -> Vec<String> {
+        let mut result = Vec::new();
+        for inherit in self.collect_inherits() {
+            if let Some(entry) = global_table.get(&inherit) {
+                if let SymbolTableEntry::Class(class) = entry {
+                    result.extend(class.symbol_table().recursive_get_function_with_signature_aux(id, parameter_list, global_table));
+                }
+            }
+        }
+        result
+    }
+
+    /// Return all the parent classes that provide a declaration for the signature
+    fn recursive_get_function_with_signature_aux(&self, id: &str, parameter_list: &ParameterList, global_table: &SymbolTable) -> Vec<String> {
+        let mut result = Vec::new();
+
+        for entry in &self.values {
+            match entry {
+                SymbolTableEntry::Function(function) => {
+                    if function.id() == id && parameter_list.same_as(&function.parameter_types) {
+                        result.push(self.name.clone());
+                        break;
+                    }
+                },
+                _ => ()
+            }
+        }
+
+        for inherit in self.collect_inherits() {
+            if let Some(entry) = global_table.get(&inherit) {
+                if let SymbolTableEntry::Class(class) = entry {
+                    result.extend(class.symbol_table().recursive_get_function_with_signature_aux(id, parameter_list, global_table));
+                }
+            }
+        }
+        result
+    }
+
+    pub fn inherit_list_has_cycles(&self, global_table:&SymbolTable) -> bool {
+        self.inherit_list_has_cycles_aux(&self.collect_inherits(), global_table, &mut Vec::new())
+    }
+
+    fn inherit_list_has_cycles_aux(&self, inherit_list: &Vec<String>, global_table:&SymbolTable, visited: &mut Vec<String>) -> bool {
+        for inherit in inherit_list {
+            if visited.contains(&inherit.to_string()) {
+                return true;
+            }
+        }
+
+        visited.extend(inherit_list.iter().map(|x| x.to_string()));
+        for inherit in inherit_list {
+            // get the class, get the inherit list and call again
+            if let Some(entry) = global_table.get(inherit) {
+                if let SymbolTableEntry::Class(class) = entry {
+                    if class.symbol_table().inherit_list_has_cycles_aux(&class.symbol_table().collect_inherits(), global_table, visited) {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    /// Return all inherit members
+    fn collect_inherits(&self) -> Vec<String> {
+        for entry in &self.values {
+            if let SymbolTableEntry::Inherit(inherit) = entry {
+                return inherit.names().clone();
+            }
+        }
+        return Vec::new();
     }
 
     pub fn contains(&self, id: &str) -> bool {
@@ -162,7 +283,7 @@ impl SymbolTable {
             match entry {
                 SymbolTableEntry::Function(function) => {
                     if function.id() == id {
-                        println!("FOUND MATCHING FUNCTION ENTRY: {:?}", function);
+                        // println!("FOUND MATCHING FUNCTION ENTRY: {:?}", function);
 
                         if parameters.same_as(&function.parameter_types()) {
                             if function.defined {
@@ -225,7 +346,7 @@ impl SymbolTable {
 
 
                     if function.id() == id {
-                        println!("FOUND MATCHING FUNCTION ENTRY: {:?}", function);
+                        // println!("FOUND MATCHING FUNCTION ENTRY: {:?}", function);
 
                         if parameters.same_as(&function.parameter_types()) {
                             if function.defined {
@@ -286,7 +407,7 @@ impl SymbolTable {
         // We can use the supplied function_definition to see if it is in the global scope or not
         match function_definition.scope() {
             Some(_) => {
-                println!("Found definition for function {}", id);
+                // println!("Found definition for function {}", id);
                 let result = self.get_undefined_function_in_scope(id, parameters, function_name, function_definition, output_config)?;
                 match result {
                     Some(f) => {return Ok(f);},
