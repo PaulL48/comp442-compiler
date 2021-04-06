@@ -3,12 +3,20 @@ use path;
 use std::fs::File;
 use std::io::prelude::*;
 
+const SYMBOL_TABLE_EXT: &str = "outsymboltable";
+const SEMANTIC_ERROR_EXT: &str = "outsemanticerrors";
 const DERIVATION_EXT: &str = "outderivation";
 const AST_EXT: &str = "outast";
 const PARSE_ERROR_EXT: &str = "outsyntaxerrors";
 const LEX_ERROR_EXT: &str = "outlexerrors";
 
 pub struct OutputConfig {
+    pub symbol_table_path: String,
+    pub symbol_table_file: File,
+
+    pub semantic_error_path: String,
+    pub semantic_error_file: File,
+
     pub derivation_path: String,
     pub derivation_file: File,
 
@@ -81,23 +89,33 @@ impl OutputConfig {
 
         let source_file_name = path::file_name(source_file_path).unwrap();
         let output = output_directory.to_string() + "/" + source_file_name;
+        let output_no_ext = path::replace_extension(&output, "").unwrap();
 
+        let symbol_table_path = path::replace_extension(&output, SYMBOL_TABLE_EXT).unwrap();
+        let semantic_error_path = path::replace_extension(&output, SEMANTIC_ERROR_EXT).unwrap();
         let derivation_path = path::replace_extension(&output, DERIVATION_EXT).unwrap();
         let ast_path = path::replace_extension(&output, AST_EXT).unwrap();
         let syntax_error_path = path::replace_extension(&output, PARSE_ERROR_EXT).unwrap();
         let lex_error_path = path::replace_extension(&output, LEX_ERROR_EXT).unwrap();
 
+        let symbol_table_file = panic_open(&symbol_table_path);
+        let semantic_error_file = panic_open(&semantic_error_path);
         let derivation_file = panic_open(&derivation_path);
         let ast_file = panic_open(&ast_path);
         let syntax_error_file = panic_open(&syntax_error_path);
 
         info!("Processing source file \"{}\"", source_file_path);
-        info!("Lexical errors will appear in \"{}\"", lex_error_path);
-        info!("Syntax errors will appear in \"{}\"", syntax_error_path);
-        info!("Grammar derivation will appear in \"{}\"", derivation_path);
-        info!("AST will appear in \"{}\"", ast_path);
+        info!("Outputs and error will appear in files named \"{}.*\" where the extension specifies the contents of the file", output_no_ext);
+        // info!("Lexical errors will appear in \"{}\"", lex_error_path);
+        // info!("Syntax errors will appear in \"{}\"", syntax_error_path);
+        // info!("Grammar derivation will appear in \"{}\"", derivation_path);
+        // info!("AST will appear in \"{}\"", ast_path);
 
         OutputConfig {
+            symbol_table_file,
+            symbol_table_path,
+            semantic_error_file,
+            semantic_error_path,
             derivation_file,
             derivation_path,
             ast_file,

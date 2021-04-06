@@ -32,9 +32,14 @@ impl<'a> FunctionDefinition<'a> {
 
         let id = validator.then_string()?;
         let scope = validator.then_optional_string()?;
-        let parameter_list = validator.then()?;
+        let parameter_list = validator.then_optional()?;
         let return_type = validator.then_optional_string()?;
         let function_body = validator.then()?;
+
+        let parameter_list = match parameter_list {
+            Some(list) => list,
+            None => ParameterList::new(*node.line(), *node.column())
+        };
 
         Ok(FunctionDefinition {
             id,

@@ -8,7 +8,9 @@ pub struct ClassFunctionDeclaration<'a> {
     visibility: Visibility,
     id: &'a str,
     parameter_list: ParameterList<'a>,
-    return_type: &'a str,
+    return_type: Option<&'a str>,
+    line: usize,
+    column: usize,
 }
 
 #[derive(Getters)]
@@ -17,6 +19,8 @@ pub struct ClassVariable<'a> {
     data_type: &'a str,
     id: &'a str,
     dimension_list: DimensionList,
+    line: usize,
+    column: usize,
 }
 
 pub enum ClassMember<'a> {
@@ -65,21 +69,30 @@ impl<'a> ViewAs<'a> for ClassMember<'a> {
                     data_type,
                     id,
                     dimension_list,
+                    line: *interior_node.line(),
+                    column: *interior_node.column(),
                 }));
             }
             "funcDecl" => {
                 let mut internal_validator =
-                    NodeValidator::new(interior_node, "Class variable").has_children(3)?;
+                    NodeValidator::new(interior_node, "Function declaration").has_children(3)?;
 
                 let id = internal_validator.then_string()?;
-                let parameter_list = internal_validator.then()?;
-                let return_type = internal_validator.then_string()?;
+                let parameter_list = internal_validator.then_optional()?;
+                let return_type = internal_validator.then_optional_string()?;
+
+                let parameter_list = match parameter_list {
+                    None => ParameterList::new(*interior_node.line(), *interior_node.column()),
+                    Some(list) => list,
+                };
 
                 return Ok(ClassMember::FunctionDeclaration(ClassFunctionDeclaration {
                     visibility,
                     id,
                     parameter_list,
                     return_type,
+                    line: *interior_node.line(),
+                    column: *interior_node.column(),
                 }));
             }
             _ => {

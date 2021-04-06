@@ -273,6 +273,7 @@ dependencies = [
  "derive-getters",
  "lazy_static",
  "log",
+ "output_manager",
 ]
 
 [[package]]

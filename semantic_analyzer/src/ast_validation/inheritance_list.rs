@@ -5,6 +5,8 @@ use derive_getters::Getters;
 #[derive(Getters)]
 pub struct InheritanceList<'a> {
     id_list: Vec<&'a str>,
+    line: usize,
+    column: usize,
 }
 
 impl<'a> ViewAs<'a> for InheritanceList<'a> {
@@ -13,6 +15,8 @@ impl<'a> ViewAs<'a> for InheritanceList<'a> {
 
         let id_list = validator.then_list_of_strings()?;
 
-        Ok(InheritanceList { id_list })
+        Ok(InheritanceList { id_list,
+        line: *node.line(),
+        column: *node.column() })
     }
 }

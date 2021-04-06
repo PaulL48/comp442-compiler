@@ -6,7 +6,7 @@ func bubbleSort(integer arr[], integer size) : void
     integer n;
     integer i;
     integer j;
-    integer temp; 
+    integer temp;
   }
   n = size;
   i = 0;
@@ -41,6 +41,13 @@ func printArray(integer arr[], integer size) : void
     write(arr[i]);
       i = i+1;
   };
+}
+
+func printArray(int arr[3], integer size) : void 
+{
+  var
+  {
+  }
 } 
 
 // main funtion to test above

@@ -2,6 +2,9 @@ use crate::format_table::FormatTable;
 use crate::symbol_table::*;
 use std::default::Default;
 use std::fmt;
+use crate::SemanticError;
+use output_manager::OutputConfig;
+use crate::ast_validation::{FunctionDefinition, ParameterList};
 
 #[derive(Debug, Clone)]
 pub enum SymbolTableEntry {
@@ -141,6 +144,38 @@ impl SymbolTable {
         None
     }
 
+    /// ASSUMES THE SYMBOL TABLE IS THE TABLE OF A CLASS ENTRY
+    pub fn get_function_mut(&mut self, id: &str, scope: &str, function: &FunctionDefinition) -> Result<Option<&mut SymbolTableEntry>, SemanticError> {
+        for entry in &mut self.values {
+            match entry {
+                SymbolTableEntry::Function(function_entry) => {
+                    if function_entry.id() == id {
+                        if !function.parameter_list().same_as(&function_entry.parameter_types()) {
+                            continue;
+                        }
+
+                        return Ok(Some(entry));
+                    }
+                },
+                _ => {
+                    return Err(SemanticError::IdentifierIsNotAMemberFunction(format!(
+                        "{}:{} Scope identifier {}::{} names a \"{}\" and not a member function",
+                        function.line(),
+                        function.column(),
+                        function.id(),
+                        function.scope().unwrap(),
+                        entry
+                    )))
+                }
+            }
+            // finds a non function: // Valid class scope, identifier is not a member function
+            // find a function that does have same signature, no problem
+            // finds a function with the same signature
+
+        }
+        todo!();
+    }
+
     pub fn contains(&self, id: &str) -> bool {
         for entry in &self.values {
             if let Some(entry_id) = entry.id() {
@@ -151,4 +186,218 @@ impl SymbolTable {
         }
         false
     }
+
+    fn get_undefined_function_in_scope(&mut self, id: &str, parameters: &ParameterList, function_name: &str, function_definition: &FunctionDefinition, output_manager: &mut OutputConfig) -> Result<Option<&mut Function>, SemanticError> {
+        for entry in &mut self.values {
+            match entry {
+                SymbolTableEntry::Function(function) => {
+                    if function.id() == id {
+                        if parameters.same_as(&function.parameter_types()) {
+                            if function.defined {
+                                match &self.scope {
+                                    Some(scope) => {
+                                        return Err(SemanticError::IdentifierRedefinition(format!(
+                                            "{}:{} Function \"{}\" is already defined for the scope {}",
+                                            parameters.line(),
+                                            parameters.column(),
+                                            function_name,
+                                            scope
+                                        )));
+                                    },
+                                    None => {
+                                        return Err(SemanticError::IdentifierRedefinition(format!(
+                                            "{}:{} Function \"{}\" is already defined",
+                                            parameters.line(),
+                                            parameters.column(),
+                                            function_name,
+                                        )));
+                                    }
+                                };
+                            } else {
+                                return Ok(Some(function));
+                            }
+                        } else {
+                            // This means the function is overloading another function
+                            SemanticError::FunctionOverload(format!(
+                                "{}:{} Function provides an overloaded signature for \"{}\"",
+                                function_definition.line(),
+                                function_definition.column(),
+                                id
+                            )).write(output_manager);
+                        }
+                    }
+                },
+                entry => {
+                    if let Some(entry_id) = entry.id() {
+                        if entry_id == id {
+                            return Err(SemanticError::IdentifierRedefinition(format!(
+                                "{}:{} Identifier \"{}\" is already defined and names \"{}\"",
+                                parameters.line(),
+                                parameters.column(),
+                                function_name,
+                                entry
+                            )));        
+                        }
+                    }
+                }
+            }
+        }
+
+        // Err(SemanticError::DefinedButNotDeclared(format!(
+        //     "{}:{} Definition provided for undeclared member function {}",
+        //     function_definition.line(),
+        //     function_definition.column(),
+        //     function_name
+        // )))
+
+        Ok(None)
+    }
+
+    pub fn function_can_be_defined(&mut self, id: &str, parameters: &ParameterList, function_name: &str, function_definition: &FunctionDefinition, output_config: &mut OutputConfig) -> Result<& mut Function, SemanticError> {
+        // We can use the supplied function_definition to see if it is in the global scope or not
+        match function_definition.scope() {
+            Some(_) => {
+                let result = self.get_undefined_function_in_scope(id, parameters, function_name, function_definition, output_config)?;
+                match result {
+                    Some(f) => {return Ok(f);},
+                    None => {
+                        return Err(SemanticError::DefinedButNotDeclared(format!(
+                            "{}:{} Definition provided for undeclared member function {}",
+                            function_definition.line(),
+                            function_definition.column(),
+                            function_name
+                        )));
+                    }
+                }
+            },
+            None => {
+                let result = self.get_undefined_function_in_scope(id, parameters, function_name, function_definition, output_config)?;
+                // here the result mean different things
+                // Some is bad
+                // None is good
+                match result {
+                    Some(_) => {
+                        // This means there's a declared by not defined function in the global scope...
+                        panic!("there's a declared by not defined function in the global scope...?");
+                    },
+                    None => {
+                        let f = Function::new(
+                            function_definition.id(),
+                            function_definition.scope(),
+                            function_definition.return_type(),
+                            None
+                        );
+                        if let SymbolTableEntry::Function(f) = self.add_entry(SymbolTableEntry::Function(f)) {
+                            return Ok(f);
+                        } else {
+                            panic!("Free function was just created in symbol table and cannot be accessed");
+                        }
+                    }
+                }
+            }
+        }
+        
+        // function can be defined in a scope if it is different in its parameter list than all the functions in the scope
+        // in addition to the negation of the above, a function cannot be defined if a non function has the same identifier
+        // for entry in &mut self.values {
+        //     match entry {
+        //         SymbolTableEntry::Function(function) => {
+        //             if function.id() == id && parameters.same_as(&function.parameter_types()) {
+        //                 if function.defined {
+        //                     match &self.scope {
+        //                         Some(scope) => {
+        //                             return Err(SemanticError::IdentifierRedefinition(format!(
+        //                                 "{}:{} Function \"{}\" is already defined for the scope {}",
+        //                                 parameters.line(),
+        //                                 parameters.column(),
+        //                                 function_name,
+        //                                 scope
+        //                             )));
+        //                         },
+        //                         None => {
+        //                             return Err(SemanticError::IdentifierRedefinition(format!(
+        //                                 "{}:{} Function \"{}\" is already defined",
+        //                                 parameters.line(),
+        //                                 parameters.column(),
+        //                                 function_name,
+        //                             )));
+        //                         }
+        //                     };
+        //                 } else {
+        //                     return Ok(function);
+        //                 }
+        //             }
+        //         },
+        //         entry => {
+        //             return Err(SemanticError::IdentifierRedefinition(format!(
+        //                 "{}:{} Identifier \"{}\" is already defined and names \"{}\"",
+        //                 parameters.line(),
+        //                 parameters.column(),
+        //                 function_name,
+        //                 entry
+        //             )));
+        //         }
+        //     }
+        // }
+
+        // let f = Function::new(
+        //     function_definition.id(),
+        //     function_definition.scope(),
+        //     function_definition.return_type(),
+        //     None
+        // );
+        // if let SymbolTableEntry::Function(f) = self.add_entry(SymbolTableEntry::Function(f)) {
+        //     return Ok(f);
+        // } else {
+        //     panic!("Free function was just created in symbol table and cannot be accessed");
+        // }
+
+
+        // return Ok(Function::new(
+        //     function_definition.id(),
+        //     function_definition.scope(),
+        //     function_definition.return_type(),
+        //     None
+        // ));
+    }
+
+    // pub fn get_or_create_function(&mut self, function: &FunctionDefinition) -> 
+
+    pub fn function_is_overloading(&self, id: &str, parameters: &ParameterList) -> bool {
+        for entry in &self.values {
+            match entry {
+                SymbolTableEntry::Function(function) => {
+                    if function.id() == id && !parameters.same_as(&function.parameter_types()) {
+                        return true;
+                    }
+                },
+                _ => ()
+            }
+        }
+        return false;
+    }
+
+    pub fn check_declared_but_not_defined_functions(&self, output_config: &mut OutputConfig) {
+        for entry in &self.values {
+            if let SymbolTableEntry::Class(class) = entry {
+                for class_entry in &class.symbol_table().values {
+                    if let SymbolTableEntry::Function(function) = class_entry {
+                        if !function.defined {
+                            SemanticError::DeclaredButNotDefined(format!(
+                                "No definition for declared member function {}::{}",
+                                class.id(),
+                                function.id(),
+                            )).write(output_config);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+enum TT {
+    IdentifierIsNotAMemberFunction, // OR Identifier already used for non-function
+    UndeclaredIdentifier,
+    MultiplyDefinedMemberFunction
 }

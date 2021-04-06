@@ -7,6 +7,8 @@ use derive_getters::Getters;
 #[derive(Getters)]
 pub struct ParameterList<'a> {
     parameters: Vec<FunctionParameter<'a>>,
+    line: usize,
+    column: usize,
 }
 
 impl<'a> ViewAs<'a> for ParameterList<'a> {
@@ -15,6 +17,22 @@ impl<'a> ViewAs<'a> for ParameterList<'a> {
 
         let parameters = validator.then_list_of()?;
 
-        Ok(ParameterList { parameters })
+        Ok(ParameterList { parameters,
+        line: *node.line(),
+        column: *node.column() })
+    }
+}
+
+impl<'a> ParameterList<'a> {
+    pub fn new(line: usize, column: usize) -> Self {
+        ParameterList {
+            parameters: Vec::new(),
+            line,
+            column
+        }
+    }
+
+    pub fn same_as(&self, string_list: &Vec<String>) -> bool {
+        self.parameters.iter().zip(string_list).all(|(lhs, rhs)| lhs.as_symbol_string() == *rhs)
     }
 }

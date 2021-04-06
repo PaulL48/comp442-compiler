@@ -8,6 +8,8 @@ pub struct Variable<'a> {
     id: &'a str,
     data_type: &'a str,
     dimension_list: DimensionList,
+    line: usize,
+    column: usize,
 }
 
 impl<'a> ViewAs<'a> for Variable<'a> {
@@ -22,6 +24,8 @@ impl<'a> ViewAs<'a> for Variable<'a> {
             id,
             data_type,
             dimension_list,
+            line: *node.line(),
+            column: *node.column(),
         })
     }
 }

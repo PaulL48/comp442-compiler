@@ -9,6 +9,8 @@ pub struct FunctionParameter<'a> {
     id: &'a str,
     data_type: &'a str,
     dimension_list: DimensionList,
+    line: usize,
+    column: usize,
 }
 
 impl<'a> ViewAs<'a> for FunctionParameter<'a> {
@@ -23,6 +25,8 @@ impl<'a> ViewAs<'a> for FunctionParameter<'a> {
             id,
             data_type,
             dimension_list,
+            line: *node.line(),
+            column: *node.column(),
         })
     }
 }

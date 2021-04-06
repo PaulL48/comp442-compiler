@@ -9,6 +9,7 @@ use crate::SemanticError;
 use derive_getters::Getters;
 use std::default::Default;
 use std::fmt;
+use output_manager::OutputConfig;
 
 #[derive(Debug, Clone, Default, Getters)]
 pub struct Function {
@@ -17,6 +18,7 @@ pub struct Function {
     return_type: String,
     visibility: Option<Visibility>,
     pub symbol_table: SymbolTable,
+    pub defined: bool,
 }
 
 // Right now the goal is:
@@ -70,6 +72,7 @@ impl Function {
             return_type: return_type.to_string(),
             visibility,
             symbol_table: SymbolTable::new(id, &Some(scope)),
+            defined: false,
         }
     }
 
@@ -103,11 +106,20 @@ impl Function {
     pub fn convert(
         validated_node: &FunctionDefinition,
         global_table: &mut SymbolTable,
+        output_config: &mut OutputConfig
     ) -> Result<(), SemanticError> {
-        // TODO: Identify duplicate function definitions
-        let active_entry = Function::get_or_create_function_entry(validated_node, global_table)?;
+        let active_entry = Function::get_or_create_function_entry(validated_node, global_table, output_config)?;
 
         for parameter in validated_node.parameter_list().parameters() {
+            if active_entry.symbol_table.contains(parameter.id()) {
+                SemanticError::IdentifierRedefinition(format!(
+                    "{}:{} Identifier \"{}\" is already defined in this scope",
+                    parameter.line(),
+                    parameter.column(),
+                    parameter.id(),
+                )).write(output_config);
+            }
+
             active_entry
                 .parameter_types
                 .push(parameter.as_symbol_string());
@@ -122,12 +134,23 @@ impl Function {
             .local_variable_list()
             .variables()
         {
+            if active_entry.symbol_table.contains(local_variable.id()) {
+                SemanticError::IdentifierRedefinition(format!(
+                    "{}:{} Identifier \"{}\" is already defined in this scope",
+                    local_variable.line(),
+                    local_variable.column(),
+                    local_variable.id(),
+                )).write(output_config);
+            }
+
             let entry = SymbolTableEntry::Local(Local::new(
                 local_variable.id(),
                 &local_variable.type_as_symbol_string(),
             ));
             active_entry.symbol_table.add_entry(entry);
         }
+
+        active_entry.defined = true;
 
         Ok(())
     }
@@ -139,78 +162,138 @@ impl Function {
     fn get_or_create_function_entry<'a>(
         validated_node: &FunctionDefinition,
         global_table: &'a mut SymbolTable,
+        output_config: &mut OutputConfig
     ) -> Result<&'a mut Function, SemanticError> {
         match validated_node.scope() {
             Some(scope) => {
                 match global_table.get_mut(validated_node.id()) {
                     // Valid class scope
                     Some(SymbolTableEntry::Class(class)) => {
+                        // Something needs to change here
+                        // match class.symbol_table().function_can_be_defined(scope, &validated_node.parameter_list(), &format!("{}::{}", validated_node.id(), scope)) {
+                        //     Ok(_) => {
+
+                        //     },
+                        //     Err(err) => return Err(err)
+                        // }
+
+                        return class.symbol_table_mut().function_can_be_defined(scope, &validated_node.parameter_list(), &format!("{}::{}", validated_node.id(), scope), validated_node, output_config);
+                        // Past here the function can be defined by getting the entry from the symbol table
+
+                        // if !class.symbol_table().function_can_be_defined(scope, &validated_node.parameter_list()) {
+
+                        // }
+
                         // but now we need to get the nested function symbol table
-                        match class.symbol_table_mut().get_mut(scope) {
-                            // Valid class scope, declared member function
-                            Some(SymbolTableEntry::Function(function)) => {
-                                Ok(function)
-                            },
-                            // Valid class scope, identifier is not a member function
-                            Some(entry) => {
-                                return Err(SemanticError::IdentifierIsNotAMemberFunction(format!(
-                                    "{}:{} Scope identifier {} names a {} and not a member function",
-                                    validated_node.line(),
-                                    validated_node.column(),
-                                    validated_node.id(),
-                                    entry
-                                )))
-                            },
-                            // Valid class scope, undeclared identifier
-                            None => {
-                                return Err(SemanticError::UndefinedIdentifier(format!(
-                                    "{}:{} Definition provided for undeclared member function {}::{}",
-                                    validated_node.line(),
-                                    validated_node.column(),
-                                    validated_node.id(),
-                                    scope,
-                                )))
-                            }
-                        }
+                        // match class.symbol_table_mut().get_mut(scope) {
+                        //     // Valid class scope, declared member function
+                        //     Some(SymbolTableEntry::Function(function)) => {
+                        //         // TODO: Add member function overloading
+                        //         // What is overloading in the context of symbol table creation?
+                        //         // it means when getting/checking for an existing symbol table we must check the signature of the functions
+                        //         if !validated_node.parameter_list().same_as(function.parameter_types()) {
+
+                        //         }
+
+                        //         if class.symbol_table().function_can_be_defined(scope, )
+                                
+
+                        //         if function.defined {
+                        //             return Err(SemanticError::IdentifierRedefinition(format!(
+                        //                 "{}:{} Function \"{}\" is already defined for class scope {}",
+                        //                 validated_node.line(),
+                        //                 validated_node.column(),
+                        //                 scope,
+                        //                 validated_node.id(),
+                        //             )))
+                        //         }
+
+                        //         Ok(function)
+                        //     },
+                        //     // Valid class scope, identifier is not a member function
+                        //     Some(entry) => {
+                        //         return Err(SemanticError::IdentifierIsNotAMemberFunction(format!(
+                        //             "{}:{} Scope identifier {}::{} names a \"{}\" and not a member function",
+                        //             validated_node.line(),
+                        //             validated_node.column(),
+                        //             validated_node.id(),
+                        //             scope,
+                        //             entry
+                        //         )))
+                        //     },
+                        //     // Valid class scope, undeclared identifier
+                        //     None => {
+                        //         return Err(SemanticError::UndefinedIdentifier(format!(
+                        //             "{}:{} Definition provided for undeclared member function {}::{}",
+                        //             validated_node.line(),
+                        //             validated_node.column(),
+                        //             validated_node.id(),
+                        //             scope,
+                        //         )))
+                        //     }
+                        // }
                     }
                     // Scope identifier exists but is not a class
-                    Some(_) => {
+                    Some(entry) => {
                         return Err(SemanticError::InvalidScopeIdentifier(format!(
-                            "{}:{} Scope identifier {} is not a class",
+                            "{}:{} Scope identifier {} names a \"{}\", and not a class",
                             // "Definition provided for undeclared class members {}::{} at {}:{}",
                             validated_node.line(),
                             validated_node.column(),
                             validated_node.id(),
+                            entry
                         )));
                     }
                     // Scope identifier does not exist
                     None => {
                         return Err(SemanticError::UndefinedIdentifier(format!(
-                            "{}:{} Definition provided for undeclared class member {}::{}",
+                            "{}:{} Class identifier {} does not exist in this scope",
                             validated_node.line(),
                             validated_node.column(),
                             validated_node.id(),
-                            scope
                         )))
                     } // Scope is specifying an undefined class
                 }
             }
             // Free function
             None => {
-                let f = Function::new(
-                    validated_node.id(),
-                    validated_node.scope(),
-                    validated_node.return_type(),
-                    None,
-                );
+                return global_table.function_can_be_defined(validated_node.id(), validated_node.parameter_list(), validated_node.id(), validated_node, output_config);
 
-                if let SymbolTableEntry::Function(f) =
-                    global_table.add_entry(SymbolTableEntry::Function(f))
-                {
-                    Ok(f)
-                } else {
-                    panic!("Free function was just created in symbol table and cannot be accessed");
-                }
+                // A free function can be defined if it is different in its parameter list than all the functions in the global scope of the same identifier
+                // if !global_table.function_can_be_defined(validated_node.id(), validated_node.parameter_list()) {
+                //     return Err(SemanticError::IdentifierRedefinition(format!(
+                //         "{}:{} Identifier \"{}\" is already defined in this scope",
+                //         validated_node.line(),
+                //         validated_node.column(),
+                //         validated_node.id(),
+                //     )))
+                // }
+
+                // if global_table.contains(validated_node.id()) {
+                //     // ADD function overloading
+
+                //     return Err(SemanticError::IdentifierRedefinition(format!(
+                //         "{}:{} Identifier \"{}\" is already defined in this scope",
+                //         validated_node.line(),
+                //         validated_node.column(),
+                //         validated_node.id(),
+                //     )))
+                // }
+
+                // let mut f = Function::new(
+                //     validated_node.id(),
+                //     validated_node.scope(),
+                //     validated_node.return_type(),
+                //     None,
+                // );
+
+                // if let SymbolTableEntry::Function(f) =
+                //     global_table.add_entry(SymbolTableEntry::Function(f))
+                // {
+                //     Ok(f)
+                // } else {
+                //     panic!("Free function was just created in symbol table and cannot be accessed");
+                // }
             }
         }
     }

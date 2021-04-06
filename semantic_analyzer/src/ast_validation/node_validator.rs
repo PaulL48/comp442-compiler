@@ -272,4 +272,19 @@ impl<'a> ParentNodeValidator<'a> {
         self.next_child += 1;
         Ok(result)
     }
+
+    pub fn then_optional<T: ViewAs<'a>>(&mut self) -> Result<Option<T>, ValidatorError> {
+        self.verify_child_available()?;
+        match self.children[self.next_child].data() {
+            Data::Epsilon => {
+                self.next_child += 1;
+                Ok(None)
+            },
+            _ => {
+                let result = ViewAs::view_as(&self.children[self.next_child])?;
+                self.next_child += 1;
+                Ok(Some(result))
+            }
+        }
+    }
 }

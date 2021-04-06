@@ -20,3 +20,11 @@ impl<'a> ViewAs<'a> for VariableList<'a> {
         Ok(VariableList { variables })
     }
 }
+
+impl<'a> VariableList<'a> {
+    pub fn new() -> Self {
+        VariableList {
+            variables: Vec::new()
+        }
+    }
+}

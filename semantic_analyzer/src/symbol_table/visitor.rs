@@ -11,34 +11,40 @@ use crate::symbol_table::symbol_table::SymbolTable;
 use crate::symbol_table::Class;
 use ast::Node;
 use log::error;
+use output_manager::OutputConfig;
 
-pub fn visit(node: &Node, current_data: &mut SemanticAnalysisResults) {
+pub fn visit(node: &Node, current_data: &mut SemanticAnalysisResults, output_config: &mut OutputConfig) {
     match node.name().as_str() {
         "prog" => {
-            if let Err(err) = program_root(node, &mut current_data.symbol_table) {
-                error!("{}", err);
+            if let Err(err) = program_root(node, &mut current_data.symbol_table, output_config) {
+                err.write(output_config);
+                // error!("{}", err);
             }
         }
         "funcDef" => {
-            if let Err(err) = function_definition(node, &mut current_data.symbol_table) {
+            if let Err(err) = function_definition(node, &mut current_data.symbol_table, output_config) {
                 // This would be where the error is logged to the file
-                error!("{}", err);
+                err.write(output_config);
+
+                // error!("{}", err);
             }
         }
         "classDecl" => {
-            if let Err(err) = class_declaration(node, &mut current_data.symbol_table) {
-                error!("{}", err);
+            if let Err(err) = class_declaration(node, &mut current_data.symbol_table, output_config) {
+                err.write(output_config);
+
+                // error!("{}", err);
             }
         }
         _ => {}
     }
 }
 
-pub fn program_root(node: &ast::Node, global_table: &mut SymbolTable) -> Result<(), SemanticError> {
+pub fn program_root(node: &ast::Node, global_table: &mut SymbolTable, output_config: &mut OutputConfig) -> Result<(), SemanticError> {
     let view: Result<ProgramRoot, ValidatorError> = ViewAs::view_as(node);
     match view {
         Ok(validated_node) => {
-            entrypoint::convert(&validated_node.main(), global_table)?;
+            entrypoint::convert(&validated_node.main(), global_table, output_config)?;
         }
         Err(validation_error) => {
             error!("{}", validation_error);
@@ -54,10 +60,11 @@ pub fn program_root(node: &ast::Node, global_table: &mut SymbolTable) -> Result<
 pub fn function_definition(
     node: &ast::Node,
     global_table: &mut SymbolTable,
+    output_config: &mut OutputConfig
 ) -> Result<(), SemanticError> {
     match FunctionDefinition::view_as(node) {
         Ok(validated_node) => {
-            function::Function::convert(&validated_node, global_table)?;
+            function::Function::convert(&validated_node, global_table, output_config)?;
         }
         Err(validation_error) => {
             error!("{}", validation_error);
@@ -71,11 +78,12 @@ pub fn function_definition(
 pub fn class_declaration(
     node: &ast::Node,
     global_table: &mut SymbolTable,
+    output_config: &mut OutputConfig
 ) -> Result<(), SemanticError> {
     let view: Result<ClassDeclaration, ValidatorError> = ViewAs::view_as(node);
     match view {
         Ok(validated_node) => {
-            Class::convert(&validated_node, global_table)?;
+            Class::convert(&validated_node, global_table, output_config)?;
         }
         Err(validation_error) => {
             error!("{}", validation_error);

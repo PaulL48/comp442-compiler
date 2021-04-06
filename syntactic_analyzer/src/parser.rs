@@ -138,25 +138,16 @@ pub fn parse(
                 current_token.unwrap()
             ),
         );
+        error!("Parsing encountered errors, see the associated output files");
         return None;
     } else if !current_token.is_none() || symbol_stack.last() != Some(&Symbol::Eos) {
-        // Ran out of file before end of productions
+        // Expected end of file
         warn_write(
             &mut output_config.syntax_error_file,
             &output_config.syntax_error_path,
-            &format!("Syntax error: unexpected end of file, but was expecting one of "),
+            &format!("Syntax error: unexpected token {}, but was expecting end of file", current_token.unwrap()),
         );
-        write_array(
-            &mut output_config.syntax_error_file,
-            &output_config.syntax_error_path,
-            &parse_table
-                .table
-                .get(&symbol_stack.last().unwrap().clone())
-                .unwrap()
-                .iter()
-                .map(|x| x.0)
-                .collect(),
-        );
+        error!("Parsing encountered errors, see the associated output files");
         return None;
     } else if !semantic_stack.is_empty() {
         let top = semantic_stack.pop().unwrap();
