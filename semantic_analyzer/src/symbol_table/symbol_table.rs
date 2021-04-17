@@ -261,7 +261,6 @@ impl SymbolTable {
             if let Some(SymbolTableEntry::Class(class)) = global_table.get(inherited) {
                 if visited.contains(class.id()) {
                     continue;
-                    // Signal a cyclic inheritance
                 }
                 result.extend(class.symbol_table().get_all_inherited_aux(
                     class,

@@ -26,10 +26,27 @@ pub fn visit(
 }
 
 pub fn end_of_phase(
-    _current_data: &mut SemanticAnalysisResults,
-    _output_config: &mut OutputConfig,
+    current_data: &mut SemanticAnalysisResults,
+    output_config: &mut OutputConfig,
 ) {
+
     // check for inheritance problems
+    //      - Check for cyclic inheritance
+    //      - warn for overloads of functions higher in the class hierarchy
+    //      - warn for overrides of functions higher in the class hierarchy
+    //      - warn for shadowed functions and variables higher in the class hierarchy
+    //
+    for entry in &current_data.symbol_table.values {
+        if let SymbolTableEntry::Class(class) = entry {
+            if class.symbol_table().inherit_list_has_cycles(&current_data.symbol_table) {
+                let err = SemanticError::new_cyclic_inheritance(class.line(), class.column(), &class.to_string());
+                output_config.add(&err.to_string(), err.line(), err.col());
+            }
+
+
+        }
+    }
+
     // check for declared but not defined functions
 }
 
@@ -49,13 +66,8 @@ pub fn function_definition(
     global_table: &mut SymbolTable,
     output_config: &mut OutputConfig,
 ) -> Result<(), SemanticError> {
-
-    println!("Here");
     let view: FunctionDefinition = ViewAs::try_view_as(node);
-    println!("Between");
     let mut entry = view.to_validated_symbol(global_table, output_config)?;
-
-    println!("Processing: {:?}", entry);
 
     let (_id, scope) = view.get_corrected_scoped_id();
     if let Some(_) = scope {
@@ -67,7 +79,6 @@ pub fn function_definition(
 
         // Because we copied the declaration we already have and filled it with more data
         // we need to get the class entry and replace the entry for the function
-        println!("replacing {:?}", entry);
         global_table.replace_class_function_declaration(entry);
     } else {
         global_table.extend(entry);

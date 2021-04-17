@@ -10,6 +10,7 @@ pub enum SemanticError {
     DefinedButNotDeclared(usize, usize, String),
     FunctionOverload(usize, usize, String), // This isn't really an error,
     MissingDimension(usize, usize, String),
+    CyclicInheritance(usize, usize, String),
 
     BinaryMismatchedTypes(usize, usize, String),
     UndefinedType(usize, usize, String),
@@ -28,6 +29,7 @@ impl fmt::Display for SemanticError {
             SemanticError::BinaryMismatchedTypes(l, c, message) => (l, c, message),
             SemanticError::UndefinedType(l, c, message) => (l, c, message),
             SemanticError::MissingDimension(l, c, message) => (l, c, message),
+            SemanticError::CyclicInheritance(l, c, message) => (l, c, message),
 
             SemanticError::FunctionOverload(l, c, message) => {
                 return write!(f, "Semantic warning: {}:{} {}", l, c, message);
@@ -52,6 +54,8 @@ impl SemanticError {
             SemanticError::UndefinedType(l, _, _) => *l,
             SemanticError::FunctionOverload(l, _, _) => *l,
             SemanticError::MissingDimension(l, _, _) => *l,
+            SemanticError::CyclicInheritance(l, _, _) => *l,
+
         }
     }
 
@@ -68,6 +72,7 @@ impl SemanticError {
             SemanticError::UndefinedType(_, c, _) => *c,
             SemanticError::FunctionOverload(_, c, _) => *c,
             SemanticError::MissingDimension(_, c, _) => *c,
+            SemanticError::CyclicInheritance(_, c, _) => *c,
         }
     }
 
@@ -151,6 +156,10 @@ impl SemanticError {
             *column,
             format!("Missing dimension for array \"{}\"", identifier),
         )
+    }
+
+    pub fn new_cyclic_inheritance(line: &usize, column: &usize, class_repr: &str) -> SemanticError {
+        SemanticError::CyclicInheritance(*line, *column, format!("Class has a cyclic inheritance hierarchy \"{}\"", class_repr))
     }
 
     // pub fn write(&self, output_manager: &mut OutputConfig) {

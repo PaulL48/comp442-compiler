@@ -140,3 +140,7 @@ pub fn mandatory_dimensions(dimension_list: &DimensionList, id: &str) -> Result<
     }
     Ok(())
 }
+
+// pub fn check_function_for_hierarchy() -> Result<(), SemanticError> {
+
+// }

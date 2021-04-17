@@ -78,7 +78,6 @@ impl<'a> ParameterList<'a> {
 
     pub fn same_as(&self, string_list: &Vec<String>) -> bool {
         if self.parameters.len() != string_list.len() {
-            // println!("Lists have different length {:?}, {:?}", self.parameters, string_list);
             return false;
         }
 

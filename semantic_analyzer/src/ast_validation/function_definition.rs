@@ -144,7 +144,6 @@ impl<'a> ToSymbol for FunctionDefinition<'a> {
                     scope,
                 ));
             };
-            println!("{:?}", class);
 
             let matching_entries = class.symbol_table().get_all(id);
             rules::function_redefines(
