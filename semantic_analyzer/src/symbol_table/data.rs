@@ -6,15 +6,21 @@ use std::fmt;
 use crate::ast_validation::class_member::ClassVariable;
 use log::error;
 
+use crate::symbol_table::utils;
+
 // A class member variable
+
+// This is a declaration of a variable name
+// with a name that specifier a primitive or compound type
+// with zero or more fully specified dimensions
+// with a visibility specifier
 
 #[derive(Debug, Clone, Default, Getters)]
 pub struct Data {
     id: String,
-    data_type: String,
     visibility: Visibility,
 
-    actual_type: String,
+    data_type: String,
     dimension: Vec<i64>,
 }
 
@@ -22,7 +28,7 @@ impl FormatTable for Data {
     fn lines(&self, _: usize) -> Vec<String> {
         vec![format!(
             "{:10}| {:12}| {:34}| {}",
-            "data", self.id, self.data_type, self.visibility
+            "data", self.id, self.type_string(), self.visibility
         )]
     }
 }
@@ -32,22 +38,12 @@ impl fmt::Display for Data {
         write!(
             f,
             "Member variable {} {} {}",
-            self.visibility, self.data_type, self.id
+            self.visibility, self.type_string(), self.id
         )
     }
 }
 
 impl Data {
-    // pub fn new(id: &str, data_type: &str, visibility: &Visibility) -> Self {
-    //     Data {
-    //         id: id.to_string(),
-    //         data_type: data_type.to_string(),
-    //         visibility: *visibility,
-    //         actual_type: "".to_string(),
-    //         dimension: Vec::new()
-    //     }
-    // }
-
     pub fn from(class_variable: &ClassVariable) -> Self {
         let mut dimensions = Vec::new();
         for dimension in class_variable.dimension_list().dimensions() {
@@ -63,11 +59,13 @@ impl Data {
 
         Data {
             id: class_variable.id().to_string(),
-            data_type: format!("{}{}", class_variable.data_type().to_string(), class_variable.dimension_list().as_symbol_string()),
             visibility: *class_variable.visibility(),
-
-            actual_type: class_variable.data_type().to_string(),
+            data_type: class_variable.data_type().to_string(),
             dimension: dimensions
         }
-    } 
+    }
+
+    pub fn type_string(&self) -> String {
+        utils::type_string(&self.data_type, &self.dimension)
+    }
 }

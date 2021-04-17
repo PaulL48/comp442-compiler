@@ -1,7 +1,13 @@
-use crate::ast_validation::view_as::ViewAs;
-use crate::ast_validation::{node_validator::NodeValidator, ValidatorError, VariableList};
+use crate::ast_validation::{node_validator::NodeValidator, ValidatorError, VariableList, ViewAs, ToSymbol};
 use ast::Node;
 use derive_getters::Getters;
+
+use crate::symbol_table::{SymbolTable, SymbolTableEntry, Class};
+use output_manager::OutputConfig;
+use crate::SemanticError;
+use crate::symbol_table::rules;
+use std::fmt;
+
 
 #[derive(Getters)]
 pub struct FunctionBody<'a> {
@@ -29,5 +35,15 @@ impl<'a> ViewAs<'a> for FunctionBody<'a> {
             line: *node.line(),
             column: *node.column(),
         })
+    }
+}
+
+impl ToSymbol for FunctionBody<'_> {
+    fn validate_entry(&self, context: &SymbolTable, output: &mut OutputConfig) -> Result<(), SemanticError> {
+        Ok(())
+    }
+    
+    fn to_symbol(&self, context: &SymbolTable, output: &mut OutputConfig) -> Result<Vec<SymbolTableEntry>, SemanticError> {
+        Ok(self.local_variable_list.to_validated_symbol(context, output)?)
     }
 }

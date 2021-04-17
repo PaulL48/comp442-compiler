@@ -12,3 +12,4 @@ output_manager = {path = "../output_manager"}
 lazy_static = "1.4.0"
 derive-getters = "0.2.0"
 log = "0.4.13"
+maplit = "1.0.2"

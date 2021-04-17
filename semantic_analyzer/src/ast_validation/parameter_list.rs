@@ -1,14 +1,34 @@
-use crate::ast_validation::function_parameter::FunctionParameter;
-use crate::ast_validation::node_validator::{NodeValidator, ValidatorError};
-use crate::ast_validation::view_as::ViewAs;
+use crate::ast_validation::{NodeValidator, ValidatorError, FunctionParameter, ViewAs, ToSymbol};
 use ast::Node;
 use derive_getters::Getters;
+use crate::symbol_table::{SymbolTable, SymbolTableEntry, Class, Param};
+use output_manager::OutputConfig;
+use crate::SemanticError;
+use crate::symbol_table::rules;
+use std::fmt;
+
 
 #[derive(Getters, Debug)]
 pub struct ParameterList<'a> {
     parameters: Vec<FunctionParameter<'a>>,
     line: usize,
     column: usize,
+}
+
+impl PartialEq<Vec<Param>> for ParameterList<'_> {
+    fn eq(&self, other: &Vec<Param>) -> bool {
+        if self.parameters.len() != other.len() {
+            return false;
+        }
+
+        for (lp, rp) in self.parameters.iter().zip(other.iter()) {
+            if lp.data_type() != rp.data_type() {
+                return false;
+            }
+        }
+
+        true
+    }
 }
 
 impl<'a> ViewAs<'a> for ParameterList<'a> {
@@ -20,6 +40,23 @@ impl<'a> ViewAs<'a> for ParameterList<'a> {
         Ok(ParameterList { parameters,
         line: *node.line(),
         column: *node.column() })
+    }
+}
+
+impl ToSymbol for ParameterList<'_> {
+    fn validate_entry(&self, context: &SymbolTable, output: &mut OutputConfig) -> Result<(), SemanticError> {
+        // The list of parameters itself, cannot be invalid at this point
+        Ok(())
+    }
+
+    fn to_symbol(&self, context: &SymbolTable, output: &mut OutputConfig) -> Result<Vec<SymbolTableEntry>, SemanticError> {
+        let mut results = Vec::new();
+        for parameter in self.parameters() {
+            // parameter.validate_entry(context, output)?;
+            let entries = parameter.to_validated_symbol(context, output)?;
+            results.extend(entries);
+        }
+        Ok(results)
     }
 }
 

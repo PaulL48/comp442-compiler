@@ -1,7 +1,12 @@
-use crate::ast_validation::{DimensionList, NodeValidator, ParameterList, ValidatorError, ViewAs};
+use crate::ast_validation::{DimensionList, NodeValidator, ParameterList, ValidatorError, ViewAs, ToSymbol};
 use crate::Visibility;
 use ast::Node;
 use derive_getters::Getters;
+use crate::symbol_table::{SymbolTable, SymbolTableEntry, Function, Data};
+use output_manager::OutputConfig;
+use crate::SemanticError;
+use crate::symbol_table::rules;
+use std::fmt;
 
 #[derive(Getters, Debug)]
 pub struct ClassFunctionDeclaration<'a> {
@@ -21,6 +26,20 @@ pub struct ClassVariable<'a> {
     dimension_list: DimensionList,
     line: usize,
     column: usize,
+}
+
+impl fmt::Display for ClassFunctionDeclaration<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // TODO: This can be improved
+        write!(f, "Class member function {}", self.id())
+    }
+}
+
+impl fmt::Display for ClassVariable<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // TODO: This can be improved
+        write!(f, "Class member variable {}", self.id())
+    }
 }
 
 pub enum ClassMember<'a> {
@@ -103,5 +122,51 @@ impl<'a> ViewAs<'a> for ClassMember<'a> {
                 )))
             }
         }
+    }
+}
+
+impl<'a> ToSymbol for ClassMember<'a> {
+    fn validate_entry(&self, context: &SymbolTable, output: &mut OutputConfig) -> Result<(), SemanticError> {
+        match self {
+            ClassMember::FunctionDeclaration(declaration) => declaration.validate_entry(context, output),
+            ClassMember::Variable(variable) => variable.validate_entry(context, output),
+        }
+    }
+
+    fn to_symbol(&self, context: &SymbolTable, output: &mut OutputConfig) -> Result<Vec<SymbolTableEntry>, SemanticError> {
+        match self {
+            ClassMember::FunctionDeclaration(declaration) => declaration.to_symbol(context, output),
+            ClassMember::Variable(variable) => variable.to_symbol(context, output),
+        }
+    }
+}
+
+impl ToSymbol for ClassFunctionDeclaration<'_> {
+    fn validate_entry(&self, context: &SymbolTable, output: &mut OutputConfig) -> Result<(), SemanticError> {
+        let matching_entries = context.get_all(self.id());
+        rules::function_redefines(self.id(), self.parameter_list(), &matching_entries, self.line(), self.column(), &self.to_string())?;
+        rules::warn_overloading_function(self.id(), self.parameter_list(), &matching_entries, self.line(), self.column(), output);
+        Ok(())
+    }
+
+    fn to_symbol(&self, context: &SymbolTable, output: &mut OutputConfig) -> Result<Vec<SymbolTableEntry>, SemanticError> {
+        let mut new_entry = Function::from_declaration(self, &context.name);
+        let parameter_entries = self.parameter_list.to_validated_symbol(context, output)?;
+        new_entry.symbol_table_mut().extend(parameter_entries);
+        Ok(vec![SymbolTableEntry::Function(new_entry)])
+    }
+}
+
+impl ToSymbol for ClassVariable<'_> {
+    fn validate_entry(&self, context: &SymbolTable, output: &mut OutputConfig) -> Result<(), SemanticError> {
+        // Check for redefinitions
+        let matching_entries = context.get_all(self.id());
+        rules::id_redefines(self.id(), &matching_entries, self.line(), self.column(), &self.to_string())?;
+        rules::mandatory_dimensions(&self.dimension_list, self.id())?;
+        Ok(())
+    }
+
+    fn to_symbol(&self, context: &SymbolTable, output: &mut OutputConfig) -> Result<Vec<SymbolTableEntry>, SemanticError> {
+        Ok(vec![SymbolTableEntry::Data(Data::from(self))])
     }
 }

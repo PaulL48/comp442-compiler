@@ -1,75 +1,59 @@
 //! Given an AST node, build a symbol table
 
-use crate::ast_validation::{
-    ClassDeclaration, FunctionDefinition, ProgramRoot, ValidatorError, ViewAs,
-};
+use crate::ast_validation::{ProgramRoot, FunctionDefinition, ClassDeclaration, ViewAs, ToSymbol};
+use crate::symbol_table::Function;
 use crate::semantic_analyzer::SemanticAnalysisResults;
 use crate::semantic_error::SemanticError;
-use crate::symbol_table::entrypoint;
-use crate::symbol_table::function;
-use crate::symbol_table::symbol_table::SymbolTable;
+use crate::symbol_table::entry_point;
+use crate::symbol_table::symbol_table::{SymbolTable, SymbolTableEntry};
 use crate::symbol_table::Class;
 use ast::Node;
-use log::error;
 use output_manager::OutputConfig;
 
 pub fn visit(node: &Node, current_data: &mut SemanticAnalysisResults, output_config: &mut OutputConfig, _: &Vec<String>) {
-    match node.name().as_str() {
-        "prog" => {
-            if let Err(err) = program_root(node, &mut current_data.symbol_table, output_config) {
-                err.write(output_config);
-                // error!("{}", err);
-            }
-        }
-        "funcDef" => {
-            if let Err(err) = function_definition(node, &mut current_data.symbol_table, output_config) {
-                // This would be where the error is logged to the file
-                err.write(output_config);
+    let result = match node.name().as_str() {
+        "prog" => program_root(node, &mut current_data.symbol_table, output_config),
+        "funcDef" => function_definition(node, &mut current_data.symbol_table, output_config),
+        "classDecl" => class_declaration(node, &mut current_data.symbol_table, output_config),
+        _ => Ok(())
+    };
+    buffer_any_message(result, output_config);
+}
 
-                // error!("{}", err);
-            }
-        }
-        "classDecl" => {
-            if let Err(err) = class_declaration(node, &mut current_data.symbol_table, output_config) {
-                err.write(output_config);
-
-                // error!("{}", err);
-            }
-        }
-        _ => {}
-    }
+pub fn end_of_phase(current_data: &mut SemanticAnalysisResults, output_config: &mut OutputConfig) {
+    // check for inheritance problems
+    // check for declared but not defined functions
 }
 
 pub fn program_root(node: &ast::Node, global_table: &mut SymbolTable, output_config: &mut OutputConfig) -> Result<(), SemanticError> {
-    let view: Result<ProgramRoot, ValidatorError> = ViewAs::view_as(node);
-    match view {
-        Ok(validated_node) => {
-            entrypoint::convert(&validated_node.main(), global_table, output_config)?;
-        }
-        Err(validation_error) => {
-            error!("{}", validation_error);
-            panic!();
-        }
-    }
+    let view: ProgramRoot = ViewAs::try_view_as(node);
+    let entry = view.to_validated_symbol(global_table, output_config)?;
+    global_table.extend(entry);
     Ok(())
 }
 
-// A function definition requires the global symbol table
-// If it is a member function, it must get its visibility from the
-// class symbol table
 pub fn function_definition(
     node: &ast::Node,
     global_table: &mut SymbolTable,
     output_config: &mut OutputConfig
 ) -> Result<(), SemanticError> {
-    match FunctionDefinition::view_as(node) {
-        Ok(validated_node) => {
-            function::Function::convert(&validated_node, global_table, output_config)?;
-        }
-        Err(validation_error) => {
-            error!("{}", validation_error);
-            panic!();
-        }
+    let view: FunctionDefinition = ViewAs::try_view_as(node);
+    let mut entry = view.to_validated_symbol(global_table, output_config)?;
+
+
+    let (_id, scope) = view.get_corrected_scoped_id();
+    if let Some(_) = scope {
+        let entry = if let Some(SymbolTableEntry::Function(function)) = entry.pop() {
+            function
+        } else {
+            panic!("entry generated from a function definition should be a function");
+        };
+
+        // Because we copied the declaration we already have and filled it with more data 
+        // we need to get the class entry and replace the entry for the function 
+        global_table.replace_class_function_declaration(entry);
+    } else {
+        global_table.extend(entry);
     }
 
     Ok(())
@@ -80,15 +64,14 @@ pub fn class_declaration(
     global_table: &mut SymbolTable,
     output_config: &mut OutputConfig
 ) -> Result<(), SemanticError> {
-    let view: Result<ClassDeclaration, ValidatorError> = ViewAs::view_as(node);
-    match view {
-        Ok(validated_node) => {
-            Class::convert(&validated_node, global_table, output_config)?;
-        }
-        Err(validation_error) => {
-            error!("{}", validation_error);
-            panic!();
-        }
-    }
+    let view: ClassDeclaration = ViewAs::try_view_as(node);
+    let entry = view.to_validated_symbol(global_table, output_config)?;
+    global_table.extend(entry);
     Ok(())
+}
+
+fn buffer_any_message(result: Result<(), SemanticError>, output: &mut OutputConfig) {
+    if let Err(err) = result {
+        output.add(&err.to_string(), err.line(), err.col());
+    }
 }

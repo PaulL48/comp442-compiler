@@ -2,6 +2,7 @@ use log::{error, info, warn};
 use path;
 use std::fs::File;
 use std::io::prelude::*;
+use std::cmp;
 
 const SYMBOL_TABLE_EXT: &str = "outsymboltable";
 const SEMANTIC_ERROR_EXT: &str = "outsemanticerrors";
@@ -10,12 +11,67 @@ const AST_EXT: &str = "outast";
 const PARSE_ERROR_EXT: &str = "outsyntaxerrors";
 const LEX_ERROR_EXT: &str = "outlexerrors";
 
+pub struct ErrorMessage {
+    line: usize,
+    column: usize,
+    message: String
+}
+
+impl ErrorMessage {
+    pub fn message(&self) -> &String {
+        &self.message
+    }
+}
+
+impl ErrorMessage {
+    fn new(line: usize, column: usize, message: &str) -> Self {
+        ErrorMessage {
+            line,
+            column,
+            message: message.to_owned(),
+        }
+    }
+}
+
+impl Ord for ErrorMessage {
+    fn cmp(&self, other: &ErrorMessage) -> cmp::Ordering {
+        if self.line < other.line {
+            cmp::Ordering::Less
+        } else if self.line == other.line {
+            if self.column < other.column {
+                cmp::Ordering::Less
+            } else if self.column == other.column {
+                cmp::Ordering::Equal
+            } else {
+                cmp::Ordering::Greater
+            }
+        } else {
+            cmp::Ordering::Greater
+        }
+    }
+}
+
+impl cmp::PartialOrd for ErrorMessage {
+    fn partial_cmp(&self, other: &ErrorMessage) -> Option<cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for ErrorMessage {
+    fn eq(&self, other: &ErrorMessage) -> bool {
+        self.line == other.line && self.column == other.column
+    }
+}
+
+impl Eq for ErrorMessage {}
+
 pub struct OutputConfig {
     pub symbol_table_path: String,
     pub symbol_table_file: File,
 
     pub semantic_error_path: String,
     pub semantic_error_file: File,
+    pub semantic_error_buffer: Vec<ErrorMessage>,
 
     pub derivation_path: String,
     pub derivation_file: File,
@@ -116,6 +172,7 @@ impl OutputConfig {
             symbol_table_path,
             semantic_error_file,
             semantic_error_path,
+            semantic_error_buffer: Vec::new(),
             derivation_file,
             derivation_path,
             ast_file,
@@ -124,5 +181,16 @@ impl OutputConfig {
             syntax_error_path,
             lex_error_path,
         }
+    }
+
+    pub fn flush_semantic_messages(&mut self) {
+        self.semantic_error_buffer.sort();
+        for message in &self.semantic_error_buffer {
+            warn_write(&mut self.semantic_error_file, &self.semantic_error_path, message.message())
+        }
+    }
+
+    pub fn add(&mut self, message: &str, line: usize, column: usize) {
+        self.semantic_error_buffer.push(ErrorMessage::new(line, column, message))
     }
 }

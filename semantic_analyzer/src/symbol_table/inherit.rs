@@ -4,6 +4,8 @@ use derive_getters::Getters;
 use std::default::Default;
 use std::fmt;
 
+// This data can and should be completely derived from the class entry itself
+
 #[derive(Debug, Clone, Default, Getters)]
 pub struct Inherit {
     names: Vec<String>,
