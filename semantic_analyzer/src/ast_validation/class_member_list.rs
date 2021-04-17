@@ -1,9 +1,9 @@
-use crate::ast_validation::{ClassMember, NodeValidator, ValidatorError, ViewAs, ToSymbol};
+use crate::ast_validation::{ClassMember, NodeValidator, ToSymbol, ValidatorError, ViewAs};
+use crate::symbol_table::{SymbolTable, SymbolTableEntry};
+use crate::SemanticError;
 use ast::Node;
 use derive_getters::Getters;
-use crate::symbol_table::{SymbolTable, SymbolTableEntry, Class};
 use output_manager::OutputConfig;
-use crate::SemanticError;
 
 // Each member can be either a function declaration or a
 // variable declaration
@@ -23,11 +23,19 @@ impl<'a> ViewAs<'a> for ClassMemberList<'a> {
 }
 
 impl<'a> ToSymbol for ClassMemberList<'a> {
-    fn validate_entry(&self, _context: &SymbolTable, _output: &mut OutputConfig) -> Result<(), SemanticError> {
+    fn validate_entry(
+        &self,
+        _context: &SymbolTable,
+        _output: &mut OutputConfig,
+    ) -> Result<(), SemanticError> {
         Ok(())
     }
 
-    fn to_symbol(&self, context: &SymbolTable, output: &mut OutputConfig) -> Result<Vec<SymbolTableEntry>, SemanticError> {
+    fn to_symbol(
+        &self,
+        context: &SymbolTable,
+        output: &mut OutputConfig,
+    ) -> Result<Vec<SymbolTableEntry>, SemanticError> {
         let mut results = Vec::new();
         for member in &self.members {
             results.extend(member.to_validated_symbol(context, output)?);

@@ -1,8 +1,8 @@
 use log::{error, info, warn};
 use path;
+use std::cmp;
 use std::fs::File;
 use std::io::prelude::*;
-use std::cmp;
 
 const SYMBOL_TABLE_EXT: &str = "outsymboltable";
 const SEMANTIC_ERROR_EXT: &str = "outsemanticerrors";
@@ -14,7 +14,7 @@ const LEX_ERROR_EXT: &str = "outlexerrors";
 pub struct ErrorMessage {
     line: usize,
     column: usize,
-    message: String
+    message: String,
 }
 
 impl ErrorMessage {
@@ -186,11 +186,16 @@ impl OutputConfig {
     pub fn flush_semantic_messages(&mut self) {
         self.semantic_error_buffer.sort();
         for message in &self.semantic_error_buffer {
-            warn_write(&mut self.semantic_error_file, &self.semantic_error_path, message.message())
+            warn_write(
+                &mut self.semantic_error_file,
+                &self.semantic_error_path,
+                message.message(),
+            )
         }
     }
 
     pub fn add(&mut self, message: &str, line: usize, column: usize) {
-        self.semantic_error_buffer.push(ErrorMessage::new(line, column, message))
+        self.semantic_error_buffer
+            .push(ErrorMessage::new(line, column, message))
     }
 }

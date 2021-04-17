@@ -1,9 +1,9 @@
-use crate::ast_validation::{NodeValidator, ValidatorError, ViewAs, ToSymbol};
+use crate::ast_validation::{NodeValidator, ToSymbol, ValidatorError, ViewAs};
+use crate::symbol_table::{Inherit, SymbolTable, SymbolTableEntry};
+use crate::SemanticError;
 use ast::Node;
 use derive_getters::Getters;
-use crate::symbol_table::{SymbolTable, SymbolTableEntry, Inherit};
 use output_manager::OutputConfig;
-use crate::SemanticError;
 use std::collections::HashSet;
 
 #[derive(Getters)]
@@ -19,18 +19,29 @@ impl<'a> ViewAs<'a> for InheritanceList<'a> {
 
         let id_list = validator.then_list_of_strings()?;
 
-        Ok(InheritanceList { id_list,
-        line: *node.line(),
-        column: *node.column() })
+        Ok(InheritanceList {
+            id_list,
+            line: *node.line(),
+            column: *node.column(),
+        })
     }
 }
 
 impl<'a> ToSymbol for InheritanceList<'a> {
-    fn validate_entry(&self, context: &SymbolTable, output: &mut OutputConfig) -> Result<(), SemanticError> {
+    fn validate_entry(
+        &self,
+        context: &SymbolTable,
+        output: &mut OutputConfig,
+    ) -> Result<(), SemanticError> {
         let mut names = HashSet::new();
         for id in &self.id_list {
             if names.contains(id) {
-                let err = SemanticError::new_duplicate_inheritance(self.line(), self.column(), &context.name, id);
+                let err = SemanticError::new_duplicate_inheritance(
+                    self.line(),
+                    self.column(),
+                    &context.name,
+                    id,
+                );
                 output.add(&err.to_string(), err.line(), err.col());
             }
             names.insert(id);
@@ -38,7 +49,11 @@ impl<'a> ToSymbol for InheritanceList<'a> {
         Ok(())
     }
 
-    fn to_symbol(&self, context: &SymbolTable, output: &mut OutputConfig) -> Result<Vec<SymbolTableEntry>, SemanticError> {
+    fn to_symbol(
+        &self,
+        _context: &SymbolTable,
+        _output: &mut OutputConfig,
+    ) -> Result<Vec<SymbolTableEntry>, SemanticError> {
         Ok(vec![SymbolTableEntry::Inherit(Inherit::new(&self.id_list))])
     }
 }

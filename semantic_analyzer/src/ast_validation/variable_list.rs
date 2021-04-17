@@ -1,12 +1,10 @@
-use crate::ast_validation::{NodeValidator, ValidatorError, Variable, ViewAs, ToSymbol};
+use crate::ast_validation::{NodeValidator, ToSymbol, ValidatorError, Variable, ViewAs};
 use ast::Node;
 use derive_getters::Getters;
 
-use crate::symbol_table::{SymbolTable, SymbolTableEntry, Class};
-use output_manager::OutputConfig;
+use crate::symbol_table::{SymbolTable, SymbolTableEntry};
 use crate::SemanticError;
-use crate::symbol_table::rules;
-
+use output_manager::OutputConfig;
 
 #[derive(Getters)]
 pub struct VariableList<'a> {
@@ -24,11 +22,18 @@ impl<'a> ViewAs<'a> for VariableList<'a> {
 }
 
 impl ToSymbol for VariableList<'_> {
-    fn validate_entry(&self, context: &SymbolTable, output: &mut OutputConfig) -> Result<(), SemanticError> {
+    fn validate_entry(
+        &self,
+        _context: &SymbolTable,
+        _output: &mut OutputConfig,
+    ) -> Result<(), SemanticError> {
         Ok(())
-    
     }
-    fn to_symbol(&self, context: &SymbolTable, output: &mut OutputConfig) -> Result<Vec<SymbolTableEntry>, SemanticError> {
+    fn to_symbol(
+        &self,
+        context: &SymbolTable,
+        output: &mut OutputConfig,
+    ) -> Result<Vec<SymbolTableEntry>, SemanticError> {
         let mut results = Vec::new();
         for variable in &self.variables {
             variable.validate_entry(context, output)?;
@@ -41,7 +46,7 @@ impl ToSymbol for VariableList<'_> {
 impl<'a> VariableList<'a> {
     pub fn new() -> Self {
         VariableList {
-            variables: Vec::new()
+            variables: Vec::new(),
         }
     }
 }

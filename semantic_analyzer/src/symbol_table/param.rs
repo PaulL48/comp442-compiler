@@ -1,11 +1,10 @@
-use crate::format_table::FormatTable;
 use crate::ast_validation::FunctionParameter;
+use crate::format_table::FormatTable;
 use derive_getters::Getters;
 use std::default::Default;
 use std::fmt;
-use output_manager::OutputConfig;
 
-use crate::symbol_table::{utils, SymbolTable};
+use crate::symbol_table::utils;
 
 // This is the entry in a function symbol table for a parameter of the function
 // an identifier that specifies a variable
@@ -35,7 +34,9 @@ impl FormatTable for Param {
     fn lines(&self, _: usize) -> Vec<String> {
         vec![format!(
             "{:10}| {:12}| {}",
-            "param", self.id, self.type_string()
+            "param",
+            self.id,
+            self.type_string()
         )]
     }
 }
@@ -46,7 +47,7 @@ impl PartialEq for Param {
     }
 }
 
-impl PartialEq<FunctionParameter<'_>> for Param  {
+impl PartialEq<FunctionParameter<'_>> for Param {
     fn eq(&self, other: &FunctionParameter) -> bool {
         self.data_type == other.data_type()
     }

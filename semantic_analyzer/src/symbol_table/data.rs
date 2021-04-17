@@ -1,10 +1,10 @@
+use crate::ast_validation::class_member::ClassVariable;
 use crate::format_table::FormatTable;
 use crate::visibility::Visibility;
 use derive_getters::Getters;
+use log::error;
 use std::default::Default;
 use std::fmt;
-use crate::ast_validation::class_member::ClassVariable;
-use log::error;
 
 use crate::symbol_table::utils;
 
@@ -28,7 +28,10 @@ impl FormatTable for Data {
     fn lines(&self, _: usize) -> Vec<String> {
         vec![format!(
             "{:10}| {:12}| {:34}| {}",
-            "data", self.id, self.type_string(), self.visibility
+            "data",
+            self.id,
+            self.type_string(),
+            self.visibility
         )]
     }
 }
@@ -38,7 +41,9 @@ impl fmt::Display for Data {
         write!(
             f,
             "Member variable {} {} {}",
-            self.visibility, self.type_string(), self.id
+            self.visibility,
+            self.type_string(),
+            self.id
         )
     }
 }
@@ -61,7 +66,7 @@ impl Data {
             id: class_variable.id().to_string(),
             visibility: *class_variable.visibility(),
             data_type: class_variable.data_type().to_string(),
-            dimension: dimensions
+            dimension: dimensions,
         }
     }
 

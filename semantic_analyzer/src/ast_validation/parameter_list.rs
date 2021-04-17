@@ -1,12 +1,9 @@
-use crate::ast_validation::{NodeValidator, ValidatorError, FunctionParameter, ViewAs, ToSymbol};
+use crate::ast_validation::{FunctionParameter, NodeValidator, ToSymbol, ValidatorError, ViewAs};
+use crate::symbol_table::{Param, SymbolTable, SymbolTableEntry};
+use crate::SemanticError;
 use ast::Node;
 use derive_getters::Getters;
-use crate::symbol_table::{SymbolTable, SymbolTableEntry, Class, Param};
 use output_manager::OutputConfig;
-use crate::SemanticError;
-use crate::symbol_table::rules;
-use std::fmt;
-
 
 #[derive(Getters, Debug)]
 pub struct ParameterList<'a> {
@@ -37,19 +34,29 @@ impl<'a> ViewAs<'a> for ParameterList<'a> {
 
         let parameters = validator.then_list_of()?;
 
-        Ok(ParameterList { parameters,
-        line: *node.line(),
-        column: *node.column() })
+        Ok(ParameterList {
+            parameters,
+            line: *node.line(),
+            column: *node.column(),
+        })
     }
 }
 
 impl ToSymbol for ParameterList<'_> {
-    fn validate_entry(&self, context: &SymbolTable, output: &mut OutputConfig) -> Result<(), SemanticError> {
+    fn validate_entry(
+        &self,
+        _context: &SymbolTable,
+        _output: &mut OutputConfig,
+    ) -> Result<(), SemanticError> {
         // The list of parameters itself, cannot be invalid at this point
         Ok(())
     }
 
-    fn to_symbol(&self, context: &SymbolTable, output: &mut OutputConfig) -> Result<Vec<SymbolTableEntry>, SemanticError> {
+    fn to_symbol(
+        &self,
+        context: &SymbolTable,
+        output: &mut OutputConfig,
+    ) -> Result<Vec<SymbolTableEntry>, SemanticError> {
         let mut results = Vec::new();
         for parameter in self.parameters() {
             // parameter.validate_entry(context, output)?;
@@ -65,7 +72,7 @@ impl<'a> ParameterList<'a> {
         ParameterList {
             parameters: Vec::new(),
             line,
-            column
+            column,
         }
     }
 
@@ -75,8 +82,9 @@ impl<'a> ParameterList<'a> {
             return false;
         }
 
-        self.parameters.iter().zip(string_list).all(|(lhs, rhs)| lhs.as_symbol_string() == *rhs)
-    
-        
+        self.parameters
+            .iter()
+            .zip(string_list)
+            .all(|(lhs, rhs)| lhs.as_symbol_string() == *rhs)
     }
 }

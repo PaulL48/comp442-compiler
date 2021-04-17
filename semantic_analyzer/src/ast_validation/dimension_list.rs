@@ -17,10 +17,10 @@ impl<'a> ViewAs<'a> for DimensionList {
 
         let dimensions = validator.then_list_of_optional_ints()?;
 
-        Ok(DimensionList { 
+        Ok(DimensionList {
             dimensions,
-            line: *node.line(), 
-            column: *node.column()
+            line: *node.line(),
+            column: *node.column(),
         })
     }
 }

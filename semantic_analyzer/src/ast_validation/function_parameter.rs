@@ -1,10 +1,10 @@
-use crate::ast_validation::{DimensionList, NodeValidator, ValidatorError, ToSymbol, ViewAs};
+use crate::ast_validation::{DimensionList, NodeValidator, ToSymbol, ValidatorError, ViewAs};
+use crate::symbol_table::rules;
+use crate::symbol_table::{Param, SymbolTable, SymbolTableEntry};
+use crate::SemanticError;
 use ast::Node;
 use derive_getters::Getters;
-use crate::symbol_table::{SymbolTable, SymbolTableEntry, Param};
 use output_manager::OutputConfig;
-use crate::SemanticError;
-use crate::symbol_table::rules;
 use std::fmt;
 
 #[derive(Getters, Debug)]
@@ -41,14 +41,28 @@ impl<'a> ViewAs<'a> for FunctionParameter<'a> {
 }
 
 impl<'a> ToSymbol for FunctionParameter<'a> {
-    fn validate_entry(&self, context: &SymbolTable, output: &mut OutputConfig) -> Result<(), SemanticError> {
+    fn validate_entry(
+        &self,
+        context: &SymbolTable,
+        _output: &mut OutputConfig,
+    ) -> Result<(), SemanticError> {
         let matching_entries = context.get_all(self.id());
-        rules::id_redefines(self.id(), &matching_entries, self.line(), self.column(), &self.to_string())?;
+        rules::id_redefines(
+            self.id(),
+            &matching_entries,
+            self.line(),
+            self.column(),
+            &self.to_string(),
+        )?;
         // parameters are the one place dimensions are not required
         Ok(())
     }
-    
-    fn to_symbol(&self, context: &SymbolTable, output: &mut OutputConfig) -> Result<Vec<SymbolTableEntry>, SemanticError> {
+
+    fn to_symbol(
+        &self,
+        _context: &SymbolTable,
+        _output: &mut OutputConfig,
+    ) -> Result<Vec<SymbolTableEntry>, SemanticError> {
         Ok(vec![SymbolTableEntry::Param(Param::from(self))])
     }
 }

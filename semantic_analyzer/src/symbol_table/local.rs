@@ -1,10 +1,10 @@
+use crate::ast_validation::Variable;
 use crate::format_table::FormatTable;
+use crate::symbol_table::utils;
 use derive_getters::Getters;
+use log::error;
 use std::default::Default;
 use std::fmt;
-use crate::ast_validation::Variable;
-use log::error;
-use crate::symbol_table::utils;
 
 // A variable declared in a function scope
 // A name that identifies a variable
@@ -31,7 +31,9 @@ impl FormatTable for Local {
     fn lines(&self, _: usize) -> Vec<String> {
         vec![format!(
             "{:10}| {:12}| {}",
-            "local", self.id, self.type_string()
+            "local",
+            self.id,
+            self.type_string()
         )]
     }
 }

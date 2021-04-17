@@ -104,7 +104,7 @@
 //     }
 // }
 
-// pub fn binary_op<'a>(node: &'a Node, symbol_table: &'a SymbolTable, current_scope: &Vec<String>, output_config: &mut OutputConfig) -> Result<&'a str, SemanticError> {    
+// pub fn binary_op<'a>(node: &'a Node, symbol_table: &'a SymbolTable, current_scope: &Vec<String>, output_config: &mut OutputConfig) -> Result<&'a str, SemanticError> {
 //     match node.data() {
 //         Data::Children(children) => {
 //             let lhs =  get_type(&children[0], symbol_table, current_scope, output_config)?;

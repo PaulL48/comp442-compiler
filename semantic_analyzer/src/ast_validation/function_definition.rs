@@ -12,15 +12,14 @@
 
 use crate::ast_validation::node_validator::{NodeValidator, ValidatorError};
 use crate::ast_validation::{FunctionBody, ParameterList};
+use crate::ast_validation::{ToSymbol, ViewAs};
+use crate::symbol_table::rules;
+use crate::symbol_table::{SymbolTable, SymbolTableEntry};
+use crate::SemanticError;
 use ast::Node;
 use derive_getters::Getters;
-use crate::ast_validation::{ViewAs, ToSymbol};
-use std::fmt;
-use crate::symbol_table::{SymbolTable, SymbolTableEntry, Class};
 use output_manager::OutputConfig;
-use crate::SemanticError;
-use crate::symbol_table::rules;
-
+use std::fmt;
 
 #[derive(Getters)]
 pub struct FunctionDefinition<'a> {
@@ -51,7 +50,7 @@ impl<'a> ViewAs<'a> for FunctionDefinition<'a> {
 
         let parameter_list = match parameter_list {
             Some(list) => list,
-            None => ParameterList::new(*node.line(), *node.column())
+            None => ParameterList::new(*node.line(), *node.column()),
         };
 
         Ok(FunctionDefinition {
@@ -74,7 +73,12 @@ impl<'a> std::cmp::PartialEq<Function> for FunctionDefinition<'a> {
             return false;
         }
 
-        for (lp, rp) in self.parameter_list().parameters().iter().zip(other.parameter_types().iter()) {
+        for (lp, rp) in self
+            .parameter_list()
+            .parameters()
+            .iter()
+            .zip(other.parameter_types().iter())
+        {
             if lp.data_type() != rp.data_type() {
                 return false;
             }
@@ -85,7 +89,6 @@ impl<'a> std::cmp::PartialEq<Function> for FunctionDefinition<'a> {
 }
 
 impl<'a> FunctionDefinition<'a> {
-
     /// Convert a loosely typed AST node into a node with more validation
     // pub fn view_as(node: &'a Node) -> Result<FunctionDefinition<'a>, ValidatorError> {
     //     let mut validator = NodeValidator::new(node, "Function definition").has_children(5)?;
@@ -118,64 +121,135 @@ impl<'a> FunctionDefinition<'a> {
     pub fn get_corrected_scoped_id(&self) -> (&'a str, Option<&'a str>) {
         match self.scope {
             Some(scope) => (scope, Some(self.id)),
-            None => (self.id, None)
+            None => (self.id, None),
         }
     }
 }
 
 impl<'a> ToSymbol for FunctionDefinition<'a> {
-    fn validate_entry(&self, context: &SymbolTable, output: &mut OutputConfig) -> Result<(), SemanticError> {
+    fn validate_entry(
+        &self,
+        context: &SymbolTable,
+        output: &mut OutputConfig,
+    ) -> Result<(), SemanticError> {
         let (id, scope) = self.get_corrected_scoped_id();
         if let Some(scope) = scope {
             let class = if let Some(SymbolTableEntry::Class(class)) = context.get(scope) {
                 class
             } else {
-                return Err(SemanticError::new_defined_not_declared(self.line(), self.column(), &self.to_string(), scope));
+                return Err(SemanticError::new_defined_not_declared(
+                    self.line(),
+                    self.column(),
+                    &self.to_string(),
+                    scope,
+                ));
             };
 
             let matching_entries = class.symbol_table().get_all(self.id());
-            rules::function_redefines(self.id(), &self.parameter_list, &matching_entries, &self.line, &self.column, &self.to_string())?;
-            rules::warn_overloading_function(self.id(), &self.parameter_list, &matching_entries, &self.line, &self.column, output);
+            rules::function_redefines(
+                self.id(),
+                &self.parameter_list,
+                &matching_entries,
+                &self.line,
+                &self.column,
+                &self.to_string(),
+            )?;
+            rules::warn_overloading_function(
+                self.id(),
+                &self.parameter_list,
+                &matching_entries,
+                &self.line,
+                &self.column,
+                output,
+            );
 
             if let None = rules::get_exact(self.id(), &self.parameter_list, &matching_entries) {
-                return Err(SemanticError::new_defined_not_declared(self.line(), self.column(), id, scope));
+                return Err(SemanticError::new_defined_not_declared(
+                    self.line(),
+                    self.column(),
+                    id,
+                    scope,
+                ));
             }
-
-
         } else {
             let matching_entries = context.get_all(self.id());
-            rules::function_redefines(self.id(), &self.parameter_list, &matching_entries, &self.line, &self.column, &self.to_string())?;
-            rules::warn_overloading_function(self.id(), &self.parameter_list, &matching_entries, &self.line, &self.column, output);
+            rules::function_redefines(
+                self.id(),
+                &self.parameter_list,
+                &matching_entries,
+                &self.line,
+                &self.column,
+                &self.to_string(),
+            )?;
+            rules::warn_overloading_function(
+                self.id(),
+                &self.parameter_list,
+                &matching_entries,
+                &self.line,
+                &self.column,
+                output,
+            );
         }
         Ok(())
     }
 
-    fn to_symbol(&self, context: &SymbolTable, output: &mut OutputConfig) -> Result<Vec<SymbolTableEntry>, SemanticError> {
+    fn to_symbol(
+        &self,
+        context: &SymbolTable,
+        output: &mut OutputConfig,
+    ) -> Result<Vec<SymbolTableEntry>, SemanticError> {
         let (_id, scope) = self.get_corrected_scoped_id();
         if let Some(scope) = scope {
             let class = if let Some(SymbolTableEntry::Class(class)) = context.get(scope) {
                 class
             } else {
-                return Err(SemanticError::new_defined_not_declared(self.line(), self.column(), &self.to_string(), scope));
+                return Err(SemanticError::new_defined_not_declared(
+                    self.line(),
+                    self.column(),
+                    &self.to_string(),
+                    scope,
+                ));
             };
 
             let matching_entries = class.symbol_table().get_all(self.id());
-            rules::function_redefines(self.id(), &self.parameter_list, &matching_entries, &self.line, &self.column, &self.to_string())?;
-            rules::warn_overloading_function(self.id(), &self.parameter_list, &matching_entries, &self.line, &self.column, output);
+            rules::function_redefines(
+                self.id(),
+                &self.parameter_list,
+                &matching_entries,
+                &self.line,
+                &self.column,
+                &self.to_string(),
+            )?;
+            rules::warn_overloading_function(
+                self.id(),
+                &self.parameter_list,
+                &matching_entries,
+                &self.line,
+                &self.column,
+                output,
+            );
 
-            if let Some(mut declaration) = rules::get_exact_clone(self.id(), &self.parameter_list, &matching_entries) {
-                let local_entries = self.function_body().to_validated_symbol(declaration.symbol_table(), output)?;
+            if let Some(mut declaration) =
+                rules::get_exact_clone(self.id(), &self.parameter_list, &matching_entries)
+            {
+                let local_entries = self
+                    .function_body()
+                    .to_validated_symbol(declaration.symbol_table(), output)?;
                 declaration.symbol_table_mut().extend(local_entries);
                 return Ok(vec![SymbolTableEntry::Function(declaration)]);
             } else {
                 panic!("Should invoke validation before symbol creation");
             }
-            
         } else {
             let mut new_entry = Function::from_definition(self);
-            let parameter_entries = self.parameter_list.to_validated_symbol(new_entry.symbol_table(), output)?;
+            let parameter_entries = self
+                .parameter_list
+                .to_validated_symbol(new_entry.symbol_table(), output)?;
             new_entry.symbol_table_mut().extend(parameter_entries);
-            let local_entries = self.function_body.local_variable_list().to_validated_symbol(new_entry.symbol_table(), output)?;
+            let local_entries = self
+                .function_body
+                .local_variable_list()
+                .to_validated_symbol(new_entry.symbol_table(), output)?;
             new_entry.symbol_table_mut().extend(local_entries);
             Ok(vec![SymbolTableEntry::Function(new_entry)])
         }

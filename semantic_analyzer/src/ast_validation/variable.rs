@@ -1,11 +1,11 @@
-use crate::ast_validation::{DimensionList, NodeValidator, ValidatorError, ViewAs, ToSymbol};
+use crate::ast_validation::{DimensionList, NodeValidator, ToSymbol, ValidatorError, ViewAs};
 use ast::Node;
 use derive_getters::Getters;
 
-use crate::symbol_table::{SymbolTable, SymbolTableEntry, Local};
-use output_manager::OutputConfig;
-use crate::SemanticError;
 use crate::symbol_table::rules;
+use crate::symbol_table::{Local, SymbolTable, SymbolTableEntry};
+use crate::SemanticError;
+use output_manager::OutputConfig;
 use std::fmt;
 
 #[derive(Getters)]
@@ -22,7 +22,6 @@ impl fmt::Display for Variable<'_> {
         write!(f, "Function parameter {}", self.type_as_symbol_string())
     }
 }
-
 
 impl<'a> ViewAs<'a> for Variable<'a> {
     fn view_as(node: &'a Node) -> Result<Self, ValidatorError> {
@@ -43,14 +42,28 @@ impl<'a> ViewAs<'a> for Variable<'a> {
 }
 
 impl ToSymbol for Variable<'_> {
-    fn validate_entry(&self, context: &SymbolTable, output: &mut OutputConfig) -> Result<(), SemanticError> {
+    fn validate_entry(
+        &self,
+        context: &SymbolTable,
+        _output: &mut OutputConfig,
+    ) -> Result<(), SemanticError> {
         let matching_entries = context.get_all(self.id());
-        rules::id_redefines(self.id(), &matching_entries, self.line(), self.column(), &self.to_string())?;
+        rules::id_redefines(
+            self.id(),
+            &matching_entries,
+            self.line(),
+            self.column(),
+            &self.to_string(),
+        )?;
         rules::mandatory_dimensions(&self.dimension_list, self.id())?;
         Ok(())
     }
 
-    fn to_symbol(&self, context: &SymbolTable, output: &mut OutputConfig) -> Result<Vec<SymbolTableEntry>, SemanticError> {
+    fn to_symbol(
+        &self,
+        _context: &SymbolTable,
+        _output: &mut OutputConfig,
+    ) -> Result<Vec<SymbolTableEntry>, SemanticError> {
         Ok(vec![SymbolTableEntry::Local(Local::from(self))])
     }
 }

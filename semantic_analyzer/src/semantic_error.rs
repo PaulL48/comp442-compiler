@@ -11,10 +11,8 @@ pub enum SemanticError {
     FunctionOverload(usize, usize, String), // This isn't really an error,
     MissingDimension(usize, usize, String),
 
-
     BinaryMismatchedTypes(usize, usize, String),
     UndefinedType(usize, usize, String),
-
 }
 
 impl fmt::Display for SemanticError {
@@ -55,7 +53,7 @@ impl SemanticError {
             SemanticError::FunctionOverload(l, _, _) => *l,
             SemanticError::MissingDimension(l, _, _) => *l,
         }
-    } 
+    }
 
     pub fn col(&self) -> usize {
         match &self {
@@ -75,50 +73,84 @@ impl SemanticError {
 
     /// Create a new message about the redefinition of some element printed as already_exists
     /// by some element printed as tried_to_add
-    pub fn new_redefinition(line: &usize, column: &usize, tried_to_add: &str, already_exists: &str) -> SemanticError {
-        SemanticError::IdentifierRedefinition(*line, *column, format!(
-            "Identifier \"{}\" is already defined in this scope as \"{}\"",
-            tried_to_add,
-            already_exists
-        ))
+    pub fn new_redefinition(
+        line: &usize,
+        column: &usize,
+        tried_to_add: &str,
+        already_exists: &str,
+    ) -> SemanticError {
+        SemanticError::IdentifierRedefinition(
+            *line,
+            *column,
+            format!(
+                "Identifier \"{}\" is already defined in this scope as \"{}\"",
+                tried_to_add, already_exists
+            ),
+        )
     }
 
     pub fn new_overload(line: &usize, column: &usize, id: &str) -> SemanticError {
-        SemanticError::FunctionOverload(*line, *column, format!(
-            "Function provides an overload for \"{}\"",
-            id
-        ))
+        SemanticError::FunctionOverload(
+            *line,
+            *column,
+            format!("Function provides an overload for \"{}\"", id),
+        )
     }
 
-    pub fn new_defined_not_declared(line: &usize, column: &usize, function: &str, missing_scope: &str) -> SemanticError {
-        SemanticError::DefinedButNotDeclared(*line, *column, format!(
-            "Member function is defining an undeclared identifier \"{}\" in the scope \"{}\"",
-            function,
-            missing_scope
-        ))
+    pub fn new_defined_not_declared(
+        line: &usize,
+        column: &usize,
+        function: &str,
+        missing_scope: &str,
+    ) -> SemanticError {
+        SemanticError::DefinedButNotDeclared(
+            *line,
+            *column,
+            format!(
+                "Member function is defining an undeclared identifier \"{}\" in the scope \"{}\"",
+                function, missing_scope
+            ),
+        )
     }
 
-    pub fn new_identifier_redefinition(line: &usize, column: &usize, function: &str, scope: &str) -> SemanticError {
-        SemanticError::IdentifierRedefinition(*line, *column, format!(
-            "Function \"{}\" is already defined for the scope {}",
-            function,
-            scope
-        ))
+    pub fn new_identifier_redefinition(
+        line: &usize,
+        column: &usize,
+        function: &str,
+        scope: &str,
+    ) -> SemanticError {
+        SemanticError::IdentifierRedefinition(
+            *line,
+            *column,
+            format!(
+                "Function \"{}\" is already defined for the scope {}",
+                function, scope
+            ),
+        )
     }
 
-    pub fn new_duplicate_inheritance(line: &usize, column: &usize, class: &str, id: &str) -> SemanticError {
-        SemanticError::DuplicateInheritance(*line, *column, format!(
-            "Duplicate inheritance of identifier {} for class {}",
-            id,
-            class
-        ))
+    pub fn new_duplicate_inheritance(
+        line: &usize,
+        column: &usize,
+        class: &str,
+        id: &str,
+    ) -> SemanticError {
+        SemanticError::DuplicateInheritance(
+            *line,
+            *column,
+            format!(
+                "Duplicate inheritance of identifier {} for class {}",
+                id, class
+            ),
+        )
     }
 
     pub fn new_missing_dimension(line: &usize, column: &usize, identifier: &str) -> SemanticError {
-        SemanticError::MissingDimension(*line, *column, format!(
-            "Missing dimension for array \"{}\"",
-            identifier
-        ))
+        SemanticError::MissingDimension(
+            *line,
+            *column,
+            format!("Missing dimension for array \"{}\"", identifier),
+        )
     }
 
     // pub fn write(&self, output_manager: &mut OutputConfig) {

@@ -145,7 +145,10 @@ pub fn parse(
         warn_write(
             &mut output_config.syntax_error_file,
             &output_config.syntax_error_path,
-            &format!("Syntax error: unexpected token {}, but was expecting end of file", current_token.unwrap()),
+            &format!(
+                "Syntax error: unexpected token {}, but was expecting end of file",
+                current_token.unwrap()
+            ),
         );
         error!("Parsing encountered errors, see the associated output files");
         return None;
