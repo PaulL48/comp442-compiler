@@ -73,6 +73,8 @@ pub fn analyze(root: &ast::Node, output_config: &mut OutputConfig) -> SemanticAn
     // Check the symbol table for class functions that haven't yet been defined
     // results.symbol_table.check_declared_but_not_defined_functions(output_config);
 
+    output_config.flush_semantic_messages();
+
     // Write results to a file
     warn_write(
         &mut output_config.symbol_table_file,

@@ -144,8 +144,9 @@ impl<'a> ToSymbol for FunctionDefinition<'a> {
                     scope,
                 ));
             };
+            println!("{:?}", class);
 
-            let matching_entries = class.symbol_table().get_all(self.id());
+            let matching_entries = class.symbol_table().get_all(id);
             rules::function_redefines(
                 self.id(),
                 &self.parameter_list,
@@ -163,7 +164,7 @@ impl<'a> ToSymbol for FunctionDefinition<'a> {
                 output,
             );
 
-            if let None = rules::get_exact(self.id(), &self.parameter_list, &matching_entries) {
+            if let None = rules::get_exact(id, &self.parameter_list, &matching_entries) {
                 return Err(SemanticError::new_defined_not_declared(
                     self.line(),
                     self.column(),
@@ -172,9 +173,9 @@ impl<'a> ToSymbol for FunctionDefinition<'a> {
                 ));
             }
         } else {
-            let matching_entries = context.get_all(self.id());
+            let matching_entries = context.get_all(id);
             rules::function_redefines(
-                self.id(),
+                id,
                 &self.parameter_list,
                 &matching_entries,
                 &self.line,
@@ -182,7 +183,7 @@ impl<'a> ToSymbol for FunctionDefinition<'a> {
                 &self.to_string(),
             )?;
             rules::warn_overloading_function(
-                self.id(),
+                id,
                 &self.parameter_list,
                 &matching_entries,
                 &self.line,
@@ -198,7 +199,7 @@ impl<'a> ToSymbol for FunctionDefinition<'a> {
         context: &SymbolTable,
         output: &mut OutputConfig,
     ) -> Result<Vec<SymbolTableEntry>, SemanticError> {
-        let (_id, scope) = self.get_corrected_scoped_id();
+        let (id, scope) = self.get_corrected_scoped_id();
         if let Some(scope) = scope {
             let class = if let Some(SymbolTableEntry::Class(class)) = context.get(scope) {
                 class
@@ -211,9 +212,9 @@ impl<'a> ToSymbol for FunctionDefinition<'a> {
                 ));
             };
 
-            let matching_entries = class.symbol_table().get_all(self.id());
+            let matching_entries = class.symbol_table().get_all(id);
             rules::function_redefines(
-                self.id(),
+                id,
                 &self.parameter_list,
                 &matching_entries,
                 &self.line,
@@ -221,7 +222,7 @@ impl<'a> ToSymbol for FunctionDefinition<'a> {
                 &self.to_string(),
             )?;
             rules::warn_overloading_function(
-                self.id(),
+                id,
                 &self.parameter_list,
                 &matching_entries,
                 &self.line,
@@ -230,7 +231,7 @@ impl<'a> ToSymbol for FunctionDefinition<'a> {
             );
 
             if let Some(mut declaration) =
-                rules::get_exact_clone(self.id(), &self.parameter_list, &matching_entries)
+                rules::get_exact_clone(id, &self.parameter_list, &matching_entries)
             {
                 let local_entries = self
                     .function_body()

@@ -43,7 +43,23 @@ func printArray(integer arr[], integer size) : void
     write(arr[i]);
       i = i+1;
   };
-} 
+}
+
+func foo(integer arr[], integer size): void
+{
+  var {
+    float a;
+    float b;
+  }
+}
+
+func foo(integer aba, integer size): float
+{
+  var {
+    float a;
+    float b;
+  }
+}
 
 // main funtion to test above
 main 

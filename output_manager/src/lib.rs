@@ -189,7 +189,7 @@ impl OutputConfig {
             warn_write(
                 &mut self.semantic_error_file,
                 &self.semantic_error_path,
-                message.message(),
+                &format!("{}\n", message.message()),
             )
         }
     }

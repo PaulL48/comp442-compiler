@@ -49,8 +49,13 @@ pub fn function_definition(
     global_table: &mut SymbolTable,
     output_config: &mut OutputConfig,
 ) -> Result<(), SemanticError> {
+
+    println!("Here");
     let view: FunctionDefinition = ViewAs::try_view_as(node);
+    println!("Between");
     let mut entry = view.to_validated_symbol(global_table, output_config)?;
+
+    println!("Processing: {:?}", entry);
 
     let (_id, scope) = view.get_corrected_scoped_id();
     if let Some(_) = scope {
@@ -62,6 +67,7 @@ pub fn function_definition(
 
         // Because we copied the declaration we already have and filled it with more data
         // we need to get the class entry and replace the entry for the function
+        println!("replacing {:?}", entry);
         global_table.replace_class_function_declaration(entry);
     } else {
         global_table.extend(entry);

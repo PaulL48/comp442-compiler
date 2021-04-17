@@ -77,6 +77,7 @@ impl<'a> ToSymbol for ClassDeclaration<'a> {
         let member_list = self
             .member_list
             .to_symbol(new_entry.symbol_table(), output)?;
+
         new_entry.symbol_table_mut().extend(member_list);
 
         Ok(vec![SymbolTableEntry::Class(new_entry)])
