@@ -68,6 +68,10 @@ impl Function {
         self.defined
     }
 
+    pub fn set_defined(&mut self) {
+        self.defined = true;
+    }
+
     /// Returns a new function with manually set id and return type
     pub fn create_main(validated_node: &FunctionBody) -> Self {
         Function {

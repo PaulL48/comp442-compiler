@@ -53,14 +53,6 @@ func foo(integer arr[], integer size): void
   }
 }
 
-func foo(integer aba, integer size): float
-{
-  var {
-    float a;
-    float b;
-  }
-}
-
 // main funtion to test above
 main 
 {

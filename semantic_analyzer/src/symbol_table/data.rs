@@ -22,6 +22,8 @@ pub struct Data {
 
     data_type: String,
     dimension: Vec<i64>,
+    line: usize,
+    column: usize,
 }
 
 impl FormatTable for Data {
@@ -67,6 +69,8 @@ impl Data {
             visibility: *class_variable.visibility(),
             data_type: class_variable.data_type().to_string(),
             dimension: dimensions,
+            line: *class_variable.line(),
+            column: *class_variable.column(),
         }
     }
 

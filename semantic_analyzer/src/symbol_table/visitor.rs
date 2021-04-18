@@ -25,11 +25,7 @@ pub fn visit(
     buffer_any_message(result, output_config);
 }
 
-pub fn end_of_phase(
-    current_data: &mut SemanticAnalysisResults,
-    output_config: &mut OutputConfig,
-) {
-
+pub fn end_of_phase(current_data: &mut SemanticAnalysisResults, output_config: &mut OutputConfig) {
     // check for inheritance problems
     //      - Check for cyclic inheritance
     //      - warn for overloads of functions higher in the class hierarchy
@@ -38,12 +34,101 @@ pub fn end_of_phase(
     //
     for entry in &current_data.symbol_table.values {
         if let SymbolTableEntry::Class(class) = entry {
-            if class.symbol_table().inherit_list_has_cycles(&current_data.symbol_table) {
-                let err = SemanticError::new_cyclic_inheritance(class.line(), class.column(), &class.to_string());
+            if class
+                .symbol_table()
+                .inherit_list_has_cycles(&current_data.symbol_table)
+            {
+                let err = SemanticError::new_cyclic_inheritance(
+                    class.line(),
+                    class.column(),
+                    &class.to_string(),
+                );
                 output_config.add(&err.to_string(), err.line(), err.col());
+                continue;
             }
 
+            for class_entry in &class.symbol_table().values {
+                match class_entry {
+                    SymbolTableEntry::Function(function) => {
+                        if !function.is_defined() {
+                            let err = SemanticError::new_declared_but_not_defined(
+                                function.line(),
+                                function.column(),
+                                &format!(
+                                    "{}::{}",
+                                    function
+                                        .scope()
+                                        .clone()
+                                        .expect("Class member missing scope"),
+                                    function.id()
+                                ),
+                            );
+                            output_config.add(&err.to_string(), err.line(), err.col());
+                        }
 
+                        let matches = SymbolTable::get_all_inherited(
+                            class,
+                            function.id(),
+                            &current_data.symbol_table,
+                        );
+                        for matching_entry in matches {
+                            match matching_entry {
+                                SymbolTableEntry::Function(matching_function) => {
+                                    if matching_function == function {
+                                        let err = SemanticError::new_override(
+                                            function.line(),
+                                            function.column(),
+                                            &function.to_string(),
+                                        );
+                                        output_config.add(&err.to_string(), err.line(), err.col());
+                                    }
+                                }
+                                SymbolTableEntry::Data(matching_variable) => {
+                                    let err = SemanticError::new_shadowing(
+                                        function.line(),
+                                        function.column(),
+                                        &function.to_string(),
+                                        &matching_variable.to_string(),
+                                    );
+                                    output_config.add(&err.to_string(), err.line(), err.col());
+                                }
+                                _ => (),
+                            }
+                        }
+                    }
+                    SymbolTableEntry::Data(variable) => {
+                        let matches = SymbolTable::get_all_inherited(
+                            class,
+                            variable.id(),
+                            &current_data.symbol_table,
+                        );
+                        for matching_entry in matches {
+                            match matching_entry {
+                                SymbolTableEntry::Function(matching_function) => {
+                                    let err = SemanticError::new_shadowing(
+                                        variable.line(),
+                                        variable.column(),
+                                        &variable.to_string(),
+                                        &matching_function.to_string(),
+                                    );
+                                    output_config.add(&err.to_string(), err.line(), err.col());
+                                }
+                                SymbolTableEntry::Data(matching_variable) => {
+                                    let err = SemanticError::new_shadowing(
+                                        variable.line(),
+                                        variable.column(),
+                                        &variable.to_string(),
+                                        &matching_variable.to_string(),
+                                    );
+                                    output_config.add(&err.to_string(), err.line(), err.col());
+                                }
+                                _ => (),
+                            }
+                        }
+                    }
+                    _ => (),
+                }
+            }
         }
     }
 
@@ -71,7 +156,7 @@ pub fn function_definition(
 
     let (_id, scope) = view.get_corrected_scoped_id();
     if let Some(_) = scope {
-        let entry = if let Some(SymbolTableEntry::Function(function)) = entry.pop() {
+        let mut entry = if let Some(SymbolTableEntry::Function(function)) = entry.pop() {
             function
         } else {
             panic!("entry generated from a function definition should be a function");
@@ -79,6 +164,7 @@ pub fn function_definition(
 
         // Because we copied the declaration we already have and filled it with more data
         // we need to get the class entry and replace the entry for the function
+        entry.set_defined();
         global_table.replace_class_function_declaration(entry);
     } else {
         global_table.extend(entry);

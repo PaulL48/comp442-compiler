@@ -34,7 +34,12 @@ pub struct FunctionDefinition<'a> {
 
 impl<'a> fmt::Display for FunctionDefinition<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Function definition {}", self.id())
+        let (id, scope) = self.get_corrected_scoped_id();
+        if let Some(scope) = scope {
+            write!(f, "Function definition {}::{}", scope, id)
+        } else {
+            write!(f, "Function definition {}", id)
+        }
     }
 }
 

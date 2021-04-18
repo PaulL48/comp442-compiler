@@ -55,7 +55,6 @@ impl SemanticError {
             SemanticError::FunctionOverload(l, _, _) => *l,
             SemanticError::MissingDimension(l, _, _) => *l,
             SemanticError::CyclicInheritance(l, _, _) => *l,
-
         }
     }
 
@@ -118,21 +117,21 @@ impl SemanticError {
         )
     }
 
-    pub fn new_identifier_redefinition(
-        line: &usize,
-        column: &usize,
-        function: &str,
-        scope: &str,
-    ) -> SemanticError {
-        SemanticError::IdentifierRedefinition(
-            *line,
-            *column,
-            format!(
-                "Function \"{}\" is already defined for the scope {}",
-                function, scope
-            ),
-        )
-    }
+    // pub fn new_identifier_redefinition(
+    //     line: &usize,
+    //     column: &usize,
+    //     function: &str,
+    //     scope: &str,
+    // ) -> SemanticError {
+    //     SemanticError::IdentifierRedefinition(
+    //         *line,
+    //         *column,
+    //         format!(
+    //             "Function \"{}\" is already defined for the scope {}",
+    //             function, scope
+    //         ),
+    //     )
+    // }
 
     pub fn new_duplicate_inheritance(
         line: &usize,
@@ -159,7 +158,50 @@ impl SemanticError {
     }
 
     pub fn new_cyclic_inheritance(line: &usize, column: &usize, class_repr: &str) -> SemanticError {
-        SemanticError::CyclicInheritance(*line, *column, format!("Class has a cyclic inheritance hierarchy \"{}\"", class_repr))
+        SemanticError::CyclicInheritance(
+            *line,
+            *column,
+            format!(
+                "Class has a cyclic inheritance hierarchy \"{}\"",
+                class_repr
+            ),
+        )
+    }
+
+    pub fn new_declared_but_not_defined(
+        line: &usize,
+        column: &usize,
+        function: &str,
+    ) -> SemanticError {
+        SemanticError::DeclaredButNotDefined(
+            *line,
+            *column,
+            format!("Member function \"{}\" missing definition", function),
+        )
+    }
+
+    pub fn new_override(line: &usize, column: &usize, function: &str) -> SemanticError {
+        SemanticError::FunctionOverload(
+            *line,
+            *column,
+            format!(
+                "Member function \"{}\" provides override for inherited method",
+                function
+            ),
+        )
+    }
+
+    pub fn new_shadowing(
+        line: &usize,
+        column: &usize,
+        entry: &str,
+        shadows: &str,
+    ) -> SemanticError {
+        SemanticError::FunctionOverload(
+            *line,
+            *column,
+            format!("\"{}\" shadows inherited member \"{}\"", entry, shadows),
+        )
     }
 
     // pub fn write(&self, output_manager: &mut OutputConfig) {

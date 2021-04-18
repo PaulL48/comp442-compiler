@@ -15,9 +15,12 @@ class QUADRATIC inherits POLYNOMIAL {
 	private float a;
 	private float b;
 	private float c;
+
+  public integer evaluate;
+
+  // public func evaluate(float x) : float;
 	
 	public func build(float A, float B, float C) : QUADRATIC;
-	public func evaluate(float x) : float;
 };
 
 // ====== Function Definitions ====== //
@@ -36,7 +39,7 @@ func LINEAR::evaluate(float x) : float
   result = a * x + b;
   return (result);
 }
-  
+
 func QUADRATIC::evaluate(float x) : float
 {
   var    
@@ -49,7 +52,7 @@ func QUADRATIC::evaluate(float x) : float
   result = result * x + c;
   return (result);
 }
-  
+
 func LINEAR::build(float A, float B) : LINEAR 
 {
   var 
