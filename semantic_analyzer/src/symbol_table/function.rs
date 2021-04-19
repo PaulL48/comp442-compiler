@@ -19,6 +19,7 @@ pub struct Function {
     visibility: Option<Visibility>,
     symbol_table: SymbolTable,
     defined: bool,
+    bytes: usize,
     line: usize,
     column: usize,
 }
@@ -37,10 +38,11 @@ impl FormatTable for Function {
     fn lines(&self, width: usize) -> Vec<String> {
         let mut result = Vec::new();
         let mut line = format!(
-            "{:10}| {:12}| {:34}",
+            "{:10}| {:10}| {:10}| {:<10}",
             "function",
             self.id,
-            format!("{}: {}", self.signature(), self.return_type_as_string())
+            format!("{}: {}", self.signature(), self.return_type_as_string()),
+            self.bytes,
         );
         if let Some(visibility) = self.visibility {
             line.push_str(&format!("| {}", visibility))
@@ -82,6 +84,7 @@ impl Function {
             visibility: None,
             symbol_table: SymbolTable::new("main"),
             defined: true,
+            bytes: 0,
             line: *validated_node.line(),
             column: *validated_node.column(),
         }
@@ -103,6 +106,7 @@ impl Function {
             visibility: None, // Free functions have no visibility
             symbol_table: SymbolTable::scoped_new(validated_node.id(), scope),
             defined: true,
+            bytes: 0,
             line: *validated_node.line(),
             column: *validated_node.column(),
         }
@@ -122,6 +126,7 @@ impl Function {
             visibility: Some(*validated_node.visibility()),
             symbol_table: SymbolTable::scoped_new(validated_node.id(), Some(parent_class)),
             defined: false,
+            bytes: 0,
             line: *validated_node.line(),
             column: *validated_node.column(),
         }
@@ -150,5 +155,16 @@ impl Function {
 
     pub fn symbol_table_mut(&mut self) -> &mut SymbolTable {
         &mut self.symbol_table
+    }
+
+
+
+    pub fn computed_size(&mut self) -> usize {
+        let mut bytes = 0;
+        for elem in self.symbol_table.values.iter_mut() {
+            bytes += elem.computed_size();
+        }
+        self.bytes = bytes;
+        bytes
     }
 }

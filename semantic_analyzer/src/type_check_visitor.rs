@@ -572,51 +572,7 @@ fn function_id(node: &mut Node, context: &mut SymbolTable, state: &mut State, gl
     info!("function_id");
     if let Some(ret_type) = function.return_type() {
         node.set_type(ret_type);
-    } else {
-        // node.set_type("void"); // Should I just not set it?
     }
-
-    // We must account for class members here as well
-    // For the context of classes we can dispatch to a custom handler and leave this one for just overloading
-    // during the pair processing of the dot lists
-
-    // let id_data = node.data().clone();
-
-    // if let Data::String(id) = id_data {
-    //     //handle overloads
-    //     let matches = global_table.get_all(&id);
-    //     for matching_entry in matches {
-    //         match matching_entry {
-    //             SymbolTableEntry::Function(function) => {
-    //                 // we must be sure the data type of the params are the same as for the function
-    //                 if function.parameter_types().len() != parameters.len() {
-    //                     continue; // bad candidate, length mismatch
-    //                 }
-
-    //                 for (param_node, st_entry) in parameters.iter().zip(function.parameter_types()) {
-    //                     // The specifically ignores the array dimensionality
-    //                     if param_node.data_type().unwrap() != *st_entry.data_type() {
-    //                         continue; // Type mismatch
-    //                     }
-    //                 }
-
-    //                 // Set the current node to the return type of the function
-    //                 if let Some(ret_type) = function.return_type() {
-    //                     node.set_type(ret_type);
-    //                 } else {
-    //                     // node.set_type("void"); // Should I just not set it?
-    //                 }
-    //                 return; // This means we found a candidate
-    //             },
-    //             entry => panic!("Id \"{}\" is colliding with something it shouldn't \"{}\"", id, entry), // Bad, but this shouldn't happen (likely culprit is collision with temporary)    
-    //         }
-    //     }
-
-    //     // Arriving here means no candidates matched or there were no candidates
-    //     let err = SemanticError::new_undefined_identifier(node.line(), node.column(), &id);
-    //     output.add(&err.to_string(), err.line(), err.col());
-    //     node.set_type("error-type");
-    // }
 }
 
 fn index_list(node: &mut Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable, output: &mut OutputConfig) {

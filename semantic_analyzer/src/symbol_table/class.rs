@@ -4,7 +4,7 @@ use crate::symbol_table::SymbolTable;
 use derive_getters::Getters;
 use std::default::Default;
 use std::fmt;
-
+use crate::sizes;
 // A class is:
 // An identifier that names a new compound type type
 // A list of types that name other compound types
@@ -22,7 +22,7 @@ pub struct Class {
 
 impl FormatTable for Class {
     fn lines(&self, width: usize) -> Vec<String> {
-        let mut result = vec![format!("class | {}", self.id)];
+        let mut result = vec![format!("class | {:10}| {:<10}", self.id, self.bytes)];
         for l in self.symbol_table.lines(width - 8) {
             result.push(format!("   {}", l));
         }
@@ -53,6 +53,15 @@ impl Class {
 
     pub fn symbol_table_mut(&mut self) -> &mut SymbolTable {
         &mut self.symbol_table
+    }
+
+    pub fn computed_size(&mut self) -> usize {
+        let mut size = 0;
+        for elem in self.symbol_table.values.iter_mut() {
+            size += elem.computed_size();
+        }
+        self.bytes = size;
+        size
     }
 }
 

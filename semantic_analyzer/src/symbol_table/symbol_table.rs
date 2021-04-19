@@ -68,6 +68,19 @@ impl SymbolTableEntry {
         }
     }
 
+    pub fn computed_size(&mut self) -> usize {
+        match self {
+            SymbolTableEntry::Class(class) => 0,
+            SymbolTableEntry::Function(function) => function.computed_size(),
+            SymbolTableEntry::Inherit(_) => 0,
+            SymbolTableEntry::Param(param) => param.computed_size(),
+            SymbolTableEntry::Local(local) => local.computed_size(),
+            SymbolTableEntry::Data(data) => data.computed_size(),
+            SymbolTableEntry::Literal(literal) => literal.computed_size(),
+            SymbolTableEntry::Temporary(temporary) => temporary.computed_size(),
+        }
+    }
+
     // TODO: re-implement
 
     // The non-array type

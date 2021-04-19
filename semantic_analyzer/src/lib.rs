@@ -23,6 +23,7 @@ pub mod symbol_table {
     pub mod visitor;
     pub mod literal;
     pub mod temporary;
+    pub mod sizes;
 
     pub use class::Class;
     pub use data::Data;

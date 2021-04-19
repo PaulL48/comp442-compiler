@@ -13,8 +13,13 @@ pub fn process(
     current_results: &mut SemanticAnalysisResults,
     output: &mut OutputConfig,
 ) {
-    info!("Starting memory size check");
-    visit(node, &mut current_results.symbol_table.clone(), &mut State {}, &mut current_results.symbol_table)
+    // we can just sum the elements of a symbol table
+
+    for element in current_results.symbol_table.values.iter_mut() {
+        element.computed_size();
+    }
+    // info!("Starting memory size check");
+    // visit(node, &mut current_results.symbol_table.clone(), &mut State {}, &mut current_results.symbol_table)
 }
 
 pub struct State {}

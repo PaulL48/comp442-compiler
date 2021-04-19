@@ -3,6 +3,7 @@ use crate::format_table::FormatTable;
 use derive_getters::Getters;
 use std::default::Default;
 use std::fmt;
+use crate::sizes;
 
 use crate::symbol_table::utils;
 
@@ -20,6 +21,7 @@ pub struct Param {
     id: String,
     data_type: String,
     dimension: Vec<Option<i64>>,
+    bytes: usize,
     line: usize,
     column: usize,
 }
@@ -33,10 +35,11 @@ impl fmt::Display for Param {
 impl FormatTable for Param {
     fn lines(&self, _: usize) -> Vec<String> {
         vec![format!(
-            "{:10}| {:10}| {}",
+            "{:10}| {:10}| {:10}| {:<10}|",
             "param",
             self.id,
-            self.type_string()
+            self.type_string(),
+            self.bytes
         )]
     }
 }
@@ -59,6 +62,7 @@ impl Param {
             id: function_parameter.id().to_string(),
             data_type: function_parameter.data_type().to_string(),
             dimension: function_parameter.dimension_list().dimensions().clone(),
+            bytes: 0,
             line: *function_parameter.line(),
             column: *function_parameter.column(),
         }
@@ -66,5 +70,11 @@ impl Param {
 
     pub fn type_string(&self) -> String {
         utils::parameter_type_string(&self.data_type, &self.dimension)
+    }
+
+    pub fn computed_size(&mut self) -> usize {
+        let size = sizes::size_of_optional(&self.data_type, &self.dimension);
+        self.bytes = size;
+        size
     }
 }

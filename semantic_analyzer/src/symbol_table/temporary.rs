@@ -3,6 +3,7 @@
 use crate::format_table::FormatTable;
 use derive_getters::Getters;
 use std::fmt;
+use crate::sizes;
 
 #[derive(Debug, Clone, Default, Getters)]
 pub struct Temporary {
@@ -40,6 +41,12 @@ impl Temporary {
             line,
             column
         }
+    }
+
+    pub fn computed_size(&mut self) -> usize {
+        let size = sizes::size_of(&self.data_type, &Vec::new());
+        self.bytes = size;
+        size
     }
 }
 

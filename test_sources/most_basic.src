@@ -22,7 +22,6 @@ func foo() : void {
 
 }
 
-
 main
 {
   var

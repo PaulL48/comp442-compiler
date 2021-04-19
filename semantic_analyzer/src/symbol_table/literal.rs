@@ -1,6 +1,7 @@
 use crate::format_table::FormatTable;
 use derive_getters::Getters;
 use std::fmt;
+use crate::sizes;
 
 #[derive(Debug, Clone)]
 pub enum LiteralValue {
@@ -59,6 +60,16 @@ impl Literal {
             line,
             column,
         }
+    }
+
+    pub fn computed_size(&mut self) -> usize {
+        let size = match self.value {
+            LiteralValue::Integer(_) => 4,
+            LiteralValue::Real(_) => 4,
+            LiteralValue::StrLit(_) => 4
+        };
+        self.bytes = size;
+        size
     }
 }
 

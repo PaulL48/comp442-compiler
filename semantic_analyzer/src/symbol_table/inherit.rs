@@ -9,6 +9,8 @@ use std::fmt;
 #[derive(Debug, Clone, Default, Getters)]
 pub struct Inherit {
     names: Vec<String>,
+    line: usize,
+    column: usize,
 }
 
 impl fmt::Display for Inherit {
@@ -39,9 +41,11 @@ impl FormatTable for Inherit {
 }
 
 impl Inherit {
-    pub fn new(id_list: &[&str]) -> Self {
+    pub fn new(id_list: &[&str], line: usize, column: usize) -> Self {
         Inherit {
             names: id_list.iter().map(|x| x.to_string()).collect(),
+            line,
+            column
         }
     }
 }
