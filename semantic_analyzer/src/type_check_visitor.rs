@@ -530,11 +530,11 @@ fn rel_op(
 }
 
 fn func_decl(
-    node: &mut Node,
-    context: &mut SymbolTable,
-    state: &mut State,
-    global_table: &mut SymbolTable,
-    output: &mut OutputConfig,
+    _node: &mut Node,
+    _context: &mut SymbolTable,
+    _state: &mut State,
+    _global_table: &mut SymbolTable,
+    _output: &mut OutputConfig,
 ) {
     info!("func_decl");
 }
@@ -542,9 +542,9 @@ fn func_decl(
 fn intfactor(
     node: &mut Node,
     context: &mut SymbolTable,
-    state: &mut State,
-    global_table: &mut SymbolTable,
-    output: &mut OutputConfig,
+    _state: &mut State,
+    _global_table: &mut SymbolTable,
+    _output: &mut OutputConfig,
 ) {
     info!("intfactor");
     let name = context.get_next_temporary();
@@ -567,9 +567,9 @@ fn intfactor(
 fn floatfactor(
     node: &mut Node,
     context: &mut SymbolTable,
-    state: &mut State,
-    global_table: &mut SymbolTable,
-    output: &mut OutputConfig,
+    _state: &mut State,
+    _global_table: &mut SymbolTable,
+    _output: &mut OutputConfig,
 ) {
     info!("floatfactor");
     let name = context.get_next_temporary();
@@ -593,9 +593,9 @@ fn floatfactor(
 fn stringfactor(
     node: &mut Node,
     context: &mut SymbolTable,
-    state: &mut State,
-    global_table: &mut SymbolTable,
-    output: &mut OutputConfig,
+    _state: &mut State,
+    _global_table: &mut SymbolTable,
+    _output: &mut OutputConfig,
 ) {
     info!("stringfactor");
     let name = context.get_next_temporary();
@@ -618,8 +618,8 @@ fn stringfactor(
 
 fn type_node(
     node: &mut Node,
-    context: &mut SymbolTable,
-    state: &mut State,
+    _context: &mut SymbolTable,
+    _state: &mut State,
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
@@ -644,11 +644,11 @@ fn type_node(
 }
 
 fn mandatory_dimlist(
-    node: &mut Node,
-    context: &mut SymbolTable,
-    state: &mut State,
-    global_table: &mut SymbolTable,
-    output: &mut OutputConfig,
+    _node: &mut Node,
+    _context: &mut SymbolTable,
+    _state: &mut State,
+    _global_table: &mut SymbolTable,
+    _output: &mut OutputConfig,
 ) {
     // The list is in a mandatory context (a declaration or a datamember)
     // This means if it has any dimensions, they must be defined
@@ -704,8 +704,8 @@ fn mandatory_indexlist(
 fn id(
     node: &mut Node,
     context: &mut SymbolTable,
-    state: &mut State,
-    global_table: &mut SymbolTable,
+    _state: &mut State,
+    _global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
     // Fetch the type from the context and set the node to the type
@@ -741,10 +741,10 @@ fn id(
 
 fn function_id(
     node: &mut Node,
-    context: &mut SymbolTable,
-    state: &mut State,
-    global_table: &mut SymbolTable,
-    output: &mut OutputConfig,
+    _context: &mut SymbolTable,
+    _state: &mut State,
+    _global_table: &mut SymbolTable,
+    _output: &mut OutputConfig,
     function: &Function,
 ) {
     info!("function_id");
@@ -754,11 +754,11 @@ fn function_id(
 }
 
 fn index_list(
-    node: &mut Node,
-    context: &mut SymbolTable,
-    state: &mut State,
-    global_table: &mut SymbolTable,
-    output: &mut OutputConfig,
+    _node: &mut Node,
+    _context: &mut SymbolTable,
+    _state: &mut State,
+    _global_table: &mut SymbolTable,
+    _output: &mut OutputConfig,
 ) {
 }
 
@@ -1061,9 +1061,9 @@ fn parameter_data_member_exception(
 
 fn a_params_correct(
     node: &mut Node,
-    context: &mut SymbolTable,
-    state: &mut State,
-    global_table: &mut SymbolTable,
+    _context: &mut SymbolTable,
+    _state: &mut State,
+    _global_table: &mut SymbolTable,
     output: &mut OutputConfig,
     function: &Function,
 ) {
@@ -1164,7 +1164,7 @@ fn func_def(
     let column = *node.column();
 
     // let parameter_list = {
-    let validated_node = FunctionDefinition::view_as(node);
+    let _validated_node = FunctionDefinition::view_as(node);
 
     let validated_node = if let Ok(validated_node) = FunctionDefinition::view_as(node) {
         validated_node
@@ -1304,8 +1304,8 @@ fn check_binary_types(
     lhs: &Node,
     rhs: &Node,
     output: &mut OutputConfig,
-    line: usize,
-    col: usize,
+    _line: usize,
+    _col: usize,
 ) -> Result<String, ()> {
     info!("check_binary");
 

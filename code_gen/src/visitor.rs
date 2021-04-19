@@ -26,9 +26,9 @@ fn prog(node: &Node, context: &SymbolTable, output: &mut OutputConfig) {
     // }
 }
 
-fn class_list(node: &Node, context: &SymbolTable, output: &mut OutputConfig) {}
+fn class_list(_node: &Node, _context: &SymbolTable, _output: &mut OutputConfig) {}
 
-fn function_list(node: &Node, context: &SymbolTable, output: &mut OutputConfig) {}
+fn function_list(_node: &Node, _context: &SymbolTable, _output: &mut OutputConfig) {}
 
 fn entry_point(node: &Node, context: &SymbolTable, output: &mut OutputConfig) {
     if let Data::Children(children) = node.data() {
@@ -46,7 +46,7 @@ fn var_list(node: &Node, context: &SymbolTable, output: &mut OutputConfig) {
     }
 }
 
-fn var_decl(node: &Node, context: &SymbolTable, output: &mut OutputConfig) {
+fn var_decl(_node: &Node, _context: &SymbolTable, _output: &mut OutputConfig) {
     // one challenge here, we need to create the entry but we also
     // need the name of the enclosing function to prefix the label
 }

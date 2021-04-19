@@ -4,13 +4,13 @@
 use crate::SemanticAnalysisResults;
 use crate::{SymbolTable, SymbolTableEntry};
 use ast::{Data, Node};
-use log::info;
+
 use output_manager::OutputConfig;
 
 pub fn process(
-    node: &Node,
+    _node: &Node,
     current_results: &mut SemanticAnalysisResults,
-    output: &mut OutputConfig,
+    _output: &mut OutputConfig,
 ) {
     // we can just sum the elements of a symbol table
 
@@ -173,10 +173,10 @@ fn assign_op(
 }
 
 fn var_decl(
-    node: &Node,
-    context: &mut SymbolTable,
-    state: &mut State,
-    global_table: &mut SymbolTable,
+    _node: &Node,
+    _context: &mut SymbolTable,
+    _state: &mut State,
+    _global_table: &mut SymbolTable,
 ) {
     // one challenge here, we need to create the entry but we also
     // need the name of the enclosing function to prefix the label
@@ -191,10 +191,10 @@ fn var(node: &Node, context: &mut SymbolTable, state: &mut State, global_table: 
 }
 
 fn data_member(
-    node: &Node,
-    context: &mut SymbolTable,
-    state: &mut State,
-    global_table: &mut SymbolTable,
+    _node: &Node,
+    _context: &mut SymbolTable,
+    _state: &mut State,
+    _global_table: &mut SymbolTable,
 ) {
 }
 
@@ -211,14 +211,14 @@ fn add_op(
     }
 
     // Create a new temporary in this context
-    let new_temp = context.get_next_temporary();
+    let _new_temp = context.get_next_temporary();
     // context.add_entry(entry: SymbolTableEntry)
 }
 
 fn func_decl(
-    node: &Node,
-    context: &mut SymbolTable,
-    state: &mut State,
-    global_table: &mut SymbolTable,
+    _node: &Node,
+    _context: &mut SymbolTable,
+    _state: &mut State,
+    _global_table: &mut SymbolTable,
 ) {
 }
