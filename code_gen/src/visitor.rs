@@ -1,6 +1,6 @@
-use ast::{Node, Data};
-use semantic_analyzer::SymbolTable;
+use ast::{Data, Node};
 use output_manager::OutputConfig;
+use semantic_analyzer::SymbolTable;
 
 pub fn visit(node: &Node, context: &SymbolTable, output: &mut OutputConfig) {
     match node.name().as_str() {
@@ -10,8 +10,6 @@ pub fn visit(node: &Node, context: &SymbolTable, output: &mut OutputConfig) {
 }
 
 fn prog(node: &Node, context: &SymbolTable, output: &mut OutputConfig) {
-    
-    
     // Here we'll explicitly invoke the individual children
     if let Data::Children(children) = node.data() {
         class_list(&children[0], context, output);
@@ -21,17 +19,14 @@ fn prog(node: &Node, context: &SymbolTable, output: &mut OutputConfig) {
         panic!();
     }
 
-    
     // if let Data::Children(children) = node.data() {
     //     for child in children {
     //         visit(child, current_results);
     //     }
     // }
-
 }
 
-fn class_list(node: &Node, context: &SymbolTable, output: &mut OutputConfig) {
-}
+fn class_list(node: &Node, context: &SymbolTable, output: &mut OutputConfig) {}
 
 fn function_list(node: &Node, context: &SymbolTable, output: &mut OutputConfig) {}
 
@@ -41,8 +36,6 @@ fn entry_point(node: &Node, context: &SymbolTable, output: &mut OutputConfig) {
             visit(child, context, output);
         }
     }
-
-
 }
 
 fn var_list(node: &Node, context: &SymbolTable, output: &mut OutputConfig) {

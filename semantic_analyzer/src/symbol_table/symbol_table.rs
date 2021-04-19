@@ -168,7 +168,10 @@ impl SymbolTable {
         if let Some(scope) = &self.scope {
             result.push_str(&format!("{}_", scope));
         }
-        result.push_str(&format!("{}_{}{}", self.name, TEMP_PREFIX, self.temp_var_count));
+        result.push_str(&format!(
+            "{}_{}{}",
+            self.name, TEMP_PREFIX, self.temp_var_count
+        ));
         self.temp_var_count += 1;
         result
     }
@@ -178,7 +181,7 @@ impl SymbolTable {
             name: name.to_string(),
             scope: None,
             values: Vec::new(),
-            temp_var_count: 0
+            temp_var_count: 0,
         }
     }
 
@@ -187,7 +190,7 @@ impl SymbolTable {
             name: name.to_string(),
             scope: scope.map(|x| x.to_string()),
             values: Vec::new(),
-            temp_var_count: 0
+            temp_var_count: 0,
         }
     }
 

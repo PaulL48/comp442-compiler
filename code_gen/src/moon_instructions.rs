@@ -78,7 +78,6 @@ pub fn cmt_line(comment: &str) -> String {
     format!(" {:w$} {}", "", comment, w = LABEL_WIDTH)
 }
 
-
 // For convenience a function is created for each that simply copies the string out
 // load_w()
 pub fn load_w(ri: &Register, k: &str, rj: &Register) -> String {
@@ -106,9 +105,10 @@ pub fn mul(dest: &Register, lhs: &Register, rhs: &Register) -> String {
 pub fn div(dest: &Register, lhs: &Register, rhs: &Register) -> String {
     format_instr_triple(DIV, dest, lhs, rhs)
 }
-pub fn _mod(dest: &Register, lhs: &Register, rhs: &Register) -> String { // Note: Underscore
+pub fn _mod(dest: &Register, lhs: &Register, rhs: &Register) -> String {
+    // Note: Underscore
     format_instr_triple(MOD, dest, lhs, rhs)
-} 
+}
 pub fn and(dest: &Register, lhs: &Register, rhs: &Register) -> String {
     format_instr_triple(AND, dest, lhs, rhs)
 }
@@ -233,13 +233,13 @@ pub fn org(k: &str) -> String {
 pub fn mem_store_w(ks: &[&str]) -> String {
     let mut result = String::new();
     result.push_str(&format!("{:w$}", MEM_STORE_W, w = INSTRUCTION_WIDTH));
-    
+
     if ks.len() == 0 {
         panic!("Store Words with empty arguments");
     }
 
     result.push_str(&format!("{}", ks[0]));
-    
+
     for element in ks.iter().skip(1) {
         result.push_str(&format!(", {}", element));
     }
@@ -250,13 +250,13 @@ pub fn mem_store_w(ks: &[&str]) -> String {
 pub fn mem_store_b(ks: &[&str]) -> String {
     let mut result = String::new();
     result.push_str(&format!("{:w$}", MEM_STORE_W, w = INSTRUCTION_WIDTH));
-    
+
     if ks.len() == 0 {
         panic!("Store Words with empty arguments");
     }
 
     result.push_str(&format!("{}", ks[0]));
-    
+
     for element in ks.iter().skip(1) {
         result.push_str(&format!(", {}", element));
     }
@@ -268,11 +268,30 @@ pub fn res(k: &str) -> String {
 }
 
 fn format_instr_triple<T: std::fmt::Display>(instruction: &str, a: &T, b: &T, c: &T) -> String {
-    format!("{:w$} {}, {}, {}", instruction, a, b, c, w = INSTRUCTION_WIDTH)
+    format!(
+        "{:w$} {}, {}, {}",
+        instruction,
+        a,
+        b,
+        c,
+        w = INSTRUCTION_WIDTH
+    )
 }
 
-fn format_instr_triple_str<T: std::fmt::Display>(instruction: &str, a: &T, b: &T, c: &str) -> String {
-    format!("{:w$} {}, {}, {}", instruction, a, b, c, w = INSTRUCTION_WIDTH)
+fn format_instr_triple_str<T: std::fmt::Display>(
+    instruction: &str,
+    a: &T,
+    b: &T,
+    c: &str,
+) -> String {
+    format!(
+        "{:w$} {}, {}, {}",
+        instruction,
+        a,
+        b,
+        c,
+        w = INSTRUCTION_WIDTH
+    )
 }
 
 fn format_instr_double<T: std::fmt::Display>(instruction: &str, a: &T, b: &T) -> String {

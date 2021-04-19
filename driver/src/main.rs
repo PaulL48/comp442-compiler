@@ -2,12 +2,12 @@ mod cli_config;
 
 use clap::{load_yaml, App};
 use cli_config::CliConfig;
+use code_gen;
 use lexical_analyzer::{lexer::Lexer, lexical_rule::LexicalRule};
 use log::{error, info};
 use output_manager::OutputConfig;
 use simplelog::*;
 use syntactic_analyzer::{parse, Grammar, ParseTable};
-use code_gen;
 
 /// Development switch to easily turn terminal logging on or off
 const LOGGING_SWITCH: LevelFilter = LevelFilter::Info;

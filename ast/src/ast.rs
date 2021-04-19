@@ -7,7 +7,6 @@ pub struct Node {
     data: Data,
     line: usize,
     column: usize,
-
     // Consider adding type
     // consider adding variable name
 }

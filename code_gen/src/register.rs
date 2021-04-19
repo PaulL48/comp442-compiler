@@ -16,17 +16,13 @@ impl RegisterPool {
     pub fn register(i: usize) -> String {
         format!("r{}", i)
     }
-    
+
     pub fn new() -> Self {
-        RegisterPool {
-            next_available: 0
-        }
+        RegisterPool { next_available: 0 }
     }
 
     pub fn reserve(&self, n: usize) -> RegisterRental {
-        RegisterRental {
-            n
-        }
+        RegisterRental { n }
     }
 
     pub fn release(&mut self, rental: RegisterRental) {

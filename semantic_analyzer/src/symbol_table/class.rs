@@ -47,8 +47,6 @@ impl Class {
         }
     }
 
-    
-
     pub fn resultant_type(&self) -> &str {
         self.id()
     }

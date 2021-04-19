@@ -1,3 +1,4 @@
+use crate::memory_size_visitor;
 use crate::symbol_table;
 use crate::symbol_table::symbol_table::SymbolTable;
 use output_manager::{warn_write, OutputConfig};
@@ -55,6 +56,8 @@ pub fn analyze(root: &ast::Node, output_config: &mut OutputConfig) -> SemanticAn
             (visitor.end_of_phase)(&mut results, output_config);
         }
     }
+
+    memory_size_visitor::process(root, &mut results, output_config);
 
     output_config.flush_semantic_messages();
 

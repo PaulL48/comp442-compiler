@@ -1,10 +1,10 @@
 mod format_table;
+mod memory_size_visitor;
 mod semantic_analyzer;
 mod semantic_error;
+mod type_check_visitor;
 mod utils;
 mod visibility;
-mod memory_size_visitor;
-mod type_check_visitor;
 
 pub use semantic_analyzer::analyze;
 pub use semantic_analyzer::SemanticAnalysisResults;
