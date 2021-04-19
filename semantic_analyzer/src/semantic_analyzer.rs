@@ -1,4 +1,5 @@
 use crate::memory_size_visitor;
+use crate::type_check_visitor;
 use crate::symbol_table;
 use crate::symbol_table::symbol_table::SymbolTable;
 use output_manager::{warn_write, OutputConfig};
@@ -32,7 +33,7 @@ impl Phase {
     }
 }
 
-pub fn analyze(root: &ast::Node, output_config: &mut OutputConfig) -> SemanticAnalysisResults {
+pub fn analyze(root: &mut ast::Node, output_config: &mut OutputConfig) -> SemanticAnalysisResults {
     let phases: Vec<Vec<Phase>> = vec![vec![Phase::new(
         symbol_table::visitor::visit,
         symbol_table::visitor::end_of_phase,
@@ -57,6 +58,7 @@ pub fn analyze(root: &ast::Node, output_config: &mut OutputConfig) -> SemanticAn
         }
     }
 
+    type_check_visitor::process(root, &mut results, output_config);
     memory_size_visitor::process(root, &mut results, output_config);
 
     output_config.flush_semantic_messages();

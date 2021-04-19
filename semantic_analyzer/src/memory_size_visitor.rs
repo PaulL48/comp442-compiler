@@ -5,12 +5,15 @@ use crate::SemanticAnalysisResults;
 use crate::{SymbolTable, SymbolTableEntry};
 use ast::{Data, Node};
 use output_manager::OutputConfig;
+use log::info;
+
 
 pub fn process(
     node: &Node,
     current_results: &mut SemanticAnalysisResults,
     output: &mut OutputConfig,
 ) {
+    info!("Starting memory size check");
     visit(node, &mut current_results.symbol_table.clone(), &mut State {}, &mut current_results.symbol_table)
 }
 

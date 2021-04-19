@@ -59,15 +59,15 @@ fn main() -> std::io::Result<()> {
         .filter(|x| path::is_file(x) && path::extension(x).unwrap_or("") == "src")
     {
         let mut oc = OutputConfig::new(&source_file, config.output_folder);
-        let result = parse(
+        let mut result = parse(
             &mut l.lex(&source_file, &oc.lex_error_path),
             &g,
             &parse_table,
             &mut oc,
         );
 
-        if let Some(ast) = result {
-            let mut result = semantic_analyzer::analyze(&ast, &mut oc);
+        if let Some(ref mut ast) = result {
+            let mut result = semantic_analyzer::analyze(ast, &mut oc);
             // TODO: Add check if the semantic analysis failed or not
 
             code_gen::process(&ast, &mut result, &mut oc)

@@ -11,6 +11,7 @@ pub enum SemanticError {
     FunctionOverload(usize, usize, String), // This isn't really an error,
     MissingDimension(usize, usize, String),
     CyclicInheritance(usize, usize, String),
+    TypeError(usize, usize, String),
 
     BinaryMismatchedTypes(usize, usize, String),
     UndefinedType(usize, usize, String),
@@ -30,6 +31,7 @@ impl fmt::Display for SemanticError {
             SemanticError::UndefinedType(l, c, message) => (l, c, message),
             SemanticError::MissingDimension(l, c, message) => (l, c, message),
             SemanticError::CyclicInheritance(l, c, message) => (l, c, message),
+            SemanticError::TypeError(l, c, message) => (l, c, message),
 
             SemanticError::FunctionOverload(l, c, message) => {
                 return write!(f, "Semantic warning: {}:{} {}", l, c, message);
@@ -55,6 +57,7 @@ impl SemanticError {
             SemanticError::FunctionOverload(l, _, _) => *l,
             SemanticError::MissingDimension(l, _, _) => *l,
             SemanticError::CyclicInheritance(l, _, _) => *l,
+            SemanticError::TypeError(l, _, _) => *l,
         }
     }
 
@@ -72,6 +75,7 @@ impl SemanticError {
             SemanticError::FunctionOverload(_, c, _) => *c,
             SemanticError::MissingDimension(_, c, _) => *c,
             SemanticError::CyclicInheritance(_, c, _) => *c,
+            SemanticError::TypeError(_, c, _) => *c,
         }
     }
 
@@ -201,6 +205,23 @@ impl SemanticError {
             *line,
             *column,
             format!("\"{}\" shadows inherited member \"{}\"", entry, shadows),
+        )
+    }
+
+    pub fn new_type_error(
+        line: &usize,
+        column: &usize,
+        lht: &str,
+        rht: &str
+    ) -> SemanticError {
+        SemanticError::TypeError(
+            *line,
+            *column,
+            format!(
+                "Type error: types of binary operation do not match \"{}\", \"{}\"",
+                lht,
+                rht,
+            )
         )
     }
 

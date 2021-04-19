@@ -1,17 +1,18 @@
 use output_manager::warn_write;
 use std::str::FromStr;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Node {
     node_type: String,
     data: Data,
     line: usize,
     column: usize,
+    data_type: Option<String>
     // Consider adding type
     // consider adding variable name
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Data {
     Children(Vec<Node>),
     Integer(i64),
@@ -27,6 +28,7 @@ impl Node {
             data,
             line,
             column,
+            data_type: None
         }
     }
 
@@ -52,6 +54,14 @@ impl Node {
 
     pub fn column(&self) -> &usize {
         &self.column
+    }
+
+    pub fn data_type(&self) -> Option<String> {
+        self.data_type.clone()
+    }
+
+    pub fn set_type(&mut self, data_type: &str) {
+        self.data_type = Some(data_type.to_owned());
     }
 
     pub fn dft(&self) -> DepthFirstIterator {
