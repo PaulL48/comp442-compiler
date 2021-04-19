@@ -10,6 +10,7 @@ const DERIVATION_EXT: &str = "outderivation";
 const AST_EXT: &str = "outast";
 const PARSE_ERROR_EXT: &str = "outsyntaxerrors";
 const LEX_ERROR_EXT: &str = "outlexerrors";
+const CODE_EXT: &str = "m";
 
 pub struct ErrorMessage {
     line: usize,
@@ -66,6 +67,11 @@ impl PartialEq for ErrorMessage {
 impl Eq for ErrorMessage {}
 
 pub struct OutputConfig {
+    pub code_path: String,
+    pub code_exec: Vec<String>,
+    pub code_data: Vec<String>,
+    pub code_file: File,
+
     pub symbol_table_path: String,
     pub symbol_table_file: File,
 
@@ -147,6 +153,7 @@ impl OutputConfig {
         let output = output_directory.to_string() + "/" + source_file_name;
         let output_no_ext = path::replace_extension(&output, "").unwrap();
 
+        let code_path = path::replace_extension(&output, CODE_EXT).unwrap();
         let symbol_table_path = path::replace_extension(&output, SYMBOL_TABLE_EXT).unwrap();
         let semantic_error_path = path::replace_extension(&output, SEMANTIC_ERROR_EXT).unwrap();
         let derivation_path = path::replace_extension(&output, DERIVATION_EXT).unwrap();
@@ -154,6 +161,7 @@ impl OutputConfig {
         let syntax_error_path = path::replace_extension(&output, PARSE_ERROR_EXT).unwrap();
         let lex_error_path = path::replace_extension(&output, LEX_ERROR_EXT).unwrap();
 
+        let code_file = panic_open(&code_path);
         let symbol_table_file = panic_open(&symbol_table_path);
         let semantic_error_file = panic_open(&semantic_error_path);
         let derivation_file = panic_open(&derivation_path);
@@ -168,6 +176,10 @@ impl OutputConfig {
         // info!("AST will appear in \"{}\"", ast_path);
 
         OutputConfig {
+            code_path,
+            code_file,
+            code_exec: Vec::new(),
+            code_data: Vec::new(),
             symbol_table_file,
             symbol_table_path,
             semantic_error_file,
@@ -197,5 +209,24 @@ impl OutputConfig {
     pub fn add(&mut self, message: &str, line: usize, column: usize) {
         self.semantic_error_buffer
             .push(ErrorMessage::new(line, column, message))
+    }
+
+    pub fn add_exec(&mut self, line: &str) {
+        self.code_exec.push(line.to_string());
+    }
+
+    pub fn add_data(&mut self, line: &str) {
+        self.code_data.push(line.to_string());
+    }
+
+    pub fn flush(&mut self) {
+        self.flush_semantic_messages();
+        for line in &self.code_exec {
+            warn_write(&mut self.code_file, &self.code_path, &line)
+        }
+
+        for line in &self.code_data {
+            warn_write(&mut self.code_file, &self.code_path, &line)
+        }
     }
 }

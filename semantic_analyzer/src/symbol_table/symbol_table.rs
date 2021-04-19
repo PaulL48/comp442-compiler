@@ -9,6 +9,7 @@ use crate::symbol_table::Class;
 use maplit::hashset;
 use std::collections::HashSet;
 
+const GLOBAL_TABLE_WIDTH: usize = 83;
 const TEMP_PREFIX: &str = "temp";
 
 #[derive(Debug, Clone)]
@@ -19,6 +20,8 @@ pub enum SymbolTableEntry {
     Param(param::Param),
     Local(local::Local),
     Data(data::Data),
+    Literal(literal::Literal),
+    Temporary(temporary::Temporary),
 }
 
 pub trait TableEntryGenerator<T> {
@@ -39,6 +42,8 @@ impl fmt::Display for SymbolTableEntry {
             SymbolTableEntry::Param(param) => param.fmt(f),
             SymbolTableEntry::Local(local) => local.fmt(f),
             SymbolTableEntry::Data(data) => data.fmt(f),
+            SymbolTableEntry::Literal(literal) => literal.fmt(f),
+            SymbolTableEntry::Temporary(temporary) => temporary.fmt(f),
         }
     }
 }
@@ -58,6 +63,8 @@ impl SymbolTableEntry {
             SymbolTableEntry::Param(param) => Some(param.id()),
             SymbolTableEntry::Local(local) => Some(local.id()),
             SymbolTableEntry::Data(data) => Some(data.id()),
+            SymbolTableEntry::Literal(literal) => Some(literal.id()),
+            SymbolTableEntry::Temporary(temporary) => Some(temporary.id()),
         }
     }
 
@@ -85,6 +92,8 @@ impl FormatTable for SymbolTableEntry {
             SymbolTableEntry::Param(p) => p.lines(width),
             SymbolTableEntry::Local(l) => l.lines(width),
             SymbolTableEntry::Data(d) => d.lines(width),
+            SymbolTableEntry::Literal(literal) => literal.lines(width),
+            SymbolTableEntry::Temporary(temporary) => temporary.lines(width),
         }
     }
 }
@@ -125,7 +134,7 @@ impl FormatTable for SymbolTable {
 
 impl fmt::Display for SymbolTable {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for l in self.lines(83) {
+        for l in self.lines(GLOBAL_TABLE_WIDTH) {
             writeln!(f, "{}", l)?;
         }
         Ok(())
@@ -162,19 +171,25 @@ impl SymbolTable {
         format!("{:=<1$}", "", table_width)
     }
 
-    pub fn get_internal_variable_prefix(&mut self) -> String {
-        let mut result = String::new();
-        result.push_str("__");
-        if let Some(scope) = &self.scope {
-            result.push_str(&format!("{}_", scope));
-        }
-        result.push_str(&format!(
-            "{}_{}{}",
-            self.name, TEMP_PREFIX, self.temp_var_count
-        ));
+    pub fn get_next_temporary(&mut self) -> String {
+        let result = format!("{}{}", TEMP_PREFIX, self.temp_var_count);
         self.temp_var_count += 1;
         result
     }
+
+    // pub fn get_internal_variable_prefix(&mut self) -> String {
+    //     let mut result = String::new();
+    //     result.push_str("__");
+    //     if let Some(scope) = &self.scope {
+    //         result.push_str(&format!("{}_", scope));
+    //     }
+    //     result.push_str(&format!(
+    //         "{}_{}{}",
+    //         self.name, TEMP_PREFIX, self.temp_var_count
+    //     ));
+    //     self.temp_var_count += 1;
+    //     result
+    // }
 
     pub fn new(name: &str) -> Self {
         SymbolTable {

@@ -21,6 +21,8 @@ pub mod symbol_table {
     pub mod symbol_table;
     pub mod utils;
     pub mod visitor;
+    pub mod literal;
+    pub mod temporary;
 
     pub use class::Class;
     pub use data::Data;
@@ -28,6 +30,8 @@ pub mod symbol_table {
     pub use inherit::Inherit;
     pub use local::Local;
     pub use param::Param;
+    pub use literal::Literal;
+    pub use temporary::Temporary;
     pub use symbol_table::{SymbolTable, SymbolTableEntry};
 }
 

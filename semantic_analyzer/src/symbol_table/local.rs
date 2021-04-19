@@ -14,9 +14,9 @@ use std::fmt;
 #[derive(Debug, Clone, Default, Getters)]
 pub struct Local {
     id: String,
-    data_type: String, // This is bad
+    data_type: String,
     dimension: Vec<i64>,
-
+    bytes: usize,
     line: usize,
     column: usize,
 }
@@ -56,6 +56,7 @@ impl Local {
             id: variable.id().to_string(),
             data_type: variable.data_type().to_string(),
             dimension: dimensions,
+            bytes: 0,
             line: *variable.line(),
             column: *variable.column(),
         }
@@ -64,4 +65,5 @@ impl Local {
     pub fn type_string(&self) -> String {
         utils::type_string(&self.data_type, &self.dimension)
     }
+
 }

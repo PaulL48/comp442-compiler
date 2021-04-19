@@ -45,9 +45,9 @@
 <FParamsTail> ::= EPSILON
 
 <Factor> ::= @makenode~list~var@ <FuncOrVar>
-<Factor> ::= 'intnum' @makenode~integer~factor@
-<Factor> ::= 'floatnum' @makenode~float~factor@
-<Factor> ::= 'stringlit' @makenode~string~factor@
+<Factor> ::= 'intnum' @makenode~integer~intfactor@
+<Factor> ::= 'floatnum' @makenode~float~floatfactor@
+<Factor> ::= 'stringlit' @makenode~string~stringfactor@
 <Factor> ::= '(' <Expr> ')'
 <Factor> ::= 'not' <Factor> @makefamily~1~not@
 <Factor> ::= <Sign> <Factor> @makefamily~2~sign@
