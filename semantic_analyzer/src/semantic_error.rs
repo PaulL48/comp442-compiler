@@ -13,6 +13,7 @@ pub enum SemanticError {
     CyclicInheritance(usize, usize, String),
     TypeError(usize, usize, String),
     InvalidArrayIndex(usize, usize, String),
+    IncorrectNumberOfArguments(usize, usize, String),
 
     BinaryMismatchedTypes(usize, usize, String),
     UndefinedType(usize, usize, String),
@@ -34,6 +35,7 @@ impl fmt::Display for SemanticError {
             SemanticError::CyclicInheritance(l, c, message) => (l, c, message),
             SemanticError::TypeError(l, c, message) => (l, c, message),
             SemanticError::InvalidArrayIndex(l, c, message) => (l, c, message),
+            SemanticError::IncorrectNumberOfArguments(l, c, message) => (l, c, message),
 
             SemanticError::FunctionOverload(l, c, message) => {
                 return write!(f, "Semantic warning: {}:{} {}", l, c, message);
@@ -61,6 +63,8 @@ impl SemanticError {
             SemanticError::CyclicInheritance(l, _, _) => *l,
             SemanticError::TypeError(l, _, _) => *l,
             SemanticError::InvalidArrayIndex(l, _, _) => *l,
+            SemanticError::IncorrectNumberOfArguments(l, _, _) => *l,
+
 
         }
     }
@@ -81,6 +85,7 @@ impl SemanticError {
             SemanticError::CyclicInheritance(_, c, _) => *c,
             SemanticError::TypeError(_, c, _) => *c,
             SemanticError::InvalidArrayIndex(_, c, _) => *c,
+            SemanticError::IncorrectNumberOfArguments(_, c, _) => *c,
 
         }
     }
@@ -291,6 +296,41 @@ impl SemanticError {
             )
         )
     }
+
+    pub fn new_incorrect_number_arguments(
+        line: usize,
+        column: usize,
+        supplied: usize,
+        actual: usize,
+    ) -> SemanticError {
+        SemanticError::IncorrectNumberOfArguments(
+            line,
+            column,
+            format!(
+                "Incorrect number of arguments supplied, expected {} but got {}",
+                actual,
+                supplied
+            )
+        )
+    }
+
+    pub fn new_incorrect_type(
+        line: usize,
+        column: usize,
+        supplied: &str,
+        expected: &str,
+    ) -> SemanticError {
+        SemanticError::TypeError(
+            line, 
+            column,
+            format!(
+                "Incorrect type found \"{}\" but was expecting \"{}\"",
+                supplied,
+                expected
+            )
+        )
+    }
+
     // pub fn write(&self, output_manager: &mut OutputConfig) {
     //     warn_write(&mut output_manager.semantic_error_file, &output_manager.semantic_error_path, &format!("{}\n", self));
     // }
