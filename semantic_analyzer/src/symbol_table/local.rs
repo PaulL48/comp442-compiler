@@ -1,11 +1,11 @@
 use crate::ast_validation::Variable;
 use crate::format_table::FormatTable;
+use crate::sizes;
 use crate::symbol_table::utils;
 use derive_getters::Getters;
 use log::error;
 use std::default::Default;
 use std::fmt;
-use crate::sizes;
 
 // A variable declared in a function scope
 // A name that identifies a variable
@@ -73,5 +73,4 @@ impl Local {
         self.bytes = size;
         size
     }
-
 }

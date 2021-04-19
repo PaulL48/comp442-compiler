@@ -70,7 +70,6 @@ impl SemanticError {
             SemanticError::IncorrectNumberOfArguments(l, _, _) => *l,
             SemanticError::NoMatchingOverload(l, _, _) => *l,
             SemanticError::InvalidRelOp(l, _, _) => *l,
-
         }
     }
 
@@ -93,7 +92,6 @@ impl SemanticError {
             SemanticError::IncorrectNumberOfArguments(_, c, _) => *c,
             SemanticError::NoMatchingOverload(_, c, _) => *c,
             SemanticError::InvalidRelOp(_, c, _) => *c,
-
         }
     }
 
@@ -230,60 +228,39 @@ impl SemanticError {
         line: &usize,
         column: &usize,
         lht: &str,
-        rht: &str
+        rht: &str,
     ) -> SemanticError {
         SemanticError::BinaryMismatchedTypes(
             *line,
             *column,
             format!(
                 "Type error: types of binary operation do not match \"{}\", \"{}\"",
-                lht,
-                rht,
-            )
+                lht, rht,
+            ),
         )
     }
 
-    pub fn new_undefined_type(
-        line: &usize,
-        column: &usize,
-        data_type: &str,
-    ) -> SemanticError {
+    pub fn new_undefined_type(line: &usize, column: &usize, data_type: &str) -> SemanticError {
         SemanticError::UndefinedType(
             *line,
             *column,
-            format!(
-                "Type error: specified type is undefined \"{}\"", data_type
-            )
+            format!("Type error: specified type is undefined \"{}\"", data_type),
         )
     }
 
-    pub fn new_undefined_identifier(
-        line: &usize,
-        column: &usize,
-        id: &str,
-    ) -> SemanticError {
+    pub fn new_undefined_identifier(line: &usize, column: &usize, id: &str) -> SemanticError {
         SemanticError::UndefinedIdentifier(
             *line,
             *column,
-            format!(
-                "Undefined identifier \"{}\"",
-                id
-            )
+            format!("Undefined identifier \"{}\"", id),
         )
     }
 
-    pub fn new_invalid_array_index(
-        line: &usize,
-        column: &usize,
-        data_type: &str,
-    ) -> SemanticError {
+    pub fn new_invalid_array_index(line: &usize, column: &usize, data_type: &str) -> SemanticError {
         SemanticError::InvalidArrayIndex(
             *line,
             *column,
-            format!(
-                "Invalid array index \"{}\"",
-                data_type
-            )
+            format!("Invalid array index \"{}\"", data_type),
         )
     }
 
@@ -291,16 +268,15 @@ impl SemanticError {
         line: &usize,
         column: &usize,
         supplied_dimension: &usize,
-        actual_dimension: &usize
+        actual_dimension: &usize,
     ) -> SemanticError {
         SemanticError::InvalidArrayIndex(
-            *line, 
+            *line,
             *column,
             format!(
                 "Incorrect number of dimensions, has {} but supplied {}",
-                actual_dimension,
-                supplied_dimension
-            )
+                actual_dimension, supplied_dimension
+            ),
         )
     }
 
@@ -315,9 +291,8 @@ impl SemanticError {
             column,
             format!(
                 "Incorrect number of arguments supplied, expected {} but got {}",
-                actual,
-                supplied
-            )
+                actual, supplied
+            ),
         )
     }
 
@@ -328,13 +303,12 @@ impl SemanticError {
         expected: &str,
     ) -> SemanticError {
         SemanticError::TypeError(
-            line, 
+            line,
             column,
             format!(
                 "Incorrect type found \"{}\" but was expecting \"{}\"",
-                supplied,
-                expected
-            )
+                supplied, expected
+            ),
         )
     }
 
@@ -342,31 +316,26 @@ impl SemanticError {
         line: usize,
         column: usize,
         id: &str,
-        parameters: &str
+        parameters: &str,
     ) -> SemanticError {
         SemanticError::NoMatchingOverload(
             line,
             column,
             format!(
                 "No overloads found for function \"{}\" that match the parameters ({})",
-                id,
-                parameters
-            )
+                id, parameters
+            ),
         )
     }
 
-    pub fn new_invalid_relop(
-        line: usize,
-        column: usize,
-        data_type: &str
-    ) -> SemanticError {
+    pub fn new_invalid_relop(line: usize, column: usize, data_type: &str) -> SemanticError {
         SemanticError::InvalidRelOp(
             line,
             column,
             format!(
                 "Comparison operators must be between integers or floats, compared \"{}\"",
                 data_type
-            )
+            ),
         )
     }
 

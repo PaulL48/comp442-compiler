@@ -1,7 +1,6 @@
 use crate::format_table::FormatTable;
 use derive_getters::Getters;
 use std::fmt;
-use crate::sizes;
 
 #[derive(Debug, Clone)]
 pub enum LiteralValue {
@@ -21,7 +20,9 @@ impl fmt::Display for LiteralValue {
 }
 
 impl Default for LiteralValue {
-    fn default() -> Self {LiteralValue::Integer(1337)}
+    fn default() -> Self {
+        LiteralValue::Integer(1337)
+    }
 }
 
 #[derive(Debug, Clone, Default, Getters)]
@@ -66,12 +67,9 @@ impl Literal {
         let size = match self.value {
             LiteralValue::Integer(_) => 4,
             LiteralValue::Real(_) => 4,
-            LiteralValue::StrLit(_) => 4
+            LiteralValue::StrLit(_) => 4,
         };
         self.bytes = size;
         size
     }
 }
-
-
-

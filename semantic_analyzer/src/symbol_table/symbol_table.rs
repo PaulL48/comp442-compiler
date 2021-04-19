@@ -70,7 +70,7 @@ impl SymbolTableEntry {
 
     pub fn computed_size(&mut self) -> usize {
         match self {
-            SymbolTableEntry::Class(class) => 0,
+            SymbolTableEntry::Class(class) => class.computed_size(),
             SymbolTableEntry::Function(function) => function.computed_size(),
             SymbolTableEntry::Inherit(_) => 0,
             SymbolTableEntry::Param(param) => param.computed_size(),

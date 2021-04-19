@@ -30,7 +30,7 @@ impl Node {
             line,
             column,
             data_type: None,
-            dimensions: None
+            dimensions: None,
         }
     }
 

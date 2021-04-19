@@ -1,9 +1,9 @@
 //! An intermediate storage area for an expression
 
 use crate::format_table::FormatTable;
+use crate::sizes;
 use derive_getters::Getters;
 use std::fmt;
-use crate::sizes;
 
 #[derive(Debug, Clone, Default, Getters)]
 pub struct Temporary {
@@ -24,10 +24,7 @@ impl FormatTable for Temporary {
     fn lines(&self, _: usize) -> Vec<String> {
         vec![format!(
             "{:10}| {:10}| {:10}| {:<10}|",
-            "temp",
-            self.id,
-            self.data_type,
-            self.bytes,
+            "temp", self.id, self.data_type, self.bytes,
         )]
     }
 }
@@ -39,7 +36,7 @@ impl Temporary {
             data_type: data_type.to_owned(),
             bytes: 0,
             line,
-            column
+            column,
         }
     }
 
@@ -49,4 +46,3 @@ impl Temporary {
         size
     }
 }
-

@@ -54,16 +54,23 @@ pub fn end_of_phase(current_data: &mut SemanticAnalysisResults, output_config: &
                             match current_data.symbol_table.get(inherit) {
                                 Some(SymbolTableEntry::Class(_)) => (), // Ok
                                 Some(other) => {
-                                    let err = SemanticError::new_incorrect_type(*inherit_list.line(), *inherit_list.column(), &other.to_string(), "a class type");
+                                    let err = SemanticError::new_incorrect_type(
+                                        *inherit_list.line(),
+                                        *inherit_list.column(),
+                                        &other.to_string(),
+                                        "a class type",
+                                    );
                                     output_config.add(&err.to_string(), err.line(), err.col());
-                                }, // Not Ok
+                                } // Not Ok
                                 None => {
-                                    let err = SemanticError::new_undefined_type(inherit_list.line(), inherit_list.column(), inherit);
+                                    let err = SemanticError::new_undefined_type(
+                                        inherit_list.line(),
+                                        inherit_list.column(),
+                                        inherit,
+                                    );
                                     output_config.add(&err.to_string(), err.line(), err.col());
-
                                 } // Not Ok
                             }
-
                         }
                     }
                     SymbolTableEntry::Function(function) => {

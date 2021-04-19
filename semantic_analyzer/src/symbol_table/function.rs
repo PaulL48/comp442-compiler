@@ -157,8 +157,6 @@ impl Function {
         &mut self.symbol_table
     }
 
-
-
     pub fn computed_size(&mut self) -> usize {
         let mut bytes = 0;
         for elem in self.symbol_table.values.iter_mut() {

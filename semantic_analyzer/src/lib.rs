@@ -15,25 +15,25 @@ pub mod symbol_table {
     pub mod data;
     pub mod function;
     pub mod inherit;
+    pub mod literal;
     pub mod local;
     pub mod param;
     pub mod rules;
+    pub mod sizes;
     pub mod symbol_table;
+    pub mod temporary;
     pub mod utils;
     pub mod visitor;
-    pub mod literal;
-    pub mod temporary;
-    pub mod sizes;
 
     pub use class::Class;
     pub use data::Data;
     pub use function::Function;
     pub use inherit::Inherit;
+    pub use literal::{Literal, LiteralValue};
     pub use local::Local;
     pub use param::Param;
-    pub use literal::{Literal, LiteralValue};
-    pub use temporary::Temporary;
     pub use symbol_table::{SymbolTable, SymbolTableEntry};
+    pub use temporary::Temporary;
 }
 
 mod ast_validation {

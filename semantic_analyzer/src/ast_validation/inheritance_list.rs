@@ -54,6 +54,10 @@ impl<'a> ToSymbol for InheritanceList<'a> {
         _context: &SymbolTable,
         _output: &mut OutputConfig,
     ) -> Result<Vec<SymbolTableEntry>, SemanticError> {
-        Ok(vec![SymbolTableEntry::Inherit(Inherit::new(&self.id_list, self.line, self.column))])
+        Ok(vec![SymbolTableEntry::Inherit(Inherit::new(
+            &self.id_list,
+            self.line,
+            self.column,
+        ))])
     }
 }

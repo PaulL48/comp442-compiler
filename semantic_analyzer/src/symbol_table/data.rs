@@ -1,12 +1,12 @@
 use crate::ast_validation::class_member::ClassVariable;
 use crate::format_table::FormatTable;
+use crate::sizes;
+use crate::symbol_table::utils;
 use crate::visibility::Visibility;
 use derive_getters::Getters;
 use log::error;
 use std::default::Default;
 use std::fmt;
-use crate::sizes;
-use crate::symbol_table::utils;
 
 // A class member variable
 

@@ -1,6 +1,5 @@
 const ADDR_SIZE: usize = 4; // When passing arrays or string around (???)
 
-
 pub fn size_of_optional(data_type: &str, dimensions: &Vec<Option<i64>>) -> usize {
     if dimensions.len() == 0 {
         return base_size_of(data_type);
@@ -22,6 +21,6 @@ fn base_size_of(data_type: &str) -> usize {
         "integer" => 4,
         "float" => 4,
         "string" => ADDR_SIZE,
-        _ => panic!()
+        _ => panic!(),
     }
 }

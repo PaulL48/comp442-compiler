@@ -1,9 +1,9 @@
 use crate::ast_validation::FunctionParameter;
 use crate::format_table::FormatTable;
+use crate::sizes;
 use derive_getters::Getters;
 use std::default::Default;
 use std::fmt;
-use crate::sizes;
 
 use crate::symbol_table::utils;
 

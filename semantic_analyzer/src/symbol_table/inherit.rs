@@ -45,7 +45,7 @@ impl Inherit {
         Inherit {
             names: id_list.iter().map(|x| x.to_string()).collect(),
             line,
-            column
+            column,
         }
     }
 }

@@ -4,9 +4,8 @@
 use crate::SemanticAnalysisResults;
 use crate::{SymbolTable, SymbolTableEntry};
 use ast::{Data, Node};
-use output_manager::OutputConfig;
 use log::info;
-
+use output_manager::OutputConfig;
 
 pub fn process(
     node: &Node,
@@ -31,7 +30,12 @@ pub struct State {}
 // when an update is made to the local table
 // copy the local table back into the global table
 
-pub fn visit(node: &Node, current_context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable) {
+pub fn visit(
+    node: &Node,
+    current_context: &mut SymbolTable,
+    state: &mut State,
+    global_table: &mut SymbolTable,
+) {
     // I don't think this needs to traverse the AST again
     // just iterate over the symbol table since it contains type information
 
@@ -75,7 +79,12 @@ fn prog(node: &Node, context: &mut SymbolTable, state: &mut State, global_table:
     }
 }
 
-fn entry_point(node: &Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable) {
+fn entry_point(
+    node: &Node,
+    context: &mut SymbolTable,
+    state: &mut State,
+    global_table: &mut SymbolTable,
+) {
     if let Data::Children(children) = node.data() {
         for child in children {
             visit(child, context, state, global_table);
@@ -85,7 +94,12 @@ fn entry_point(node: &Node, context: &mut SymbolTable, state: &mut State, global
     // so find main in the gst and overwrite it with context
 }
 
-fn class_list(node: &Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable) {
+fn class_list(
+    node: &Node,
+    context: &mut SymbolTable,
+    state: &mut State,
+    global_table: &mut SymbolTable,
+) {
     if let Data::Children(children) = node.data() {
         for child in children {
             visit(child, context, state, global_table);
@@ -93,7 +107,12 @@ fn class_list(node: &Node, context: &mut SymbolTable, state: &mut State, global_
     }
 }
 
-fn function_list(node: &Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable) {
+fn function_list(
+    node: &Node,
+    context: &mut SymbolTable,
+    state: &mut State,
+    global_table: &mut SymbolTable,
+) {
     if let Data::Children(children) = node.data() {
         for child in children {
             visit(child, context, state, global_table);
@@ -101,7 +120,12 @@ fn function_list(node: &Node, context: &mut SymbolTable, state: &mut State, glob
     }
 }
 
-fn var_list(node: &Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable) {
+fn var_list(
+    node: &Node,
+    context: &mut SymbolTable,
+    state: &mut State,
+    global_table: &mut SymbolTable,
+) {
     if let Data::Children(children) = node.data() {
         for child in children {
             visit(child, context, state, global_table);
@@ -109,7 +133,12 @@ fn var_list(node: &Node, context: &mut SymbolTable, state: &mut State, global_ta
     }
 }
 
-fn func_body(node: &Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable) {
+fn func_body(
+    node: &Node,
+    context: &mut SymbolTable,
+    state: &mut State,
+    global_table: &mut SymbolTable,
+) {
     if let Data::Children(children) = node.data() {
         for child in children {
             visit(child, context, state, global_table);
@@ -117,7 +146,12 @@ fn func_body(node: &Node, context: &mut SymbolTable, state: &mut State, global_t
     }
 }
 
-fn stat_block(node: &Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable) {
+fn stat_block(
+    node: &Node,
+    context: &mut SymbolTable,
+    state: &mut State,
+    global_table: &mut SymbolTable,
+) {
     if let Data::Children(children) = node.data() {
         for child in children {
             visit(child, context, state, global_table);
@@ -125,7 +159,12 @@ fn stat_block(node: &Node, context: &mut SymbolTable, state: &mut State, global_
     }
 }
 
-fn assign_op(node: &Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable) {
+fn assign_op(
+    node: &Node,
+    context: &mut SymbolTable,
+    state: &mut State,
+    global_table: &mut SymbolTable,
+) {
     if let Data::Children(children) = node.data() {
         for child in children {
             visit(child, context, state, global_table);
@@ -133,10 +172,14 @@ fn assign_op(node: &Node, context: &mut SymbolTable, state: &mut State, global_t
     }
 }
 
-fn var_decl(node: &Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable) {
+fn var_decl(
+    node: &Node,
+    context: &mut SymbolTable,
+    state: &mut State,
+    global_table: &mut SymbolTable,
+) {
     // one challenge here, we need to create the entry but we also
     // need the name of the enclosing function to prefix the label
-    
 }
 
 fn var(node: &Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable) {
@@ -147,9 +190,20 @@ fn var(node: &Node, context: &mut SymbolTable, state: &mut State, global_table: 
     }
 }
 
-fn data_member(node: &Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable) {}
+fn data_member(
+    node: &Node,
+    context: &mut SymbolTable,
+    state: &mut State,
+    global_table: &mut SymbolTable,
+) {
+}
 
-fn add_op(node: &Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable) {
+fn add_op(
+    node: &Node,
+    context: &mut SymbolTable,
+    state: &mut State,
+    global_table: &mut SymbolTable,
+) {
     if let Data::Children(children) = node.data() {
         for child in children {
             visit(child, context, state, global_table);
@@ -161,4 +215,10 @@ fn add_op(node: &Node, context: &mut SymbolTable, state: &mut State, global_tabl
     // context.add_entry(entry: SymbolTableEntry)
 }
 
-fn func_decl(node: &Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable) {}
+fn func_decl(
+    node: &Node,
+    context: &mut SymbolTable,
+    state: &mut State,
+    global_table: &mut SymbolTable,
+) {
+}

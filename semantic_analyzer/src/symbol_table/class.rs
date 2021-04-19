@@ -4,7 +4,7 @@ use crate::symbol_table::SymbolTable;
 use derive_getters::Getters;
 use std::default::Default;
 use std::fmt;
-use crate::sizes;
+
 // A class is:
 // An identifier that names a new compound type type
 // A list of types that name other compound types

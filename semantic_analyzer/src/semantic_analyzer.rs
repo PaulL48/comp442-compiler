@@ -1,7 +1,7 @@
 use crate::memory_size_visitor;
-use crate::type_check_visitor;
 use crate::symbol_table;
 use crate::symbol_table::symbol_table::SymbolTable;
+use crate::type_check_visitor;
 use output_manager::{warn_write, OutputConfig};
 
 pub struct SemanticAnalysisResults {
