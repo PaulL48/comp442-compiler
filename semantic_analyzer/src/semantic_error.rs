@@ -12,6 +12,7 @@ pub enum SemanticError {
     MissingDimension(usize, usize, String),
     CyclicInheritance(usize, usize, String),
     TypeError(usize, usize, String),
+    InvalidArrayIndex(usize, usize, String),
 
     BinaryMismatchedTypes(usize, usize, String),
     UndefinedType(usize, usize, String),
@@ -32,6 +33,7 @@ impl fmt::Display for SemanticError {
             SemanticError::MissingDimension(l, c, message) => (l, c, message),
             SemanticError::CyclicInheritance(l, c, message) => (l, c, message),
             SemanticError::TypeError(l, c, message) => (l, c, message),
+            SemanticError::InvalidArrayIndex(l, c, message) => (l, c, message),
 
             SemanticError::FunctionOverload(l, c, message) => {
                 return write!(f, "Semantic warning: {}:{} {}", l, c, message);
@@ -58,6 +60,8 @@ impl SemanticError {
             SemanticError::MissingDimension(l, _, _) => *l,
             SemanticError::CyclicInheritance(l, _, _) => *l,
             SemanticError::TypeError(l, _, _) => *l,
+            SemanticError::InvalidArrayIndex(l, _, _) => *l,
+
         }
     }
 
@@ -76,6 +80,8 @@ impl SemanticError {
             SemanticError::MissingDimension(_, c, _) => *c,
             SemanticError::CyclicInheritance(_, c, _) => *c,
             SemanticError::TypeError(_, c, _) => *c,
+            SemanticError::InvalidArrayIndex(_, c, _) => *c,
+
         }
     }
 
@@ -254,6 +260,37 @@ impl SemanticError {
         )
     }
 
+    pub fn new_invalid_array_index(
+        line: &usize,
+        column: &usize,
+        data_type: &str,
+    ) -> SemanticError {
+        SemanticError::InvalidArrayIndex(
+            *line,
+            *column,
+            format!(
+                "Invalid array index \"{}\"",
+                data_type
+            )
+        )
+    }
+
+    pub fn new_invalid_array_dimension(
+        line: &usize,
+        column: &usize,
+        supplied_dimension: &usize,
+        actual_dimension: &usize
+    ) -> SemanticError {
+        SemanticError::InvalidArrayIndex(
+            *line, 
+            *column,
+            format!(
+                "Incorrect number of dimensions, has {} but supplied {}",
+                actual_dimension,
+                supplied_dimension
+            )
+        )
+    }
     // pub fn write(&self, output_manager: &mut OutputConfig) {
     //     warn_write(&mut output_manager.semantic_error_file, &output_manager.semantic_error_path, &format!("{}\n", self));
     // }

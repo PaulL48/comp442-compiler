@@ -35,10 +35,10 @@ pub struct Literal {
 impl FormatTable for Literal {
     fn lines(&self, _: usize) -> Vec<String> {
         vec![format!(
-            "{:10}| {:10}| {:10}| {:10}|",
+            "{:10}| {:10}| {:10}| {:<10}|",
             "literal",
             self.id,
-            self.value,
+            self.value.to_string(),
             self.bytes
         )]
     }
@@ -51,7 +51,15 @@ impl fmt::Display for Literal {
 }
 
 impl Literal {
-
+    pub fn new(id: &str, value: &LiteralValue, line: usize, column: usize) -> Self {
+        Literal {
+            id: id.to_owned(),
+            value: value.clone(),
+            bytes: 0,
+            line,
+            column,
+        }
+    }
 }
 
 

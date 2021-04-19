@@ -33,7 +33,7 @@ impl fmt::Display for Param {
 impl FormatTable for Param {
     fn lines(&self, _: usize) -> Vec<String> {
         vec![format!(
-            "{:10}| {:12}| {}",
+            "{:10}| {:10}| {}",
             "param",
             self.id,
             self.type_string()

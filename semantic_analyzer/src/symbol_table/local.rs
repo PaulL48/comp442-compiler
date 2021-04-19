@@ -30,7 +30,7 @@ impl fmt::Display for Local {
 impl FormatTable for Local {
     fn lines(&self, _: usize) -> Vec<String> {
         vec![format!(
-            "{:10}| {:12}| {}",
+            "{:10}| {:10}| {}",
             "local",
             self.id,
             self.type_string()

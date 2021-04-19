@@ -8,7 +8,7 @@ pub struct Node {
     line: usize,
     column: usize,
     data_type: Option<String>,
-    dimensions: Option<Vec<i64>>,
+    dimensions: Option<usize>,
     // Consider adding type
     // consider adding variable name
 }
@@ -66,8 +66,12 @@ impl Node {
         self.data_type = Some(data_type.to_owned());
     }
 
-    pub fn set_dimensions(&mut self) {
-        todo!();
+    pub fn set_dimensions(&mut self, dimensions: &usize) {
+        self.dimensions = Some(*dimensions);
+    }
+
+    pub fn dimensions(&self) -> Option<usize> {
+        self.dimensions
     }
 
     pub fn dft(&self) -> DepthFirstIterator {

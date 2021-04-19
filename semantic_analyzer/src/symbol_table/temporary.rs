@@ -22,16 +22,24 @@ impl fmt::Display for Temporary {
 impl FormatTable for Temporary {
     fn lines(&self, _: usize) -> Vec<String> {
         vec![format!(
-            "{:10}| {:10}| {:10}| {:3}",
+            "{:10}| {:10}| {:10}| {:<10}|",
             "temp",
             self.id,
-            self.data_type(),
+            self.data_type,
             self.bytes,
         )]
     }
 }
 
 impl Temporary {
-
+    pub fn new(id: &str, data_type: &str, line: usize, column: usize) -> Self {
+        Temporary {
+            id: id.to_owned(),
+            data_type: data_type.to_owned(),
+            bytes: 0,
+            line,
+            column
+        }
+    }
 }
 

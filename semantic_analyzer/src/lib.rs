@@ -30,7 +30,7 @@ pub mod symbol_table {
     pub use inherit::Inherit;
     pub use local::Local;
     pub use param::Param;
-    pub use literal::Literal;
+    pub use literal::{Literal, LiteralValue};
     pub use temporary::Temporary;
     pub use symbol_table::{SymbolTable, SymbolTableEntry};
 }
