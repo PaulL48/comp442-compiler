@@ -14,6 +14,7 @@ pub enum SemanticError {
     TypeError(usize, usize, String),
     InvalidArrayIndex(usize, usize, String),
     IncorrectNumberOfArguments(usize, usize, String),
+    NoMatchingOverload(usize, usize, String),
 
     BinaryMismatchedTypes(usize, usize, String),
     UndefinedType(usize, usize, String),
@@ -36,6 +37,7 @@ impl fmt::Display for SemanticError {
             SemanticError::TypeError(l, c, message) => (l, c, message),
             SemanticError::InvalidArrayIndex(l, c, message) => (l, c, message),
             SemanticError::IncorrectNumberOfArguments(l, c, message) => (l, c, message),
+            SemanticError::NoMatchingOverload(l, c, message) => (l, c, message),
 
             SemanticError::FunctionOverload(l, c, message) => {
                 return write!(f, "Semantic warning: {}:{} {}", l, c, message);
@@ -64,7 +66,7 @@ impl SemanticError {
             SemanticError::TypeError(l, _, _) => *l,
             SemanticError::InvalidArrayIndex(l, _, _) => *l,
             SemanticError::IncorrectNumberOfArguments(l, _, _) => *l,
-
+            SemanticError::NoMatchingOverload(l, _, _) => *l,
 
         }
     }
@@ -86,6 +88,7 @@ impl SemanticError {
             SemanticError::TypeError(_, c, _) => *c,
             SemanticError::InvalidArrayIndex(_, c, _) => *c,
             SemanticError::IncorrectNumberOfArguments(_, c, _) => *c,
+            SemanticError::NoMatchingOverload(_, c, _) => *c,
 
         }
     }
@@ -327,6 +330,23 @@ impl SemanticError {
                 "Incorrect type found \"{}\" but was expecting \"{}\"",
                 supplied,
                 expected
+            )
+        )
+    }
+
+    pub fn new_no_overload(
+        line: usize,
+        column: usize,
+        id: &str,
+        parameters: &str
+    ) -> SemanticError {
+        SemanticError::NoMatchingOverload(
+            line,
+            column,
+            format!(
+                "No overloads found for function \"{}\" that match the parameters ({})",
+                id,
+                parameters
             )
         )
     }

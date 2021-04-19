@@ -1,6 +1,17 @@
-func foo(integer a, integer b, integer c) : void {
+func foo(integer a, integer b, integer c) : integer {
   var {
   }
+}
+
+func foo(integer a, integer b) : float {
+  var {
+  }
+}
+
+func foo(float a[][]) : string {
+  var {
+  }
+
 }
 
 
@@ -10,8 +21,10 @@ main
   {
     integer i;
     integer c[2][2];
+    float d[2][1];
   }
-  i = 1;
-  c[1][2] = 2.0;
-  foo(0, i, c);
+  //i = foo(0, 0, 0) + 1;
+  c[1][2] = 2;
+  // foo(0, i, c[1][2]);
+  foo(d);
 }

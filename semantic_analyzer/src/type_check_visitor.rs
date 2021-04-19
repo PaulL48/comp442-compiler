@@ -3,7 +3,7 @@
 //! Add literal and temporary values to the symbol table
 
 use crate::SemanticAnalysisResults;
-use crate::{SymbolTable, SymbolTableEntry, Temporary, Literal, LiteralValue};
+use crate::{SymbolTable, SymbolTableEntry, Temporary, Literal, LiteralValue, Function};
 use ast::{Data, Node};
 use output_manager::OutputConfig;
 use crate::SemanticError;
@@ -500,29 +500,55 @@ fn id(node: &mut Node, context: &mut SymbolTable, state: &mut State, global_tabl
     }
 }
 
-fn function_id(node: &mut Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable, output: &mut OutputConfig) {
+fn function_id(node: &mut Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable, output: &mut OutputConfig, function: &Function) {
     info!("function_id");
+    if let Some(ret_type) = function.return_type() {
+        node.set_type(ret_type);
+    } else {
+        // node.set_type("void"); // Should I just not set it?
+    }
 
     // We must account for class members here as well
+    // For the context of classes we can dispatch to a custom handler and leave this one for just overloading
+    // during the pair processing of the dot lists
 
-    if let Data::String(id) = node.data() {
-        match global_table.get(id) {
-            Some(SymbolTableEntry::Function(function)) => {
-                // Set the current node to the return type of the function
-                if let Some(ret_type) = function.return_type() {
-                    node.set_type(ret_type);
-                } else {
-                    node.set_type("void"); // Should I just not set it?
-                }
-            },
-            Some(entry) => panic!("Id \"{}\" is colliding with something it shouldn't \"{}\"", id, entry), // Bad, but this shouldn't happen (likely culprit is collision with temporary)
-            None => {
-                let err = SemanticError::new_undefined_identifier(node.line(), node.column(), id);
-                output.add(&err.to_string(), err.line(), err.col());
-                node.set_type("error-type");
-            }
-        }
-    }
+    // let id_data = node.data().clone();
+
+    // if let Data::String(id) = id_data {
+    //     //handle overloads
+    //     let matches = global_table.get_all(&id);
+    //     for matching_entry in matches {
+    //         match matching_entry {
+    //             SymbolTableEntry::Function(function) => {
+    //                 // we must be sure the data type of the params are the same as for the function
+    //                 if function.parameter_types().len() != parameters.len() {
+    //                     continue; // bad candidate, length mismatch
+    //                 }
+
+    //                 for (param_node, st_entry) in parameters.iter().zip(function.parameter_types()) {
+    //                     // The specifically ignores the array dimensionality
+    //                     if param_node.data_type().unwrap() != *st_entry.data_type() {
+    //                         continue; // Type mismatch
+    //                     }
+    //                 }
+
+    //                 // Set the current node to the return type of the function
+    //                 if let Some(ret_type) = function.return_type() {
+    //                     node.set_type(ret_type);
+    //                 } else {
+    //                     // node.set_type("void"); // Should I just not set it?
+    //                 }
+    //                 return; // This means we found a candidate
+    //             },
+    //             entry => panic!("Id \"{}\" is colliding with something it shouldn't \"{}\"", id, entry), // Bad, but this shouldn't happen (likely culprit is collision with temporary)    
+    //         }
+    //     }
+
+    //     // Arriving here means no candidates matched or there were no candidates
+    //     let err = SemanticError::new_undefined_identifier(node.line(), node.column(), &id);
+    //     output.add(&err.to_string(), err.line(), err.col());
+    //     node.set_type("error-type");
+    // }
 }
 
 fn index_list(node: &mut Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable, output: &mut OutputConfig) {
@@ -546,18 +572,19 @@ fn read_stat(node: &mut Node, context: &mut SymbolTable, state: &mut State, glob
 }
 
 fn f_call(node: &mut Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable, output: &mut OutputConfig) {
+    
+    let nc = node.clone();
+
     if let Data::Children(children) = node.data_mut() {
         // for child in children.iter_mut() {
         //     visit(child, context, state, global_table, output);
         // }
 
-        // Because there's an ID we manually dispatch
-        function_id(&mut children[0], context, state, global_table, output);
 
         let child_data_clone = children[0].data().clone();
 
 
-        let function_id = if let Data::String(id) = child_data_clone {
+        let function_id_str = if let Data::String(id) = child_data_clone {
             id
         } else {
             panic!();
@@ -567,11 +594,66 @@ fn f_call(node: &mut Node, context: &mut SymbolTable, state: &mut State, global_
         // 
         a_params_children(&mut children[1], context, state, global_table, output);
 
+        let parameters = if let Data::Children(parameters) = children[1].data() {
+            parameters.clone()
+        } else {
+            Vec::new()
+        };
+
+        // Now that the parameters have had their types determined
+        // We should select the correct overload based on them and supply that to both
+        // following functions
+        let f = select_free_overload(&function_id_str, &parameters, global_table);
+        match f {
+            Ok(matching_function) => {
+                println!("Selected overload for {:?} is {:?}", nc, matching_function);
+
+                function_id(&mut children[0], context, state, global_table, output, &matching_function);
+                a_params_correct(&mut children[1], context, state, global_table, output, &matching_function);
+                if let Some(d_type) = matching_function.return_type() {
+                    node.set_type(d_type);
+                }
+            },
+            Err(Some(_)) => {
+                let parameter_str = parameters.iter().map(|n| n.data_type().unwrap()).collect::<Vec<_>>().join(", ");
+
+                let err = SemanticError::new_no_overload(*node.line(), *node.column(), &function_id_str, &parameter_str);
+                output.add(&err.to_string(), err.line(), err.col());
+            }, // cannot find overload
+            Err(None) => {
+                let err = SemanticError::new_undefined_identifier(node.line(), node.column(), &function_id_str);
+                output.add(&err.to_string(), err.line(), err.col());
+            }, // Undefined identifier
+        }
+
+        // if let Some(f) = f {
+        //     println!("Selected overload for {:?} is {:?}", nc, f);
+
+        //     function_id(&mut children[0], context, state, global_table, output, &f);
+        //     a_params_correct(&mut children[1], context, state, global_table, output, &f);
+        //     if let Some(d_type) = f.return_type() {
+        //         node.set_type(d_type);
+        //     }
+        // } else {
+
+        // }
+
+
+
+        // Because there's an ID we manually dispatch
+        // we also need to supply the parameters to select the correct overload
+
+        
+
+        // let d_type = children[0].data_type().clone().unwrap();
+        
+
             // Given: The parameter node, the function id
 
-        a_params_correct(&mut children[1], context, state, global_table, output, &function_id);
         // We could always visit the node twice
         // once to validate the children and once to validate the types of the function call
+    
+        // node.set_type(&d_type);
     }
 }
 
@@ -708,7 +790,7 @@ fn parameter_data_member_exception(node: &mut Node, context: &mut SymbolTable, s
 
 
 
-fn a_params_correct(node: &mut Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable, output: &mut OutputConfig, function_id: &str) {
+fn a_params_correct(node: &mut Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable, output: &mut OutputConfig, function: &Function) {
     // We must make sure
     // The number of children is equal to the number of parameters
     // The types of the children are equivalent to the parameters
@@ -717,24 +799,35 @@ fn a_params_correct(node: &mut Node, context: &mut SymbolTable, state: &mut Stat
 
     println!("PARAM CORRECT {:?}", node);
     if let Data::Children(children) = node.data_mut() {
-        // This sets up the data types of the children
-        // for child in children.iter_mut() {
-        //     visit(child, context, state, global_table, output);
-        // }
-        // The children have already been set up by a_params_children
+        // both the type and dimensionality of the parameter must be checked
+        if function.parameter_types().len() != children.len() {
+            let err = SemanticError::new_incorrect_number_arguments(line, column, children.len(), function.parameter_types().len());
+            output.add(&err.to_string(), err.line(), err.col());
+        }
 
-        // We need to compare the 
+        // now actually go through the children
+        for (node, st_entry) in children.iter().zip(function.parameter_types().iter()) {
+            println!("!!! {:?}, {}", node, st_entry);
+            if let Some(dimension) = node.dimensions() {
+                if dimension != st_entry.dimension().len() {
+                    let mut node_type = String::new();
+                    node_type.push_str(&node.data_type().clone().unwrap());
+                    for _ in 0..node.dimensions().clone().unwrap() {
+                        node_type.push_str("[]");
+                    }
+                    
+                    let err = SemanticError::new_incorrect_type(line, column, &node_type, &st_entry.type_string());
+                    output.add(&err.to_string(), err.line(), err.col());
 
-        if let Some(SymbolTableEntry::Function(function)) = global_table.get(function_id) {
-            // both the type and dimensionality of the parameter must be checked
-            if function.parameter_types().len() != children.len() {
-                let err = SemanticError::new_incorrect_number_arguments(line, column, children.len(), function.parameter_types().len());
+                }
+            } else if st_entry.dimension().len() != 0 {
+                let mut node_type = String::new();
+                node_type.push_str(&node.data_type().clone().unwrap());
+                let err = SemanticError::new_incorrect_type(line, column, &node_type, &st_entry.type_string());
                 output.add(&err.to_string(), err.line(), err.col());
-            }
-
-            // now actually go through the children
-            for (node, st_entry) in children.iter().zip(function.parameter_types().iter()) {
-                println!("!!! {:?}, {}", node, st_entry);
+            } else if node.data_type().clone().unwrap() != *st_entry.data_type() {
+                // At this point we know we have the correct base type but we need to check
+                // whether the dimension of the node is correct
                 if let Some(dimension) = node.dimensions() {
                     if dimension != st_entry.dimension().len() {
                         let mut node_type = String::new();
@@ -752,30 +845,10 @@ fn a_params_correct(node: &mut Node, context: &mut SymbolTable, state: &mut Stat
                     node_type.push_str(&node.data_type().clone().unwrap());
                     let err = SemanticError::new_incorrect_type(line, column, &node_type, &st_entry.type_string());
                     output.add(&err.to_string(), err.line(), err.col());
-                } else if node.data_type().clone().unwrap() != *st_entry.data_type() {
-                    // At this point we know we have the correct base type but we need to check
-                    // whether the dimension of the node is correct
-                    if let Some(dimension) = node.dimensions() {
-                        if dimension != st_entry.dimension().len() {
-                            let mut node_type = String::new();
-                            node_type.push_str(&node.data_type().clone().unwrap());
-                            for _ in 0..node.dimensions().clone().unwrap() {
-                                node_type.push_str("[]");
-                            }
-                            
-                            let err = SemanticError::new_incorrect_type(line, column, &node_type, &st_entry.type_string());
-                            output.add(&err.to_string(), err.line(), err.col());
-
-                        }
-                    } else if st_entry.dimension().len() != 0 {
-                        let mut node_type = String::new();
-                        node_type.push_str(&node.data_type().clone().unwrap());
-                        let err = SemanticError::new_incorrect_type(line, column, &node_type, &st_entry.type_string());
-                        output.add(&err.to_string(), err.line(), err.col());
-                    }
                 }
             }
         }
+        
     }
 }
 
@@ -806,4 +879,45 @@ fn check_binary_types(lhs: &Node, rhs: &Node, output: &mut OutputConfig, line: u
 
         Ok(lht)
     }
+}
+
+fn select_free_overload(function_id: &str, parameters: &[Node], global_table: &SymbolTable) -> Result<Function, Option<()>> {
+    println!("Trying to find correct overload of {}{:?}", function_id, parameters);
+    
+    let matches = global_table.get_all(&function_id);
+    if matches.len() == 0 {
+        return Err(None);
+    }
+
+    for matching_entry in matches {
+        match matching_entry {
+            SymbolTableEntry::Function(function) => {
+                println!("Checking candidate {:?}", function);
+
+                // we must be sure the data type of the params are the same as for the function
+                if function.parameter_types().len() != parameters.len() {
+                    continue; // bad candidate, length mismatch
+                }
+
+                let mut parameter_failure = false;
+
+                for (param_node, st_entry) in parameters.iter().zip(function.parameter_types()) {
+                    println!("Checking parameter n:{:?} st:{:?}", param_node, st_entry);
+                    
+                    // The specifically ignores the array dimensionality
+                    if param_node.data_type().unwrap() != *st_entry.data_type() {
+                        println!("Skipping candidate because type mismatch");
+                        parameter_failure = true;
+                    }
+                }
+
+                if !parameter_failure {
+                    println!("Candidate confirmed");
+                    return Ok(function.clone())    
+                }
+            },
+            entry => panic!("Id \"{}\" is colliding with something it shouldn't \"{}\"", function_id, entry), // Bad, but this shouldn't happen (likely culprit is collision with temporary)    
+        }
+    }
+    Err(Some(()))
 }
