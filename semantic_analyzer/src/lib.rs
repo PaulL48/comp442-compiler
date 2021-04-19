@@ -3,8 +3,11 @@ mod semantic_analyzer;
 mod semantic_error;
 mod utils;
 mod visibility;
+mod memory_size_visitor;
+mod type_check_visitor;
 
 pub use semantic_analyzer::analyze;
+pub use semantic_analyzer::SemanticAnalysisResults;
 use semantic_error::SemanticError;
 
 pub mod symbol_table {

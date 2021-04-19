@@ -8,4 +8,5 @@ members = [
     "ast",
     "output_manager",
     "semantic_analyzer",
+    "code_gen",
 ]

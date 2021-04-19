@@ -9,6 +9,8 @@ use crate::symbol_table::Class;
 use maplit::hashset;
 use std::collections::HashSet;
 
+const TEMP_PREFIX: &str = "temp";
+
 #[derive(Debug, Clone)]
 pub enum SymbolTableEntry {
     Class(class::Class),
@@ -92,6 +94,8 @@ pub struct SymbolTable {
     pub name: String,
     pub values: Vec<SymbolTableEntry>,
     pub scope: Option<String>,
+
+    temp_var_count: usize,
 }
 
 /// Helper type for inheritance based searches
@@ -158,11 +162,23 @@ impl SymbolTable {
         format!("{:=<1$}", "", table_width)
     }
 
+    pub fn get_internal_variable_prefix(&mut self) -> String {
+        let mut result = String::new();
+        result.push_str("__");
+        if let Some(scope) = &self.scope {
+            result.push_str(&format!("{}_", scope));
+        }
+        result.push_str(&format!("{}_{}{}", self.name, TEMP_PREFIX, self.temp_var_count));
+        self.temp_var_count += 1;
+        result
+    }
+
     pub fn new(name: &str) -> Self {
         SymbolTable {
             name: name.to_string(),
             scope: None,
             values: Vec::new(),
+            temp_var_count: 0
         }
     }
 
@@ -171,6 +187,7 @@ impl SymbolTable {
             name: name.to_string(),
             scope: scope.map(|x| x.to_string()),
             values: Vec::new(),
+            temp_var_count: 0
         }
     }
 

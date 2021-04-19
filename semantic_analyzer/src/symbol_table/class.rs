@@ -15,6 +15,7 @@ pub struct Class {
     id: String,
     inheritance_list: Vec<String>,
     symbol_table: SymbolTable,
+    bytes: usize,
     line: usize,
     column: usize,
 }
@@ -40,10 +41,13 @@ impl Class {
                 .iter()
                 .map(|x| x.to_string())
                 .collect(),
+            bytes: 0,
             line: *class_declaration.line(),
             column: *class_declaration.column(),
         }
     }
+
+    
 
     pub fn resultant_type(&self) -> &str {
         self.id()

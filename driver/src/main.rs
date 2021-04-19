@@ -7,6 +7,7 @@ use log::{error, info};
 use output_manager::OutputConfig;
 use simplelog::*;
 use syntactic_analyzer::{parse, Grammar, ParseTable};
+use code_gen;
 
 /// Development switch to easily turn terminal logging on or off
 const LOGGING_SWITCH: LevelFilter = LevelFilter::Info;
@@ -66,7 +67,10 @@ fn main() -> std::io::Result<()> {
         );
 
         if let Some(ast) = result {
-            let _result = semantic_analyzer::analyze(&ast, &mut oc);
+            let mut result = semantic_analyzer::analyze(&ast, &mut oc);
+            // TODO: Add check if the semantic analysis failed or not
+
+            code_gen::process(&ast, &mut result, &mut oc)
         }
     }
 
