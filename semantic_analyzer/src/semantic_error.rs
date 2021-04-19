@@ -15,6 +15,7 @@ pub enum SemanticError {
     InvalidArrayIndex(usize, usize, String),
     IncorrectNumberOfArguments(usize, usize, String),
     NoMatchingOverload(usize, usize, String),
+    InvalidRelOp(usize, usize, String),
 
     BinaryMismatchedTypes(usize, usize, String),
     UndefinedType(usize, usize, String),
@@ -38,6 +39,7 @@ impl fmt::Display for SemanticError {
             SemanticError::InvalidArrayIndex(l, c, message) => (l, c, message),
             SemanticError::IncorrectNumberOfArguments(l, c, message) => (l, c, message),
             SemanticError::NoMatchingOverload(l, c, message) => (l, c, message),
+            SemanticError::InvalidRelOp(l, c, message) => (l, c, message),
 
             SemanticError::FunctionOverload(l, c, message) => {
                 return write!(f, "Semantic warning: {}:{} {}", l, c, message);
@@ -67,6 +69,7 @@ impl SemanticError {
             SemanticError::InvalidArrayIndex(l, _, _) => *l,
             SemanticError::IncorrectNumberOfArguments(l, _, _) => *l,
             SemanticError::NoMatchingOverload(l, _, _) => *l,
+            SemanticError::InvalidRelOp(l, _, _) => *l,
 
         }
     }
@@ -89,6 +92,7 @@ impl SemanticError {
             SemanticError::InvalidArrayIndex(_, c, _) => *c,
             SemanticError::IncorrectNumberOfArguments(_, c, _) => *c,
             SemanticError::NoMatchingOverload(_, c, _) => *c,
+            SemanticError::InvalidRelOp(_, c, _) => *c,
 
         }
     }
@@ -347,6 +351,21 @@ impl SemanticError {
                 "No overloads found for function \"{}\" that match the parameters ({})",
                 id,
                 parameters
+            )
+        )
+    }
+
+    pub fn new_invalid_relop(
+        line: usize,
+        column: usize,
+        data_type: &str
+    ) -> SemanticError {
+        SemanticError::InvalidRelOp(
+            line,
+            column,
+            format!(
+                "Comparison operators must be between integers or floats, compared \"{}\"",
+                data_type
             )
         )
     }

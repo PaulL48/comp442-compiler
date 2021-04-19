@@ -44,18 +44,18 @@ pub fn visit(node: &mut Node, current_context: &mut SymbolTable, state: &mut Sta
 
     match node.name().as_str() {
         "prog" => prog(node, current_context, state, global_table, output),
-        "funcDecl" => func_decl(node, current_context, state, global_table, output),
         "classDeclList" => class_list(node, current_context, state, global_table, output),
         "funcDefList" => function_list(node, current_context, state, global_table, output),
+
+        "funcDecl" => func_decl(node, current_context, state, global_table, output),
         "funcBody" => func_body(node, current_context, state, global_table, output),
         "funcDef" => func_def(node, current_context, state, global_table, output),
-        "statBlock" => stat_block(node, current_context, state, global_table, output),
-        "assignOp" => assign_op(node, current_context, state, global_table, output),
+        "fCall" => f_call(node, current_context, state, global_table, output),
         "varList" => var_list(node, current_context, state, global_table, output),
+
+        "statBlock" => stat_block(node, current_context, state, global_table, output),
         "var" => var(node, current_context, state, global_table, output),
         "dataMember" => data_member(node, current_context, state, global_table, output),
-        "addOp" => add_op(node, current_context, state, global_table, output),
-        "mulOp" => mul_op(node, current_context, state, global_table, output),
         "intfactor" => intfactor(node, current_context, state, global_table, output),
         "floatfactor" => floatfactor(node, current_context, state, global_table, output),
         "stringfactor" => stringfactor(node, current_context, state, global_table, output),
@@ -63,11 +63,18 @@ pub fn visit(node: &mut Node, current_context: &mut SymbolTable, state: &mut Sta
         "varDecl" => var_decl(node, current_context, state, global_table, output),
         "id" => id(node, current_context, state, global_table, output),
         "indexList" => mandatory_indexlist(node, current_context, state, global_table, output),
+        "aParams" => a_params_children(node, current_context, state, global_table, output),
+        
+        "returnStat" => return_stat(node, current_context, state, global_table, output),
+        "ifStat" => if_stat(node, current_context, state, global_table, output),
+        "whileStat" => while_stat(node, current_context, state, global_table, output),
         "writeStat" => write_stat(node, current_context, state, global_table, output),
         "readStat" => read_stat(node, current_context, state, global_table, output),
-        "fCall" => f_call(node, current_context, state, global_table, output),
-        "aParams" => a_params_children(node, current_context, state, global_table, output),
-        "returnStat" => return_stat(node, current_context, state, global_table, output),
+
+        "assignOp" => assign_op(node, current_context, state, global_table, output),
+        "addOp" => add_op(node, current_context, state, global_table, output),
+        "mulOp" => mul_op(node, current_context, state, global_table, output),
+        "relOp" => rel_op(node, current_context, state, global_table, output),
         _ => {}
     }
 }
@@ -378,6 +385,39 @@ fn mul_op(node: &mut Node, context: &mut SymbolTable, state: &mut State, global_
         info!("Calling check bin from mul_op");
         if let Ok(d_type) = check_binary_types(&children[0], &children[2], output, line, col) {
             node.set_type(&d_type);
+
+            let new_name = context.get_next_temporary();
+            let temp = Temporary::new(&new_name, &d_type, line, col);
+            context.add_entry(SymbolTableEntry::Temporary(temp));
+        } else {
+            node.set_type("error-type");
+        }
+    }
+}
+
+fn rel_op(node: &mut Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable, output: &mut OutputConfig) {
+    let line = *node.line();
+    let col = *node.column();
+    
+    if let Data::Children(children) = node.data_mut() {
+        for child in children.iter_mut() {
+            visit(child, context, state, global_table, output);
+        }
+
+        // Here we also must enforce that it is of int or real type
+        if let Ok(d_type) = check_binary_types(&children[0], &children[2], output, line, col) {
+            if !(d_type == INTEGER || d_type == FLOAT) {
+                let err = SemanticError::new_invalid_relop(line, col, &d_type);
+                output.add(&err.to_string(), err.line(), err.col());
+                node.set_type("error-type");
+                return;
+            }
+            
+            node.set_type(&d_type);
+
+            let new_name = context.get_next_temporary();
+            let temp = Temporary::new(&new_name, &d_type, line, col);
+            context.add_entry(SymbolTableEntry::Temporary(temp));
         } else {
             node.set_type("error-type");
         }
@@ -959,7 +999,6 @@ fn func_def(node: &mut Node, context: &mut SymbolTable, state: &mut State, globa
 fn return_stat(node: &mut Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable, output: &mut OutputConfig) {
     let mut r_type = None;
     if let Data::Children(children) = node.data_mut() {
-        // Do we actually want to perform these checks?
         for child in children.iter_mut() {
             visit(child, context, state, global_table, output);
             r_type = child.data_type();
@@ -970,10 +1009,27 @@ fn return_stat(node: &mut Node, context: &mut SymbolTable, state: &mut State, gl
     }
 }
 
+fn if_stat(node: &mut Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable, output: &mut OutputConfig) {
+    if let Data::Children(children) = node.data_mut() {
+        for child in children.iter_mut() {
+            visit(child, context, state, global_table, output);
+        }
+    }
+}
+
+fn while_stat(node: &mut Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable, output: &mut OutputConfig) {
+    if let Data::Children(children) = node.data_mut() {
+        for child in children.iter_mut() {
+            visit(child, context, state, global_table, output);
+        }
+    }
+}
+
+
+
 fn check_binary_types(lhs: &Node, rhs: &Node, output: &mut OutputConfig, line: usize, col: usize) -> Result<String, ()> {
     info!("check_binary");
 
-    
     let lht = if let Some(d_type) = lhs.data_type() {
         d_type
     } else {
