@@ -1,16 +1,24 @@
 func foo(integer a, integer b, integer c) : integer {
   var {
+    integer x;
   }
+  x = 2 * a + b - c;
+  return (a);
 }
 
 func foo(integer a, integer b) : float {
   var {
   }
+  return (1.0);
 }
 
 func foo(float a[][]) : string {
   var {
   }
+  return ("hello world");
+}
+
+func foo() : void {
 
 }
 
@@ -23,8 +31,5 @@ main
     integer c[2][2];
     float d[2][1];
   }
-  //i = foo(0, 0, 0) + 1;
-  c[1][2] = 2;
-  // foo(0, i, c[1][2]);
-  foo(d);
+  
 }

@@ -48,6 +48,7 @@ pub fn visit(node: &mut Node, current_context: &mut SymbolTable, state: &mut Sta
         "classDeclList" => class_list(node, current_context, state, global_table, output),
         "funcDefList" => function_list(node, current_context, state, global_table, output),
         "funcBody" => func_body(node, current_context, state, global_table, output),
+        "funcDef" => func_def(node, current_context, state, global_table, output),
         "statBlock" => stat_block(node, current_context, state, global_table, output),
         "assignOp" => assign_op(node, current_context, state, global_table, output),
         "varList" => var_list(node, current_context, state, global_table, output),
@@ -66,6 +67,7 @@ pub fn visit(node: &mut Node, current_context: &mut SymbolTable, state: &mut Sta
         "readStat" => read_stat(node, current_context, state, global_table, output),
         "fCall" => f_call(node, current_context, state, global_table, output),
         "aParams" => a_params_children(node, current_context, state, global_table, output),
+        "returnStat" => return_stat(node, current_context, state, global_table, output),
         _ => {}
     }
 }
@@ -76,7 +78,7 @@ fn prog(node: &mut Node, context: &mut SymbolTable, state: &mut State, global_ta
     // Here we'll explicitly invoke the individual children
     if let Data::Children(children) = node.data_mut() {
         visit(&mut children[0], context, state, global_table, output);
-        visit(&mut children[0], context, state, global_table, output);
+        visit(&mut children[1], context, state, global_table, output);
 
         if let Some(SymbolTableEntry::Function(main)) = context.get_mut("main") {
             entry_point(&mut children[2], main.symbol_table_mut(), state, global_table, output);
@@ -134,20 +136,46 @@ fn var_list(node: &mut Node, context: &mut SymbolTable, state: &mut State, globa
 fn func_body(node: &mut Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable, output: &mut OutputConfig) {
     info!("func_body");
 
+    let mut r_type = None;
     if let Data::Children(children) = node.data_mut() {
         for child in children {
-            visit(child, context, state, global_table, output);
+            match child.name().as_str() {
+                "statBlock" => {
+                    visit(child, context, state, global_table, output);
+                    r_type = child.data_type();
+                }, // get the type of the node and assign it to this type
+                _ => visit(child, context, state, global_table, output),
+            }
+            // visit(child, context, state, global_table, output);
         }
+    }
+    if let Some(r_type) = r_type {
+        node.set_type(&r_type)
+    } else {
+        // lets say you do return (void_func());
+        //panic!(); // Return statement with no type? I think the t
     }
 }
 
 fn stat_block(node: &mut Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable, output: &mut OutputConfig) {
     info!("stat_block");
+    let mut r_type = None;
 
     if let Data::Children(children) = node.data_mut() {
         for child in children {
-            visit(child, context, state, global_table, output);
+            match child.name().as_str() {
+                "returnStat" => {
+                    visit(child, context, state, global_table, output);
+                    r_type = child.data_type();
+                },
+                _ => visit(child, context, state, global_table, output),
+            }
         }
+    }
+
+    if let Some(r_type) = r_type {
+        node.set_type(&r_type)
+    } else {
     }
 }
 
@@ -852,6 +880,96 @@ fn a_params_correct(node: &mut Node, context: &mut SymbolTable, state: &mut Stat
     }
 }
 
+use crate::ast_validation::{ViewAs, FunctionDefinition};
+
+fn func_def(node: &mut Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable, output: &mut OutputConfig) {
+    // make sure to change the context and copy it back out once done
+    let line = *node.line();
+    let column = *node.column();
+
+    // let parameter_list = {
+    let validated_node = FunctionDefinition::view_as(node);
+
+    let validated_node = if let Ok(validated_node) = FunctionDefinition::view_as(node) {
+        validated_node
+    } else {
+        // bad
+        panic!(); 
+    };
+
+    let mut parameter_list = Vec::new();
+    for parameter in validated_node.parameter_list().parameters() {
+        let mut n = Node::new("", Data::Epsilon, 0, 0);
+        n.set_type(parameter.data_type());
+        parameter_list.push(n);
+    }
+
+    let function_id_str = validated_node.id().to_owned();
+    let mut return_type = None;
+    let mut return_l = 0;
+    let mut return_c = 0;
+
+    if let Data::Children(children) = node.data_mut() {
+        // I think all of the checking has already been done in the symbol table assembly
+        // so we just need to get the right context by supplying
+
+        match select_free_overload_mut(&function_id_str, &parameter_list, context) {
+            Ok(matching_function) => {
+                for child in children.iter_mut() {
+                    match child.name().as_str() {
+                        "id" => (),
+                        "funcBody" => {
+                            // This will set the return type of the function
+                            visit(child, matching_function.symbol_table_mut(), state, global_table, output);
+                            return_l = *child.line();
+                            return_c = *child.column();
+                            return_type = child.data_type();
+                        }
+                        _ => visit(child, matching_function.symbol_table_mut(), state, global_table, output),
+                    }
+                    // We don't actually need to visit the id of the function
+                    // since all the verification was done for it already
+
+                }
+
+                if return_type != *matching_function.return_type() {
+                    let err = SemanticError::new_incorrect_type(*node.line(), *node.column(), &return_type.clone().unwrap_or("void".to_owned()), &matching_function.return_type().clone().unwrap_or("void".to_owned()));
+                    output.add(&err.to_string(), err.line(), err.col());
+                }
+
+                *global_table = context.clone();
+            },
+            Err(Some(_)) => {
+                let parameter_str = parameter_list.iter().map(|n| n.data_type().unwrap()).collect::<Vec<_>>().join(", ");
+
+                let err = SemanticError::new_no_overload(line, column, &function_id_str, &parameter_str);
+                output.add(&err.to_string(), err.line(), err.col());
+            }, // cannot find overload
+            Err(None) => {
+                let err = SemanticError::new_undefined_identifier(&line, &column, &function_id_str);
+                output.add(&err.to_string(), err.line(), err.col());
+            }, // Undefined identifier
+
+        }
+
+        
+    }
+}
+
+fn return_stat(node: &mut Node, context: &mut SymbolTable, state: &mut State, global_table: &mut SymbolTable, output: &mut OutputConfig) {
+    let mut r_type = None;
+    if let Data::Children(children) = node.data_mut() {
+        // Do we actually want to perform these checks?
+        for child in children.iter_mut() {
+            visit(child, context, state, global_table, output);
+            r_type = child.data_type();
+        }
+    }
+    if let Some(r_type) = r_type {
+        node.set_type(&r_type);
+    }
+}
+
 fn check_binary_types(lhs: &Node, rhs: &Node, output: &mut OutputConfig, line: usize, col: usize) -> Result<String, ()> {
     info!("check_binary");
 
@@ -914,6 +1032,47 @@ fn select_free_overload(function_id: &str, parameters: &[Node], global_table: &S
                 if !parameter_failure {
                     println!("Candidate confirmed");
                     return Ok(function.clone())    
+                }
+            },
+            entry => panic!("Id \"{}\" is colliding with something it shouldn't \"{}\"", function_id, entry), // Bad, but this shouldn't happen (likely culprit is collision with temporary)    
+        }
+    }
+    Err(Some(()))
+}
+
+fn select_free_overload_mut<'a>(function_id: &str, parameters: &[Node], global_table: &'a mut SymbolTable) -> Result<&'a mut Function, Option<()>> {
+    println!("Trying to find correct overload of {}{:?}", function_id, parameters);
+    
+    let matches = global_table.get_all_mut(&function_id);
+    if matches.len() == 0 {
+        return Err(None);
+    }
+
+    for matching_entry in matches {
+        match matching_entry {
+            SymbolTableEntry::Function(function) => {
+                println!("Checking candidate {:?}", function);
+
+                // we must be sure the data type of the params are the same as for the function
+                if function.parameter_types().len() != parameters.len() {
+                    continue; // bad candidate, length mismatch
+                }
+
+                let mut parameter_failure = false;
+
+                for (param_node, st_entry) in parameters.iter().zip(function.parameter_types()) {
+                    println!("Checking parameter n:{:?} st:{:?}", param_node, st_entry);
+                    
+                    // The specifically ignores the array dimensionality
+                    if param_node.data_type().unwrap() != *st_entry.data_type() {
+                        println!("Skipping candidate because type mismatch");
+                        parameter_failure = true;
+                    }
+                }
+
+                if !parameter_failure {
+                    println!("Candidate confirmed");
+                    return Ok(function);
                 }
             },
             entry => panic!("Id \"{}\" is colliding with something it shouldn't \"{}\"", function_id, entry), // Bad, but this shouldn't happen (likely culprit is collision with temporary)    
