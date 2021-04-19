@@ -9,6 +9,7 @@ pub struct Node {
     column: usize,
     data_type: Option<String>,
     dimensions: Option<usize>,
+    label: Option<String>,
     // Consider adding type
     // consider adding variable name
 }
@@ -29,6 +30,7 @@ impl Node {
             data,
             line,
             column,
+            label: None,
             data_type: None,
             dimensions: None,
         }
@@ -72,6 +74,14 @@ impl Node {
 
     pub fn dimensions(&self) -> Option<usize> {
         self.dimensions
+    }
+
+    pub fn label(&self) -> Option<String> {
+        self.label.clone()
+    }
+
+    pub fn set_label(&mut self, label: &str) {
+        self.label = Some(label.to_owned())
     }
 
     pub fn dft(&self) -> DepthFirstIterator {

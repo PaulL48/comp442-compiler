@@ -458,6 +458,8 @@ fn add_op(
             let new_name = context.get_next_temporary();
             let temp = Temporary::new(&new_name, &d_type, line, col);
             context.add_entry(SymbolTableEntry::Temporary(temp));
+            node.set_label(&context.get_previous_mangled_name());
+
         } else {
             node.set_type("error-type");
         }
@@ -488,6 +490,8 @@ fn mul_op(
             let new_name = context.get_next_temporary();
             let temp = Temporary::new(&new_name, &d_type, line, col);
             context.add_entry(SymbolTableEntry::Temporary(temp));
+            node.set_label(&context.get_previous_mangled_name());
+
         } else {
             node.set_type("error-type");
         }
@@ -523,6 +527,8 @@ fn rel_op(
             let new_name = context.get_next_temporary();
             let temp = Temporary::new(&new_name, &d_type, line, col);
             context.add_entry(SymbolTableEntry::Temporary(temp));
+            node.set_label(&context.get_previous_mangled_name());
+
         } else {
             node.set_type("error-type");
         }
@@ -562,6 +568,7 @@ fn intfactor(
     );
     context.add_entry(SymbolTableEntry::Literal(lit));
     node.set_type(INTEGER);
+    node.set_label(&context.get_previous_mangled_name());
 }
 
 fn floatfactor(
@@ -588,6 +595,8 @@ fn floatfactor(
     context.add_entry(SymbolTableEntry::Literal(lit));
 
     node.set_type(FLOAT);
+    node.set_label(&context.get_previous_mangled_name());
+
 }
 
 fn stringfactor(
@@ -614,6 +623,8 @@ fn stringfactor(
     context.add_entry(SymbolTableEntry::Literal(lit));
 
     node.set_type(STRING);
+    node.set_label(&context.get_previous_mangled_name());
+
 }
 
 fn type_node(
@@ -1182,8 +1193,6 @@ fn func_def(
 
     let function_id_str = validated_node.id().to_owned();
     let mut return_type = None;
-    let mut return_l = 0;
-    let mut return_c = 0;
 
     if let Data::Children(children) = node.data_mut() {
         // I think all of the checking has already been done in the symbol table assembly
@@ -1203,8 +1212,6 @@ fn func_def(
                                 global_table,
                                 output,
                             );
-                            return_l = *child.line();
-                            return_c = *child.column();
                             return_type = child.data_type();
                         }
                         _ => visit(

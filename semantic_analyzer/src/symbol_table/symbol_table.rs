@@ -190,6 +190,10 @@ impl SymbolTable {
         result
     }
 
+    pub fn get_previous_mangled_name(&self) -> String {
+        format!("{}__{}{}", self.name, TEMP_PREFIX, self.temp_var_count - 1)
+    }
+
     // pub fn get_internal_variable_prefix(&mut self) -> String {
     //     let mut result = String::new();
     //     result.push_str("__");
