@@ -703,75 +703,6 @@ fn parameter_data_member_exception(node: &mut Node, context: &mut SymbolTable, s
                 }
             }
         }
-
-        println!("GIVES: {:?}", node);
-
-        // Here we have to check:
-        // If the id identifies an array (which is known )
-
-        // This is to make the borrow checker happy
-        // let child_data_clone = children[0].data().clone();
-        // let child_dimensions_clone = children[0].dimensions().clone();
-        // let index_list_clone = children[1].clone();
-
-        // let id = if let Data::String(id) = child_data_clone {
-        //     id
-        // } else {
-        //     return;
-        // };
-
-        // if let Some(d_type) = children[0].data_type() {
-        //     node.set_type(&d_type);
-        // } else {
-        //     node.set_type("error-type");
-        // }
-
-        // match context.get(&id) {
-        //     Some(SymbolTableEntry::Local(local)) => {
-        //         // Check to make sure dimensionalities agree
-        //         // This means the number of indexes must be the same
-        //         if let Some(dimensions) = index_list_clone.dimensions() {
-        //             info!("symb {}, ast {}", local.dimension().len(), dimensions);
-        //             if local.dimension().len() != dimensions {
-        //                 // Dimensions are specified but they don't match
-
-        //                 let err = SemanticError::new_invalid_array_dimension(node.line(), node.column(), &dimensions, &local.dimension().len());
-        //                 output.add(&err.to_string(), err.line(), err.col());
-        //                 node.set_type("error-type");
-        //             }
-        //         } else {
-        //             // Dimensions are not specified
-        //             // So they must be included in the dataMember type
-        //             if let Some(dimensions) = child_dimensions_clone {
-        //                 node.set_dimensions(&dimensions);
-        //             } else {
-        //                 node.set_type("error-type");
-        //             }
-        //         }
-                
-        //     },
-        //     Some(SymbolTableEntry::Param(param)) => {
-        //         if let Some(dimensions) = index_list_clone.dimensions() {
-        //             if param.dimension().len() != dimensions {
-        //                 let err = SemanticError::new_invalid_array_dimension(node.line(), node.column(), &dimensions, &param.dimension().len());
-        //                 output.add(&err.to_string(), err.line(), err.col());
-        //                 node.set_type("error-type");
-        //             }
-        //         } else {
-        //             if let Some(dimensions) = child_dimensions_clone {
-        //                 node.set_dimensions(&dimensions);
-        //             } else {
-        //                 node.set_type("error-type");
-        //             }
-        //         }
-        //     },
-        //     Some(entry) => panic!("Id \"{}\" is naming something it shouldn't \"{}\"", id, entry), // Bad, but this shouldn't happen (likely culprit is collision with temporary)
-        //     None => {
-        //         let err = SemanticError::new_undefined_identifier(node.line(), node.column(), &id);
-        //         output.add(&err.to_string(), err.line(), err.col());
-        //         node.set_type("error-type");
-        //     }
-        // }
     }
 }
 
@@ -784,7 +715,7 @@ fn a_params_correct(node: &mut Node, context: &mut SymbolTable, state: &mut Stat
     let line = *node.line();
     let column = *node.column();
 
-
+    println!("PARAM CORRECT {:?}", node);
     if let Data::Children(children) = node.data_mut() {
         // This sets up the data types of the children
         // for child in children.iter_mut() {
@@ -792,7 +723,7 @@ fn a_params_correct(node: &mut Node, context: &mut SymbolTable, state: &mut Stat
         // }
         // The children have already been set up by a_params_children
 
-    
+        // We need to compare the 
 
         if let Some(SymbolTableEntry::Function(function)) = global_table.get(function_id) {
             // both the type and dimensionality of the parameter must be checked
@@ -804,21 +735,43 @@ fn a_params_correct(node: &mut Node, context: &mut SymbolTable, state: &mut Stat
             // now actually go through the children
             for (node, st_entry) in children.iter().zip(function.parameter_types().iter()) {
                 println!("!!! {:?}, {}", node, st_entry);
-                if node.data_type().clone().unwrap() != *st_entry.data_type() {                    
-                    if st_entry.dimension().len() > 0 {
-                        if let Some(dimension) = node.dimensions() {
-                            if dimension != st_entry.dimension().len() {
-                                let mut node_type = String::new();
-                                node_type.push_str(&node.data_type().clone().unwrap());
-                                for _ in 0..node.dimensions().clone().unwrap() {
-                                    node_type.push_str("[]");
-                                }
-                                
-                                let err = SemanticError::new_incorrect_type(line, column, &node_type, &st_entry.type_string());
-                                output.add(&err.to_string(), err.line(), err.col());
-            
-                            }
+                if let Some(dimension) = node.dimensions() {
+                    if dimension != st_entry.dimension().len() {
+                        let mut node_type = String::new();
+                        node_type.push_str(&node.data_type().clone().unwrap());
+                        for _ in 0..node.dimensions().clone().unwrap() {
+                            node_type.push_str("[]");
                         }
+                        
+                        let err = SemanticError::new_incorrect_type(line, column, &node_type, &st_entry.type_string());
+                        output.add(&err.to_string(), err.line(), err.col());
+
+                    }
+                } else if st_entry.dimension().len() != 0 {
+                    let mut node_type = String::new();
+                    node_type.push_str(&node.data_type().clone().unwrap());
+                    let err = SemanticError::new_incorrect_type(line, column, &node_type, &st_entry.type_string());
+                    output.add(&err.to_string(), err.line(), err.col());
+                } else if node.data_type().clone().unwrap() != *st_entry.data_type() {
+                    // At this point we know we have the correct base type but we need to check
+                    // whether the dimension of the node is correct
+                    if let Some(dimension) = node.dimensions() {
+                        if dimension != st_entry.dimension().len() {
+                            let mut node_type = String::new();
+                            node_type.push_str(&node.data_type().clone().unwrap());
+                            for _ in 0..node.dimensions().clone().unwrap() {
+                                node_type.push_str("[]");
+                            }
+                            
+                            let err = SemanticError::new_incorrect_type(line, column, &node_type, &st_entry.type_string());
+                            output.add(&err.to_string(), err.line(), err.col());
+
+                        }
+                    } else if st_entry.dimension().len() != 0 {
+                        let mut node_type = String::new();
+                        node_type.push_str(&node.data_type().clone().unwrap());
+                        let err = SemanticError::new_incorrect_type(line, column, &node_type, &st_entry.type_string());
+                        output.add(&err.to_string(), err.line(), err.col());
                     }
                 }
             }
