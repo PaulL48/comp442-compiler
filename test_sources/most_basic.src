@@ -5,6 +5,7 @@ main
   var
   {
     integer i;
+    float f[2][2];
   }
-  i = 1 + 1 * 1.0;
+  i = 1.0 + 1.0 * 1.0;
 }

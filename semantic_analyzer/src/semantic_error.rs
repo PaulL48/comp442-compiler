@@ -208,19 +208,48 @@ impl SemanticError {
         )
     }
 
-    pub fn new_type_error(
+    pub fn new_binary_type_error(
         line: &usize,
         column: &usize,
         lht: &str,
         rht: &str
     ) -> SemanticError {
-        SemanticError::TypeError(
+        SemanticError::BinaryMismatchedTypes(
             *line,
             *column,
             format!(
                 "Type error: types of binary operation do not match \"{}\", \"{}\"",
                 lht,
                 rht,
+            )
+        )
+    }
+
+    pub fn new_undefined_type(
+        line: &usize,
+        column: &usize,
+        data_type: &str,
+    ) -> SemanticError {
+        SemanticError::UndefinedType(
+            *line,
+            *column,
+            format!(
+                "Type error: specified type is undefined \"{}\"", data_type
+            )
+        )
+    }
+
+    pub fn new_undefined_identifier(
+        line: &usize,
+        column: &usize,
+        id: &str,
+    ) -> SemanticError {
+        SemanticError::UndefinedIdentifier(
+            *line,
+            *column,
+            format!(
+                "Undefined identifier \"{}\"",
+                id
             )
         )
     }
