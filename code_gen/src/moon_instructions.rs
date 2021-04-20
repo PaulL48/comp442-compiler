@@ -2,7 +2,7 @@
 
 use crate::register::Register;
 
-pub const LABEL_WIDTH: usize = 24;
+pub const LABEL_WIDTH: usize = 20;
 
 // This is just the max length of the below instructions
 pub const INSTRUCTION_WIDTH: usize = 5;
@@ -67,30 +67,30 @@ const MEM_STORE_B: &str = "db"; // Sme as above
 const RES: &str = "res";
 
 pub fn labeled_line(label: &str, instruction: &str) -> String {
-    format!(" {:w$} {}", label, instruction, w = LABEL_WIDTH)
+    format!(" {:w$} {}\n", label, instruction, w = LABEL_WIDTH)
 }
 
 pub fn instr_line(instruction: &str) -> String {
-    format!(" {:w$} {}", "", instruction, w = LABEL_WIDTH)
+    format!(" {:w$} {}\n", "", instruction, w = LABEL_WIDTH)
 }
 
 pub fn cmt_line(comment: &str) -> String {
-    format!(" {:w$} {}", "", comment, w = LABEL_WIDTH)
+    format!(" {:w$} % {}\n", "", comment, w = LABEL_WIDTH)
 }
 
 // For convenience a function is created for each that simply copies the string out
 // load_w()
 pub fn load_w(ri: &Register, k: &str, rj: &Register) -> String {
-    format!("{:w$} {},{}({})", LOAD_W, ri, k, rj, w = INSTRUCTION_WIDTH)
+    format!("{:w$} {}, {}({})", LOAD_W, ri, k, rj, w = INSTRUCTION_WIDTH)
 }
 pub fn load_b(ri: &Register, k: &str, rj: &Register) -> String {
-    format!("{:w$} {},{}({})", LOAD_B, ri, k, rj, w = INSTRUCTION_WIDTH)
+    format!("{:w$} {}, {}({})", LOAD_B, ri, k, rj, w = INSTRUCTION_WIDTH)
 }
 pub fn store_w(k: &str, rj: &Register, ri: &Register) -> String {
-    format!("{:w$} {}({}),{}", STORE_W, k, rj, ri, w = INSTRUCTION_WIDTH)
+    format!("{:w$} {}({}), {}", STORE_W, k, rj, ri, w = INSTRUCTION_WIDTH)
 }
 pub fn store_b(k: &str, rj: &Register, ri: &Register) -> String {
-    format!("{:w$} {}({}),{}", STORE_B, k, rj, ri, w = INSTRUCTION_WIDTH)
+    format!("{:w$} {}({}), {}", STORE_B, k, rj, ri, w = INSTRUCTION_WIDTH)
 }
 
 pub fn add(dest: &Register, lhs: &Register, rhs: &Register) -> String {
@@ -232,7 +232,7 @@ pub fn org(k: &str) -> String {
 /// dw
 pub fn mem_store_w(ks: &[&str]) -> String {
     let mut result = String::new();
-    result.push_str(&format!("{:w$}", MEM_STORE_W, w = INSTRUCTION_WIDTH));
+    result.push_str(&format!("{:w$} ", MEM_STORE_W, w = INSTRUCTION_WIDTH));
 
     if ks.len() == 0 {
         panic!("Store Words with empty arguments");
@@ -249,7 +249,7 @@ pub fn mem_store_w(ks: &[&str]) -> String {
 /// db
 pub fn mem_store_b(ks: &[&str]) -> String {
     let mut result = String::new();
-    result.push_str(&format!("{:w$}", MEM_STORE_W, w = INSTRUCTION_WIDTH));
+    result.push_str(&format!("{:w$} ", MEM_STORE_W, w = INSTRUCTION_WIDTH));
 
     if ks.len() == 0 {
         panic!("Store Words with empty arguments");

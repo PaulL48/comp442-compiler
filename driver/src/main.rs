@@ -69,8 +69,14 @@ fn main() -> std::io::Result<()> {
         if let Some(ref mut ast) = result {
             let mut result = semantic_analyzer::analyze(ast, &mut oc);
             // TODO: Add check if the semantic analysis failed or not
+            oc.flush_semantic_messages();
+            if !oc.has_errors() {
+                code_gen::process(&ast, &mut result, &mut oc);
 
-            code_gen::process(&ast, &mut result, &mut oc)
+                oc.flush_code();
+            } else {
+                error!("Semantic errors have occurred, please check the error files");
+            }
         }
     }
 

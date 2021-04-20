@@ -11,6 +11,10 @@ use std::collections::HashSet;
 
 const GLOBAL_TABLE_WIDTH: usize = 83;
 const TEMP_PREFIX: &str = "temp";
+const ELSE_PREFIX: &str = "else";
+const ENDIF_PREFIX: &str = "endif";
+const GOWHILE_PREFIX: &str = "gowhile";
+const ENDWHILE_PREFIX: &str = "endwhile";
 
 #[derive(Debug, Clone)]
 pub enum SymbolTableEntry {
@@ -118,6 +122,8 @@ pub struct SymbolTable {
     pub scope: Option<String>,
 
     temp_var_count: usize,
+    if_else_count: usize,
+    while_count: usize,
 }
 
 /// Helper type for inheritance based searches
@@ -190,8 +196,26 @@ impl SymbolTable {
         result
     }
 
+    pub fn get_next_if_else_label(&mut self) -> (String, String) {
+        let result1 = format!("{}__{}{}", self.name, ELSE_PREFIX, self.if_else_count);
+        let result2 = format!("{}__{}{}", self.name, ENDIF_PREFIX, self.if_else_count);
+        self.if_else_count += 1;
+        return (result1, result2);
+    }
+
+    pub fn get_next_while_label(&mut self) -> (String, String) {
+        let result1 = format!("{}__{}{}", self.name, GOWHILE_PREFIX, self.while_count);
+        let result2 = format!("{}__{}{}", self.name, ENDWHILE_PREFIX, self.while_count);
+        self.while_count += 1;
+        return (result1, result2);
+    }
+
     pub fn get_previous_mangled_name(&self) -> String {
         format!("{}__{}{}", self.name, TEMP_PREFIX, self.temp_var_count - 1)
+    }
+
+    pub fn mangle(&self, id: &str) -> String {
+        format!("{}__{}", self.name, id)
     }
 
     // pub fn get_internal_variable_prefix(&mut self) -> String {
@@ -214,6 +238,8 @@ impl SymbolTable {
             scope: None,
             values: Vec::new(),
             temp_var_count: 0,
+            if_else_count: 0,
+            while_count: 0,
         }
     }
 
@@ -223,6 +249,8 @@ impl SymbolTable {
             scope: scope.map(|x| x.to_string()),
             values: Vec::new(),
             temp_var_count: 0,
+            if_else_count: 0,
+            while_count: 0,
         }
     }
 

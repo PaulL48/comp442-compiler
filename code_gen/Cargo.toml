@@ -10,3 +10,4 @@ edition = "2018"
 ast = {path = "../ast"}
 output_manager = {path = "../output_manager"}
 semantic_analyzer = {path = "../semantic_analyzer"}
+log = "0.4.13"

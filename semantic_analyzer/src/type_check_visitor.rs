@@ -18,7 +18,7 @@ pub fn process(
     current_results: &mut SemanticAnalysisResults,
     output: &mut OutputConfig,
 ) {
-    info!("Starting type check");
+    // info!("Starting type check");
     visit(
         node,
         &mut current_results.symbol_table.clone(),
@@ -97,7 +97,7 @@ fn prog(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    info!("prog");
+    
 
     // Here we'll explicitly invoke the individual children
     if let Data::Children(children) = node.data_mut() {
@@ -129,7 +129,7 @@ fn entry_point(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    info!("entry_point");
+    
 
     if let Data::Children(children) = node.data_mut() {
         for child in children.iter_mut() {
@@ -145,7 +145,7 @@ fn class_list(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    info!("class_list");
+    
 
     if let Data::Children(children) = node.data_mut() {
         for child in children {
@@ -161,7 +161,7 @@ fn function_list(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    info!("function_list");
+    
 
     if let Data::Children(children) = node.data_mut() {
         for child in children {
@@ -177,7 +177,7 @@ fn var_list(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    info!("var_list");
+    
 
     if let Data::Children(children) = node.data_mut() {
         for child in children {
@@ -193,7 +193,7 @@ fn func_body(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    info!("func_body");
+    
 
     let mut r_type = None;
     if let Data::Children(children) = node.data_mut() {
@@ -223,7 +223,7 @@ fn stat_block(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    info!("stat_block");
+    
     let mut r_type = None;
 
     if let Data::Children(children) = node.data_mut() {
@@ -251,7 +251,7 @@ fn assign_op(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    info!("assign_op");
+    
     let line = *node.line();
     let col = *node.column();
 
@@ -260,7 +260,7 @@ fn assign_op(
             visit(child, context, state, global_table, output);
         }
 
-        info!("Calling check bin from assign op");
+        
 
         if let Ok(d_type) = check_binary_types(&children[0], &children[1], output, line, col) {
             node.set_type(&d_type);
@@ -277,7 +277,7 @@ fn var_decl(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    info!("var_decl");
+    
 
     if let Data::Children(children) = node.data_mut() {
         // for child in children {
@@ -301,7 +301,7 @@ fn var(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    info!("var");
+    
 
     // This is where a lot of complexity accumulates
     // each child represents one element in a sequence of
@@ -342,8 +342,9 @@ fn var(
         // }
         let dim = children[0].dimensions();
 
-        if let Some(d_type) = children[0].data_type() {
+        if let (Some(d_type), Some(label)) = (children[0].data_type(), children[0].label()) {
             node.set_type(&d_type);
+            node.set_label(&label);
         } else {
             node.set_type("error-type");
         }
@@ -367,7 +368,7 @@ fn data_member(
     // This assuming that the dataMember is an assignable value and on the lhs of an equal sign
     // match context.get(id: &str)
 
-    info!("data_member");
+    
 
     if let Data::Children(children) = node.data_mut() {
         for child in children.iter_mut() {
@@ -378,20 +379,21 @@ fn data_member(
         let child_data_clone = children[0].data().clone();
         let index_list_clone = children[1].clone();
 
-        if let Some(d_type) = children[0].data_type() {
+        if let (Some(d_type), Some(label)) = (children[0].data_type(), children[0].label()) {
             node.set_type(&d_type);
+            node.set_label(&label);
         } else {
             node.set_type("error-type");
         }
 
         if let Data::String(id) = child_data_clone {
-            info!("Checking dimensionality of {}", id);
+            
             match context.get(&id) {
                 Some(SymbolTableEntry::Local(local)) => {
                     // Check to make sure dimensionalities agree
                     // This means the number of indexes must be the same
                     if let Some(dimensions) = index_list_clone.dimensions() {
-                        info!("symb {}, ast {}", local.dimension().len(), dimensions);
+                        
                         if local.dimension().len() != dimensions {
                             let err = SemanticError::new_invalid_array_dimension(
                                 node.line(),
@@ -440,7 +442,7 @@ fn add_op(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    info!("add_op");
+    
 
     let line = *node.line();
     let col = *node.column();
@@ -450,7 +452,7 @@ fn add_op(
             visit(child, context, state, global_table, output);
         }
 
-        info!("Calling check bin from add_op");
+        
 
         if let Ok(d_type) = check_binary_types(&children[0], &children[2], output, line, col) {
             node.set_type(&d_type);
@@ -473,7 +475,7 @@ fn mul_op(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    info!("mul_op");
+    
 
     let line = *node.line();
     let col = *node.column();
@@ -483,7 +485,7 @@ fn mul_op(
             visit(child, context, state, global_table, output);
         }
 
-        info!("Calling check bin from mul_op");
+        
         if let Ok(d_type) = check_binary_types(&children[0], &children[2], output, line, col) {
             node.set_type(&d_type);
 
@@ -542,7 +544,7 @@ fn func_decl(
     _global_table: &mut SymbolTable,
     _output: &mut OutputConfig,
 ) {
-    info!("func_decl");
+    
 }
 
 fn intfactor(
@@ -552,7 +554,7 @@ fn intfactor(
     _global_table: &mut SymbolTable,
     _output: &mut OutputConfig,
 ) {
-    info!("intfactor");
+    
     let name = context.get_next_temporary();
     let value = if let Data::Integer(integer) = node.data() {
         *integer
@@ -578,7 +580,7 @@ fn floatfactor(
     _global_table: &mut SymbolTable,
     _output: &mut OutputConfig,
 ) {
-    info!("floatfactor");
+    
     let name = context.get_next_temporary();
     let value = if let Data::Float(float) = node.data() {
         *float as f32
@@ -606,7 +608,7 @@ fn stringfactor(
     _global_table: &mut SymbolTable,
     _output: &mut OutputConfig,
 ) {
-    info!("stringfactor");
+    
     let name = context.get_next_temporary();
     let value = if let Data::String(string) = node.data() {
         string
@@ -634,7 +636,7 @@ fn type_node(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    info!("type_node");
+    
 
     if let Data::String(variable_type) = node.data() {
         match variable_type.as_str() {
@@ -663,7 +665,7 @@ fn mandatory_dimlist(
 ) {
     // The list is in a mandatory context (a declaration or a datamember)
     // This means if it has any dimensions, they must be defined
-    info!("mandatory_dimlist");
+    
 }
 
 fn mandatory_indexlist(
@@ -675,7 +677,7 @@ fn mandatory_indexlist(
 ) {
     // The list is in a mandatory context (a declaration or a datamember)
     // This means if it has any dimensions, they must be defined
-    info!("mandatory_indexlist");
+    
 
     // it should be a list of intfactors as children
     if let Data::Children(children) = node.data_mut() {
@@ -725,16 +727,19 @@ fn id(
     // TODO: ID is also used for fCalls
 
     // Seems it would be best to break this out into multiple
-    info!("id");
+    
 
     if let Data::String(id) = node.data() {
         match context.get(id) {
             Some(SymbolTableEntry::Local(local)) => {
                 node.set_type(local.data_type());
+                node.set_label(&context.mangle(local.id()));
                 // TODO: Dimensions
             }
             Some(SymbolTableEntry::Param(parameter)) => {
                 node.set_type(parameter.data_type());
+                node.set_label(&context.mangle(parameter.id()));
+
                 // TODO: Dimensions
             }
             Some(entry) => panic!(
@@ -758,7 +763,7 @@ fn function_id(
     _output: &mut OutputConfig,
     function: &Function,
 ) {
-    info!("function_id");
+    
     if let Some(ret_type) = function.return_type() {
         node.set_type(ret_type);
     }
@@ -839,7 +844,7 @@ fn f_call(
         let f = select_free_overload(&function_id_str, &parameters, global_table);
         match f {
             Ok(matching_function) => {
-                println!("Selected overload for {:?} is {:?}", nc, matching_function);
+                // println!("Selected overload for {:?} is {:?}", nc, matching_function);
 
                 function_id(
                     &mut children[0],
@@ -982,7 +987,7 @@ fn parameter_data_member_exception(
 ) {
     // This is exactly like a normal data except for:
     // Array indexing can be none to pass the array itself as a parameter
-    info!("data_member");
+    
 
     if let Data::Children(children) = node.data_mut() {
         // Do we actually want to perform these checks?
@@ -1000,14 +1005,15 @@ fn parameter_data_member_exception(
         // if they're passing a normal number, no further action
         // If they're passing an un-indexed array, find the dimensionality from the symbol table
         // If they're passing an indexed array,
-        if let Some(d_type) = children[0].data_type() {
+        if let (Some(d_type), Some(label)) = (children[0].data_type(), children[0].label()) {
             node.set_type(&d_type);
+            node.set_label(&label);
         } else {
             node.set_type("error-type");
         }
 
         if let Data::String(id) = child_data_clone {
-            info!("Checking dimensionality of {}", id);
+            
             match context.get(&id) {
                 Some(SymbolTableEntry::Local(local)) => {
                     if let Some(dimensions) = index_list_clone.dimensions() {
@@ -1015,7 +1021,6 @@ fn parameter_data_member_exception(
                         if dimensions == 0 {
                             node.set_dimensions(&local.dimension().len());
                         } else {
-                            // info!("symb {}, ast {}", local.dimension().len(), dimensions);
                             if local.dimension().len() != dimensions {
                                 let err = SemanticError::new_invalid_array_dimension(
                                     node.line(),
@@ -1084,7 +1089,7 @@ fn a_params_correct(
     let line = *node.line();
     let column = *node.column();
 
-    println!("PARAM CORRECT {:?}", node);
+    // println!("PARAM CORRECT {:?}", node);
     if let Data::Children(children) = node.data_mut() {
         // both the type and dimensionality of the parameter must be checked
         if function.parameter_types().len() != children.len() {
@@ -1099,7 +1104,7 @@ fn a_params_correct(
 
         // now actually go through the children
         for (node, st_entry) in children.iter().zip(function.parameter_types().iter()) {
-            println!("!!! {:?}, {}", node, st_entry);
+            // println!("!!! {:?}, {}", node, st_entry);
             if let Some(dimension) = node.dimensions() {
                 if dimension != st_entry.dimension().len() {
                     let mut node_type = String::new();
@@ -1314,7 +1319,7 @@ fn check_binary_types(
     _line: usize,
     _col: usize,
 ) -> Result<String, ()> {
-    info!("check_binary");
+    
 
     let lht = if let Some(d_type) = lhs.data_type() {
         d_type
@@ -1331,11 +1336,11 @@ fn check_binary_types(
     if lht != rht {
         let err = SemanticError::new_binary_type_error(rhs.line(), rhs.column(), &lht, &rht);
         output.add(&err.to_string(), err.line(), err.col());
-        info!("check_binary failed {}", err.to_string());
+        
 
         Err(())
     } else {
-        info!("check_binary ok");
+        
 
         Ok(lht)
     }
@@ -1346,10 +1351,10 @@ fn select_free_overload(
     parameters: &[Node],
     global_table: &SymbolTable,
 ) -> Result<Function, Option<()>> {
-    println!(
-        "Trying to find correct overload of {}{:?}",
-        function_id, parameters
-    );
+    // println!(
+    //     "Trying to find correct overload of {}{:?}",
+    //     function_id, parameters
+    // );
 
     let matches = global_table.get_all(&function_id);
     if matches.len() == 0 {
@@ -1359,7 +1364,7 @@ fn select_free_overload(
     for matching_entry in matches {
         match matching_entry {
             SymbolTableEntry::Function(function) => {
-                println!("Checking candidate {:?}", function);
+                //println!("Checking candidate {:?}", function);
 
                 // we must be sure the data type of the params are the same as for the function
                 if function.parameter_types().len() != parameters.len() {
@@ -1369,17 +1374,17 @@ fn select_free_overload(
                 let mut parameter_failure = false;
 
                 for (param_node, st_entry) in parameters.iter().zip(function.parameter_types()) {
-                    println!("Checking parameter n:{:?} st:{:?}", param_node, st_entry);
+                    //println!("Checking parameter n:{:?} st:{:?}", param_node, st_entry);
 
                     // The specifically ignores the array dimensionality
                     if param_node.data_type().unwrap() != *st_entry.data_type() {
-                        println!("Skipping candidate because type mismatch");
+                        //println!("Skipping candidate because type mismatch");
                         parameter_failure = true;
                     }
                 }
 
                 if !parameter_failure {
-                    println!("Candidate confirmed");
+                    //println!("Candidate confirmed");
                     return Ok(function.clone());
                 }
             }
@@ -1397,10 +1402,10 @@ fn select_free_overload_mut<'a>(
     parameters: &[Node],
     global_table: &'a mut SymbolTable,
 ) -> Result<&'a mut Function, Option<()>> {
-    println!(
-        "Trying to find correct overload of {}{:?}",
-        function_id, parameters
-    );
+    // println!(
+    //     "Trying to find correct overload of {}{:?}",
+    //     function_id, parameters
+    // );
 
     let matches = global_table.get_all_mut(&function_id);
     if matches.len() == 0 {
@@ -1410,7 +1415,7 @@ fn select_free_overload_mut<'a>(
     for matching_entry in matches {
         match matching_entry {
             SymbolTableEntry::Function(function) => {
-                println!("Checking candidate {:?}", function);
+                //println!("Checking candidate {:?}", function);
 
                 // we must be sure the data type of the params are the same as for the function
                 if function.parameter_types().len() != parameters.len() {
@@ -1420,17 +1425,17 @@ fn select_free_overload_mut<'a>(
                 let mut parameter_failure = false;
 
                 for (param_node, st_entry) in parameters.iter().zip(function.parameter_types()) {
-                    println!("Checking parameter n:{:?} st:{:?}", param_node, st_entry);
+                    //println!("Checking parameter n:{:?} st:{:?}", param_node, st_entry);
 
                     // The specifically ignores the array dimensionality
                     if param_node.data_type().unwrap() != *st_entry.data_type() {
-                        println!("Skipping candidate because type mismatch");
+                        //println!("Skipping candidate because type mismatch");
                         parameter_failure = true;
                     }
                 }
 
                 if !parameter_failure {
-                    println!("Candidate confirmed");
+                    //println!("Candidate confirmed");
                     return Ok(function);
                 }
             }

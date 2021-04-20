@@ -10,7 +10,7 @@ const DERIVATION_EXT: &str = "outderivation";
 const AST_EXT: &str = "outast";
 const PARSE_ERROR_EXT: &str = "outsyntaxerrors";
 const LEX_ERROR_EXT: &str = "outlexerrors";
-const CODE_EXT: &str = "m";
+const CODE_EXT: &str = "moon";
 
 pub struct ErrorMessage {
     line: usize,
@@ -219,8 +219,7 @@ impl OutputConfig {
         self.code_data.push(line.to_string());
     }
 
-    pub fn flush(&mut self) {
-        self.flush_semantic_messages();
+    pub fn flush_code(&mut self) {
         for line in &self.code_exec {
             warn_write(&mut self.code_file, &self.code_path, &line)
         }
@@ -228,5 +227,14 @@ impl OutputConfig {
         for line in &self.code_data {
             warn_write(&mut self.code_file, &self.code_path, &line)
         }
+    }
+
+    pub fn has_errors(&self) -> bool {
+        for entry in &self.semantic_error_buffer {
+            if let Some(position) = entry.message().find("error") {
+                return true;
+            }
+        }
+        return false;
     }
 }

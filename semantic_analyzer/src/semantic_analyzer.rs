@@ -61,7 +61,7 @@ pub fn analyze(root: &mut ast::Node, output_config: &mut OutputConfig) -> Semant
     type_check_visitor::process(root, &mut results, output_config);
     memory_size_visitor::process(root, &mut results, output_config);
 
-    output_config.flush_semantic_messages();
+    // output_config.flush_semantic_messages();
 
     // Write results to a file
     warn_write(
