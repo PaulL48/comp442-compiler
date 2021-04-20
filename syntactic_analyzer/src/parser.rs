@@ -145,7 +145,10 @@ pub fn parse(
         warn_write(
             &mut output_config.syntax_error_file,
             &output_config.syntax_error_path,
-            &format!("Syntax error: unexpected token {}, but was expecting end of file", current_token.unwrap()),
+            &format!(
+                "Syntax error: unexpected token {}, but was expecting end of file",
+                current_token.unwrap()
+            ),
         );
         error!("Parsing encountered errors, see the associated output files");
         return None;
@@ -174,7 +177,7 @@ fn skip_errors(
                     warn_write(&mut output_config.syntax_error_file, &output_config.syntax_error_path, &format!("Syntax error at line {}, col {}: encountered {}, but was expecting {}\n", lex_token.line, lex_token.column, lex_token.lexeme, c));
                 }
                 Symbol::NonTerminal(nt) => {
-                    warn_write(&mut output_config.syntax_error_file, &output_config.syntax_error_path, &format!("Syntax error at line {}, col {}: encountered {}, but was expecting a {} which begins with one of ", lex_token.line, lex_token.column, nt, lex_token.lexeme));
+                    warn_write(&mut output_config.syntax_error_file, &output_config.syntax_error_path, &format!("Syntax error at line {}, col {}: encountered {}, but was expecting a {} which begins with one of ", lex_token.line, lex_token.column, lex_token.lexeme, nt));
                     write_array(
                         &mut output_config.syntax_error_file,
                         &output_config.syntax_error_path,

@@ -212,15 +212,13 @@ impl<'a> ParentNodeValidator<'a> {
                 self.next_child += 1;
                 Ok(None)
             }
-            _ => {
-                Err(ValidatorError::MalformedAst(format!(
-                    "{} node {:?} requires child {} to be a string or epsilon node, found {:?}",
-                    self.node_name,
-                    self.node,
-                    self.next_child,
-                    self.children[self.next_child].data()
-                )))
-            }
+            _ => Err(ValidatorError::MalformedAst(format!(
+                "{} node {:?} requires child {} to be a string or epsilon node, found {:?}",
+                self.node_name,
+                self.node,
+                self.next_child,
+                self.children[self.next_child].data()
+            ))),
         }
     }
 
@@ -244,7 +242,7 @@ impl<'a> ParentNodeValidator<'a> {
             Data::Epsilon => {
                 self.next_child += 1;
                 Ok(None)
-            },
+            }
             _ => {
                 let result = ViewAs::view_as(&self.children[self.next_child])?;
                 self.next_child += 1;

@@ -7,6 +7,8 @@ use derive_getters::Getters;
 #[derive(Debug, Clone, Getters)]
 pub struct DimensionList {
     dimensions: Vec<Option<i64>>,
+    line: usize,
+    column: usize,
 }
 
 impl<'a> ViewAs<'a> for DimensionList {
@@ -15,7 +17,11 @@ impl<'a> ViewAs<'a> for DimensionList {
 
         let dimensions = validator.then_list_of_optional_ints()?;
 
-        Ok(DimensionList { dimensions })
+        Ok(DimensionList {
+            dimensions,
+            line: *node.line(),
+            column: *node.column(),
+        })
     }
 }
 

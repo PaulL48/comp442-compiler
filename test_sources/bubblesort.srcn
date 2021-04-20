@@ -26,6 +26,8 @@ func bubbleSort(integer arr[], integer size) : void
     i = i+1;
   };
 }
+
+
    
 /* Print the array */
 func printArray(integer arr[], integer size) : void 
@@ -41,7 +43,15 @@ func printArray(integer arr[], integer size) : void
     write(arr[i]);
       i = i+1;
   };
-} 
+}
+
+func foo(integer arr[], integer size): void
+{
+  var {
+    float a;
+    float b;
+  }
+}
 
 // main funtion to test above
 main 

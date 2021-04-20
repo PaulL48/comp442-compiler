@@ -101,6 +101,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "code_gen"
+version = "0.1.0"
+dependencies = [
+ "ast",
+ "log",
+ "output_manager",
+ "semantic_analyzer",
+]
+
+[[package]]
 name = "derive-getters"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -116,6 +126,7 @@ name = "driver"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "code_gen",
  "lexical_analyzer",
  "log",
  "output_manager",
@@ -273,6 +284,7 @@ dependencies = [
  "derive-getters",
  "lazy_static",
  "log",
+ "maplit",
  "output_manager",
 ]
 

@@ -1,5 +1,5 @@
 [package]
-name = "semantic_analyzer"
+name = "code_gen"
 version = "0.1.0"
 authors = ["Paul Lane <paul.lane083@gmail.com>"]
 edition = "2018"
@@ -9,7 +9,5 @@ edition = "2018"
 [dependencies]
 ast = {path = "../ast"}
 output_manager = {path = "../output_manager"}
-lazy_static = "1.4.0"
-derive-getters = "0.2.0"
+semantic_analyzer = {path = "../semantic_analyzer"}
 log = "0.4.13"
-maplit = "1.0.2"

@@ -1,7 +1,12 @@
-use crate::ast_validation::view_as::ViewAs;
-use crate::ast_validation::{node_validator::NodeValidator, ValidatorError, VariableList};
+use crate::ast_validation::{
+    node_validator::NodeValidator, ToSymbol, ValidatorError, VariableList, ViewAs,
+};
 use ast::Node;
 use derive_getters::Getters;
+
+use crate::symbol_table::{SymbolTable, SymbolTableEntry};
+use crate::SemanticError;
+use output_manager::OutputConfig;
 
 #[derive(Getters)]
 pub struct FunctionBody<'a> {
@@ -20,7 +25,7 @@ impl<'a> ViewAs<'a> for FunctionBody<'a> {
 
         let local_variable_list = match local_variable_list {
             Some(list) => list,
-            None => VariableList::new()
+            None => VariableList::new(),
         };
 
         Ok(FunctionBody {
@@ -29,5 +34,25 @@ impl<'a> ViewAs<'a> for FunctionBody<'a> {
             line: *node.line(),
             column: *node.column(),
         })
+    }
+}
+
+impl ToSymbol for FunctionBody<'_> {
+    fn validate_entry(
+        &self,
+        _context: &SymbolTable,
+        _output: &mut OutputConfig,
+    ) -> Result<(), SemanticError> {
+        Ok(())
+    }
+
+    fn to_symbol(
+        &self,
+        context: &SymbolTable,
+        output: &mut OutputConfig,
+    ) -> Result<Vec<SymbolTableEntry>, SemanticError> {
+        Ok(self
+            .local_variable_list
+            .to_validated_symbol(context, output)?)
     }
 }
