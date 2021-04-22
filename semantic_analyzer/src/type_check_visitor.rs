@@ -321,11 +321,11 @@ fn var(
         //     panic!("My assumption was wrong");
         // }
         let dim = children[0].dimensions();
-        println!("{:?}", children[0].name());
+        //println!("{:?}", children[0].name());
 
-        if children[0].name() == "fCall" {
-            println!("Setting type of var node based on fCall");
-        }
+        // if children[0].name() == "fCall" {
+        //     println!("Setting type of var node based on fCall");
+        // }
         let d_type = children[0].data_type().clone();
         let label = children[0].label().clone();
 
@@ -860,7 +860,7 @@ fn f_call(
     
 
                 if let Some(d_type) = matching_function.return_type() {
-                    println!("Setting type of fCall node to: {:?}", d_type);
+                    //println!("Setting type of fCall node to: {:?}", d_type);
                     node.set_type(d_type);
                     let new_name = context.get_next_temporary();
                     let p = context.collect_parameters();
@@ -939,11 +939,11 @@ fn a_params_children(
             // Since this is the only context where an array can be partially or fully unspecified in their dimension
             match child.name().as_str() {
                 "var" => {
-                    println!("Visiting p");
+                    //println!("Visiting p");
                     parameter_var_exception(child, context, state, global_table, output);
                 },
                 _ => {
-                    println!("Visiting non p");
+                    //println!("Visiting non p");
                     visit(child, context, state, global_table, output);
                 }
             }

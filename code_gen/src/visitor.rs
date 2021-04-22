@@ -547,7 +547,7 @@ fn rel_op(
     output.add_exec(&moon::instr_line(&moon::load_w(&lhs, &lhs_label, &R0)));
     output.add_exec(&moon::instr_line(&moon::load_w(&rhs, &rhs_label, &R0)));
 
-    println!("{}", op);
+    //println!("{}", op);
     if op == "lt" {
         output.add_exec(&moon::instr_line(&moon::cmp_lt(
             &local_register,
@@ -775,13 +775,13 @@ fn f_call(
 
         let parameters = a_params_collect(&children[1]);
         let parameter_labels = a_params_label_collect(&children[1]);
-        println!("{:?}", children[1]);
+        //println!("{:?}", children[1]);
         let function_id = if let Data::String(name) = children[0].data() {
             name
         } else {
             panic!();
         };
-        println!("{}", context.name());
+        //println!("{}", context.name());
 
         if let Some(overload) = global_table.get_function(function_id, &parameters) {
             mm::cmt_exec("Handling function call", output);
