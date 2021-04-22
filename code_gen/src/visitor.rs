@@ -547,6 +547,7 @@ fn rel_op(
     output.add_exec(&moon::instr_line(&moon::load_w(&lhs, &lhs_label, &R0)));
     output.add_exec(&moon::instr_line(&moon::load_w(&rhs, &rhs_label, &R0)));
 
+    println!("{}", op);
     if op == "lt" {
         output.add_exec(&moon::instr_line(&moon::cmp_lt(
             &local_register,
@@ -571,12 +572,30 @@ fn rel_op(
             &lhs,
             &rhs,
         )));
-    } else if op == "eq" {
+    } else if op == "releq" {
         output.add_exec(&moon::instr_line(&moon::cmp_eq(
             &local_register,
             &lhs,
             &rhs,
         )));
+    } else if op == "geq" {
+        output.add_exec(&moon::instr_line(&moon::cmp_gte(
+            &local_register,
+            &lhs,
+            &rhs,
+        )));    
+    } else if op == "leq" {
+        output.add_exec(&moon::instr_line(&moon::cmp_lte(
+            &local_register,
+            &lhs,
+            &rhs,
+        )));  
+    } else if op == "relneq" {
+        output.add_exec(&moon::instr_line(&moon::cmp_neq(
+            &local_register,
+            &lhs,
+            &rhs,
+        )));  
     } else {
         panic!();
     }
@@ -754,9 +773,9 @@ fn f_call(
             visit(child, context, state, global_table, output);
         }
 
-
         let parameters = a_params_collect(&children[1]);
         let parameter_labels = a_params_label_collect(&children[1]);
+        println!("{:?}", children[1]);
         let function_id = if let Data::String(name) = children[0].data() {
             name
         } else {
@@ -765,11 +784,15 @@ fn f_call(
         println!("{}", context.name());
 
         if let Some(overload) = global_table.get_function(function_id, &parameters) {
+            mm::cmt_exec("Handling function call", output);
+
             // Load the parameters
             let r = state.registers.reserve(1);
             let local_register = state.registers.pop();
             let mangled_name = mangling::mangle_function(function_id, &parameters, None);
             let return_label = mangling::function_return(&mangled_name, None);
+
+            mm::cmt_exec("Loading paramters for call", output);
             for (i, param) in parameter_labels.iter().enumerate() {
                 let mangled_parameter = mangling::function_parameter(&mangled_name, i, None);
                 // load the value of the label for the parameter
@@ -777,16 +800,16 @@ fn f_call(
                 output.add_exec(&moon::instr_line(&moon::store_w(&mangled_parameter, &R0, &local_register)));
             }
 
-            // call into the function
-            let return_temporary = if let Some(l) = node.label() {
-                l
-            } else {
-                panic!();
-            };
+            mm::cmt_exec("Jumping to function code", output);
 
             output.add_exec(&moon::instr_line(&moon::jmp_lnk(&R15, &mangled_name)));
             output.add_exec(&moon::instr_line(&moon::load_w(&local_register, &return_label, &R0)));
-            output.add_exec(&moon::instr_line(&moon::store_w(&return_temporary, &R0, &local_register)));
+
+            // call into the function
+            if let Some(l) = node.label() {
+                output.add_exec(&moon::instr_line(&moon::store_w(&l, &R0, &local_register)));
+            }
+
             // load the return value into the function label
 
 

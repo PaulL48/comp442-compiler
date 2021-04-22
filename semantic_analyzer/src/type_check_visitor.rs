@@ -976,11 +976,17 @@ fn parameter_var_exception(
         }
 
         let dim = children[0].dimensions();
+        let d_type = children[0].data_type().clone();
+        let label = children[0].label().clone();
 
-        if let Some(d_type) = children[0].data_type() {
+        if let Some(d_type) = d_type {
             node.set_type(&d_type);
         } else {
             node.set_type("error-type");
+        }
+
+        if let Some(label) = label {
+            node.set_label(&label);
         }
 
         if let Some(dimension) = dim {
@@ -1253,8 +1259,8 @@ fn func_def(
 
                 // let temp = Temporary::new(&mangled_name, "integer", line, column);
                 // matching_function.symbol_table_mut().add_entry(SymbolTableEntry::Temporary(temp));
-
-                if return_type != *matching_function.return_type() {
+                let r_t = find_return_type(node);
+                if r_t != *matching_function.return_type() {
                     let err = SemanticError::new_incorrect_type(
                         *node.line(),
                         *node.column(),
@@ -1464,4 +1470,22 @@ fn select_free_overload_mut<'a>(
         }
     }
     Err(Some(()))
+}
+
+fn find_return_type(node: &Node) -> Option<String> {
+    if node.name() == "returnStat" {
+        if let Some(d_type) = node.data_type() {
+            return Some(d_type.clone());
+        }
+    }
+
+    if let Data::Children(children) = node.data() {
+        for child in children {
+            if let Some(r_type) = find_return_type(child) {
+                return Some(r_type);
+            }
+        }
+    }
+
+    None
 }
