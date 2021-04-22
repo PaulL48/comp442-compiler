@@ -2,7 +2,7 @@
 
 use crate::register::Register;
 
-pub const LABEL_WIDTH: usize = 20;
+pub const LABEL_WIDTH: usize = 40;
 
 // This is just the max length of the below instructions
 pub const INSTRUCTION_WIDTH: usize = 5;
@@ -87,10 +87,24 @@ pub fn load_b(ri: &Register, k: &str, rj: &Register) -> String {
     format!("{:w$} {}, {}({})", LOAD_B, ri, k, rj, w = INSTRUCTION_WIDTH)
 }
 pub fn store_w(k: &str, rj: &Register, ri: &Register) -> String {
-    format!("{:w$} {}({}), {}", STORE_W, k, rj, ri, w = INSTRUCTION_WIDTH)
+    format!(
+        "{:w$} {}({}), {}",
+        STORE_W,
+        k,
+        rj,
+        ri,
+        w = INSTRUCTION_WIDTH
+    )
 }
 pub fn store_b(k: &str, rj: &Register, ri: &Register) -> String {
-    format!("{:w$} {}({}), {}", STORE_B, k, rj, ri, w = INSTRUCTION_WIDTH)
+    format!(
+        "{:w$} {}({}), {}",
+        STORE_B,
+        k,
+        rj,
+        ri,
+        w = INSTRUCTION_WIDTH
+    )
 }
 
 pub fn add(dest: &Register, lhs: &Register, rhs: &Register) -> String {

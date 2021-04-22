@@ -1,17 +1,18 @@
-use ast::{Data, Node};
-use output_manager::OutputConfig;
-use semantic_analyzer::{SymbolTable, SymbolTableEntry, Literal, LiteralValue};
-use semantic_analyzer::SemanticAnalysisResults;
-use log::info;
-use crate::moon_instructions as moon;
 use crate::macros as mm; // for moon-macros
-use crate::register::{RegisterPool, Register, R0, R14, R13, R15};
+use crate::moon_instructions as moon;
 use crate::preamble;
+use crate::register::{Register, RegisterPool, R0, R13, R14, R15};
+use ast::{Data, Node};
+use log::info;
+use output_manager::OutputConfig;
+use semantic_analyzer::SemanticAnalysisResults;
+use semantic_analyzer::{Literal, LiteralValue, SymbolTable, SymbolTableEntry};
+use semantic_analyzer::mangling;
 
 const OUTPUT_BUFFER_SIZE: usize = 20;
 
 pub struct State {
-    registers: RegisterPool
+    registers: RegisterPool,
 }
 
 pub fn process(
@@ -20,8 +21,12 @@ pub fn process(
     output: &mut OutputConfig,
 ) {
     // Add the contents of the lib file
-    output_manager::warn_write(&mut output.code_file, &mut output.code_path, preamble::PREAMBLE);
-    
+    output_manager::warn_write(
+        &mut output.code_file,
+        &mut output.code_path,
+        preamble::PREAMBLE,
+    );
+
     // This is taken from the slides
     // Add the buffer for output
     output.add_data(&moon::cmt_line(" Buffer space used for console output"));
@@ -31,28 +36,30 @@ pub fn process(
     visit(
         node,
         &mut current_results.symbol_table.clone(),
-        &mut State {registers: RegisterPool::new()},
+        &mut State {
+            registers: RegisterPool::new(),
+        },
         &mut current_results.symbol_table,
         output,
     )
 }
 
-fn reserve_space(
-    table: &SymbolTable,
-    output: &mut OutputConfig,
-) {
+fn reserve_space(table: &SymbolTable, output: &mut OutputConfig) {
     // Iterate over the functions and create labeled reserve statements for the various functions
     for element in &table.values {
         match element {
             SymbolTableEntry::Function(function) => {
-                output.add_data(&moon::cmt_line(&format!("Reserved memory for function {}", function.id())));
+                output.add_data(&moon::cmt_line(&format!(
+                    "Reserved memory for function {}",
+                    function.id()
+                )));
                 reserve_space(function.symbol_table(), output);
             }
             SymbolTableEntry::Local(local) => {
-                mm::res(*local.bytes(), &table.mangle(local.id()), output)
-            },
+                mm::res(*local.bytes(), &mangling::mangle_id(local.id(), table.name(), None), output)
+            }
             SymbolTableEntry::Param(param) => {
-                mm::res(*param.bytes(), &table.mangle(param.id()), output)
+                mm::res(*param.bytes(), &mangling::mangle_id(param.id(), table.name(), None), output)
             }
             SymbolTableEntry::Literal(literal) => {
                 let result = match literal.value() {
@@ -61,13 +68,15 @@ fn reserve_space(
                     LiteralValue::StrLit(s) => panic!(), // don't know what to do here
                 };
                 let t = vec![result.as_str()];
-                output.add_data(&moon::labeled_line(&table.mangle(literal.id()), &moon::mem_store_w(t.as_slice())));
-                // mm::res(*literal.bytes(), &table.mangle(literal.id()), output)
-            },
+                output.add_data(&moon::labeled_line(
+                    &mangling::mangle_id(table.name(), literal.id(), None),
+                    &moon::mem_store_w(t.as_slice()),
+                ));
+            }
             SymbolTableEntry::Temporary(temporary) => {
-                mm::res(*temporary.bytes(), &table.mangle(temporary.id()), output)
-            },
-            _ => ()
+                mm::res(*temporary.bytes(), &mangling::mangle_id(temporary.id(), table.name(), None), output)
+            }
+            _ => (),
         }
     }
 }
@@ -85,8 +94,8 @@ fn visit(
         // "funcDefList" => function_list(node, current_context, state, global_table, output),
 
         // "funcDecl" => func_decl(node, current_context, state, global_table, output),
-        // "funcBody" => func_body(node, current_context, state, global_table, output),
-        // "funcDef" => func_def(node, current_context, state, global_table, output),
+        "funcBody" => visit_children(node, current_context, state, global_table, output),
+        "funcDef" => func_def(node, current_context, state, global_table, output),
         // "fCall" => f_call(node, current_context, state, global_table, output),
         "varList" => var_list(node, current_context, state, global_table, output),
 
@@ -107,14 +116,12 @@ fn visit(
         "whileStat" => while_stat(node, current_context, state, global_table, output),
         "writeStat" => write_stat(node, current_context, state, global_table, output),
         // "readStat" => read_stat(node, current_context, state, global_table, output),
-
         "assignOp" => assign_op(node, current_context, state, global_table, output),
         "addOp" => add_op(node, current_context, state, global_table, output),
         "mulOp" => mul_op(node, current_context, state, global_table, output),
         "relOp" => rel_op(node, current_context, state, global_table, output),
         _ => {}
     }
-
 }
 
 fn prog(
@@ -127,7 +134,7 @@ fn prog(
     // Here we'll explicitly invoke the individual children
     if let Data::Children(children) = node.data() {
         // class_list(node, context, state, global_table, output);
-        // function_list(&children[1], context, output);
+        function_list(&children[1], context, state, global_table, output);
         // entry_point(&children[2], context, state, global_table, output);
         if let Some(SymbolTableEntry::Function(main)) = context.get_mut("main") {
             entry_point(
@@ -151,21 +158,107 @@ fn prog(
     // }
 }
 
+fn visit_children(
+    node: &Node,
+    context: &mut SymbolTable,
+    state: &mut State,
+    global_table: &mut SymbolTable,
+    output: &mut OutputConfig,
+) {
+    if let Data::Children(children) = node.data() {
+        for child in children {
+            visit(child, context, state, global_table, output);
+        }
+    }
+}
+
 fn class_list(
     node: &Node,
     context: &SymbolTable,
     state: &mut State,
     global_table: &SymbolTable,
     output: &mut OutputConfig,
-) {}
+) {
+}
 
 fn function_list(
     node: &Node,
-    context: &SymbolTable,
+    context: &mut SymbolTable,
     state: &mut State,
-    global_table: &SymbolTable,
+    global_table: &mut SymbolTable,
     output: &mut OutputConfig,
-) {}
+) {
+    if let Data::Children(children) = node.data() {
+        for child in children {
+            visit(child, context, state, global_table, output);
+        }
+    }
+}
+
+fn func_def(
+    node: &Node,
+    context: &mut SymbolTable,
+    state: &mut State,
+    global_table: &mut SymbolTable,
+    output: &mut OutputConfig,
+) {
+    if let Data::Children(children) = node.data() {
+        let id = if let Data::String(s) = children[0].data() {
+            s
+        } else {
+            panic!();
+        };
+        let parameters = collect_parameters(&children[2]);
+
+        // Switch the context 
+        let mut t1 = context.clone();
+        let mut t2 = global_table.clone();
+        if let Some(overload) = global_table.get_function(id, &parameters) {
+            output.add_exec(&moon::cmt_line(&format!("Defining function {}", id)));
+            let mangled_name = mangling::mangle_function(id, &parameters, None);
+            output.add_exec(&moon::labeled_line(&mangling::function_return(&mangled_name, None), &moon::res("4")));
+            for (i, _) in parameters.iter().enumerate() {
+                output.add_exec(&moon::labeled_line(&mangling::function_parameter(&mangled_name, i, None), &moon::res("4")));
+            }
+
+            output.add_exec(&moon::labeled_line(&mangled_name, &moon::noop()));
+
+            for child in children {
+                visit(child, &mut t1, state, &mut t2, output);
+            }
+
+            // generate exit label
+            output.add_exec(&moon::labeled_line(&mangling::function_exit(&mangled_name, None), &moon::noop()));
+
+            // We're going to need some jump back to the call site
+            mm::ret(output);
+        } else {
+            panic!();
+        }
+        *context = t1;
+        *global_table = t2;
+    }
+
+    // The following code is assuming this a free function
+
+    // global_table.get_function(id: &str, parameters: &[&str])
+
+    // End assumption
+
+    // This could be a free function definition or a class member definition
+    // To know the
+
+    // Select the correct overload
+    // This may be a class metho
+
+    // Setup memory block for return statement
+
+    // Setup the memory block for the parameters
+    // integer and floats are passed direct into the registers
+    // string and classes (compound types) are passed as addresses
+
+    // Setup memory block for the code
+}
 
 fn entry_point(
     node: &Node,
@@ -178,14 +271,12 @@ fn entry_point(
     output.add_exec(&moon::instr_line(&moon::entry()));
     output.add_exec(&moon::instr_line(&moon::add_i(&R14, &R0, "topaddr")));
 
-
     if let Data::Children(children) = node.data() {
         for child in children {
             visit(child, context, state, global_table, output);
         }
     }
 
-    
     output.add_exec(&moon::instr_line(&moon::halt()));
     mm::cmt_exec("==================================================================================================================", output);
     mm::cmt_exec("   END OF PROGRAM/BEGINNING OF DATA", output);
@@ -252,8 +343,7 @@ fn assign_op(
     // mm::zero(&dst_offset_reg, output);
     // mm::zero(&src_offset_reg, output);
 
-
-    // 
+    //
 
     let dst = get_child_label(node, 0);
     // let dst_offset = get_index(node: &Node)
@@ -261,10 +351,17 @@ fn assign_op(
     // let src_offset
 
     // Here the added offset to the dst is what will affect arrays
-    mm::cmt_exec(&format!("Processing assign op to \"{}\" from \"{}\"", src, dst), output);
+    mm::cmt_exec(
+        &format!("Processing assign op to \"{}\" from \"{}\"", src, dst),
+        output,
+    );
 
     output.add_exec(&moon::instr_line(&moon::load_w(&local_register, &src, &R0)));
-    output.add_exec(&moon::instr_line(&moon::store_w(&dst, &R0, &local_register)));
+    output.add_exec(&moon::instr_line(&moon::store_w(
+        &dst,
+        &R0,
+        &local_register,
+    )));
 
     state.registers.release(r);
 }
@@ -292,7 +389,13 @@ fn mul_op(
     let dst = get_label(node);
     let op = get_child_name(node, 1);
 
-    mm::cmt_exec(&format!("Processing mul op {} <- {} {} {} ", dst, lhs_label, op, rhs_label), output);
+    mm::cmt_exec(
+        &format!(
+            "Processing mul op {} <- {} {} {} ",
+            dst, lhs_label, op, rhs_label
+        ),
+        output,
+    );
 
     output.add_exec(&moon::instr_line(&moon::load_w(&lhs, &lhs_label, &R0)));
     output.add_exec(&moon::instr_line(&moon::load_w(&rhs, &rhs_label, &R0)));
@@ -307,7 +410,11 @@ fn mul_op(
         panic!();
     }
 
-    output.add_exec(&moon::instr_line(&moon::store_w(&dst, &R0, &local_register)));
+    output.add_exec(&moon::instr_line(&moon::store_w(
+        &dst,
+        &R0,
+        &local_register,
+    )));
 
     state.registers.release(r);
 }
@@ -335,7 +442,13 @@ fn add_op(
     let dst = get_label(node);
     let op = get_child_name(node, 1);
 
-    mm::cmt_exec(&format!("Processing add op {} <- {} {} {} ", dst, lhs_label, op, rhs_label), output);
+    mm::cmt_exec(
+        &format!(
+            "Processing add op {} <- {} {} {} ",
+            dst, lhs_label, op, rhs_label
+        ),
+        output,
+    );
 
     output.add_exec(&moon::instr_line(&moon::load_w(&lhs, &lhs_label, &R0)));
     output.add_exec(&moon::instr_line(&moon::load_w(&rhs, &rhs_label, &R0)));
@@ -350,7 +463,11 @@ fn add_op(
         panic!();
     }
 
-    output.add_exec(&moon::instr_line(&moon::store_w(&dst, &R0, &local_register)));
+    output.add_exec(&moon::instr_line(&moon::store_w(
+        &dst,
+        &R0,
+        &local_register,
+    )));
 
     state.registers.release(r);
 }
@@ -378,26 +495,56 @@ fn rel_op(
     let dst = get_label(node);
     let op = get_child_name(node, 1);
 
-    mm::cmt_exec(&format!("Processing rel op {} <- {} {} {}", dst, lhs_label, op, rhs_label), output);
+    mm::cmt_exec(
+        &format!(
+            "Processing rel op {} <- {} {} {}",
+            dst, lhs_label, op, rhs_label
+        ),
+        output,
+    );
 
     output.add_exec(&moon::instr_line(&moon::load_w(&lhs, &lhs_label, &R0)));
     output.add_exec(&moon::instr_line(&moon::load_w(&rhs, &rhs_label, &R0)));
 
     if op == "lt" {
-        output.add_exec(&moon::instr_line(&moon::cmp_lt(&local_register, &lhs, &rhs)));
+        output.add_exec(&moon::instr_line(&moon::cmp_lt(
+            &local_register,
+            &lhs,
+            &rhs,
+        )));
     } else if op == "lte" {
-        output.add_exec(&moon::instr_line(&moon::cmp_lte(&local_register, &lhs, &rhs)));
+        output.add_exec(&moon::instr_line(&moon::cmp_lte(
+            &local_register,
+            &lhs,
+            &rhs,
+        )));
     } else if op == "gt" {
-        output.add_exec(&moon::instr_line(&moon::cmp_gt(&local_register, &lhs, &rhs)));
+        output.add_exec(&moon::instr_line(&moon::cmp_gt(
+            &local_register,
+            &lhs,
+            &rhs,
+        )));
     } else if op == "gte" {
-        output.add_exec(&moon::instr_line(&moon::cmp_gte(&local_register, &lhs, &rhs)));
+        output.add_exec(&moon::instr_line(&moon::cmp_gte(
+            &local_register,
+            &lhs,
+            &rhs,
+        )));
     } else if op == "eq" {
-        output.add_exec(&moon::instr_line(&moon::cmp_eq(&local_register, &lhs, &rhs)));
+        output.add_exec(&moon::instr_line(&moon::cmp_eq(
+            &local_register,
+            &lhs,
+            &rhs,
+        )));
     } else {
         panic!();
     }
 
-    output.add_exec(&moon::instr_line(&moon::store_w(&dst, &R0, &local_register)));
+    output.add_exec(&moon::instr_line(&moon::store_w(
+        &dst,
+        &R0,
+        &local_register,
+    )));
 
     state.registers.release(r);
 }
@@ -411,31 +558,35 @@ fn if_stat(
 ) {
     if let Data::Children(children) = node.data() {
         let (else_label, endif_label) = context.get_next_if_else_label();
-        mm::cmt_exec(&format!("If statement ({}, {})", else_label, endif_label), output);
-
+        mm::cmt_exec(
+            &format!("If statement ({}, {})", else_label, endif_label),
+            output,
+        );
 
         // Loads the relOp label with the value
         visit(&children[0], context, state, global_table, output);
 
         let rel_op = get_child_label(node, 0);
-        
-
 
         let r = state.registers.reserve(1);
         let cmp_res = state.registers.pop();
 
-
-
         output.add_exec(&moon::instr_line(&moon::load_w(&cmp_res, &rel_op, &R0)));
         output.add_exec(&moon::instr_line(&moon::jmp_zero(&cmp_res, &else_label)));
 
-        mm::cmt_exec(&format!("If statement ({}, {}) TRUE block", else_label, endif_label), output);
+        mm::cmt_exec(
+            &format!("If statement ({}, {}) TRUE block", else_label, endif_label),
+            output,
+        );
 
         // True block
         visit(&children[1], context, state, global_table, output);
         output.add_exec(&moon::instr_line(&moon::jmp(&endif_label)));
 
-        mm::cmt_exec(&format!("If statement ({}, {}) FALSE block", else_label, endif_label), output);
+        mm::cmt_exec(
+            &format!("If statement ({}, {}) FALSE block", else_label, endif_label),
+            output,
+        );
 
         // False block
         output.add_exec(&moon::labeled_line(&else_label, &moon::noop()));
@@ -463,21 +614,35 @@ fn while_stat(
     if let Data::Children(children) = node.data() {
         let rel_op = get_child_label(node, 0);
         let (go_while, end_while) = context.get_next_while_label();
-        mm::cmt_exec(&format!("While statement  ({}, {})", go_while, end_while), output);
-
+        mm::cmt_exec(
+            &format!("While statement  ({}, {})", go_while, end_while),
+            output,
+        );
 
         let r = state.registers.reserve(1);
         let cmp_res = state.registers.pop();
 
         output.add_exec(&moon::labeled_line(&go_while, &moon::noop()));
 
-        mm::cmt_exec(&format!("While statement ({}, {}), Evaluation of conditional", go_while, end_while), output);
+        mm::cmt_exec(
+            &format!(
+                "While statement ({}, {}), Evaluation of conditional",
+                go_while, end_while
+            ),
+            output,
+        );
 
         visit(&children[0], context, state, global_table, output);
         output.add_exec(&moon::instr_line(&moon::load_w(&cmp_res, &rel_op, &R0)));
         output.add_exec(&moon::instr_line(&moon::jmp_zero(&cmp_res, &end_while)));
 
-        mm::cmt_exec(&&format!("While statement ({}, {}), Statement block", go_while, end_while), output);
+        mm::cmt_exec(
+            &&format!(
+                "While statement ({}, {}), Statement block",
+                go_while, end_while
+            ),
+            output,
+        );
 
         // True block
         visit(&children[1], context, state, global_table, output);
@@ -487,7 +652,6 @@ fn while_stat(
         state.registers.release(r);
     }
 }
-
 
 fn write_stat(
     node: &Node,
@@ -523,7 +687,21 @@ fn write_stat(
     state.registers.release(r);
 }
 
-
+/// Return the aggregated list of non-array parameter type
+/// from the supplied fparamList node
+fn collect_parameters(node: &Node) -> Vec<String> {
+    let mut result = Vec::new();
+    if let Data::Children(children) = node.data() {
+        for child in children {
+            if let Data::Children(sub_children) = child.data() {
+                if let Data::String(d_type) = sub_children[0].data() {
+                    result.push(d_type.clone());
+                }
+            }
+        }
+    }
+    result
+}
 
 // fn entry_point(node: &Node, context: &SymbolTable, output: &mut OutputConfig) {
 //     if let Data::Children(children) = node.data() {
@@ -558,6 +736,9 @@ fn get_child_label(node: &Node, index: usize) -> String {
     };
 }
 
+/// Traverse the tree of nodes looking for the return statement
+fn get_return_statement() {}
+
 // This accepts a dataMember
 // fn get_index(node: &Node, child: usize) -> usize {
 //     if let Data::Children(children) = node.data() { // This would be the assignOp
@@ -568,7 +749,7 @@ fn get_child_label(node: &Node, index: usize) -> String {
 //                 }
 //             }
 //         }
-    
+
 //     }
 
 //     return 0;

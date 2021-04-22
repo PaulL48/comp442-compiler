@@ -84,20 +84,6 @@ impl SymbolTableEntry {
             SymbolTableEntry::Temporary(temporary) => temporary.computed_size(),
         }
     }
-
-    // TODO: re-implement
-
-    // The non-array type
-    // pub fn base_type(&self) -> &str {
-    //     match self {
-    //         SymbolTableEntry::Class(class) => class.id(),
-    //         SymbolTableEntry::Function(function) => &function.return_type().unwrap_or("void".to_owned()),
-    //         SymbolTableEntry::Inherit(_) => panic!("Getting resultant type of inheritance list"),
-    //         SymbolTableEntry::Param(param) => param.actual_type(),
-    //         SymbolTableEntry::Local(local) => local.actual_type(),
-    //         SymbolTableEntry::Data(data) => data.actual_type(),
-    //     }
-    // }
 }
 
 impl FormatTable for SymbolTableEntry {
@@ -169,6 +155,10 @@ impl Extend<SymbolTableEntry> for SymbolTable {
 }
 
 impl SymbolTable {
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+
     /// Add an entry to the symbol table and return a mutable reference to it
     pub fn add_entry(&mut self, entry: SymbolTableEntry) -> &mut SymbolTableEntry {
         self.values.push(entry);
@@ -210,12 +200,41 @@ impl SymbolTable {
         return (result1, result2);
     }
 
-    pub fn get_previous_mangled_name(&self) -> String {
-        format!("{}__{}{}", self.name, TEMP_PREFIX, self.temp_var_count - 1)
+    // pub fn get_previous_mangled_name(&self) -> String {
+    //     format!("{}__{}{}", self.name, TEMP_PREFIX, self.temp_var_count - 1)
+    // }
+
+    // pub fn mangle(&self, id: &str) -> String {
+    //     format!("{}__{}", self.name, id)
+    // }
+
+    pub fn get_function<'a, T: AsRef<str>>(
+        &'a self,
+        id: &str,
+        parameters: &[T],
+    ) -> Option<&'a Function> {
+        // Select the correct overload
+        let matches = self.get_all(id);
+        for entry in matches {
+            match entry {
+                SymbolTableEntry::Function(function) => {
+                    if function.signature_matches(id, parameters) {
+                        return Some(function);
+                    }
+                }
+                _ => (),
+            }
+        }
+        None
     }
 
-    pub fn mangle(&self, id: &str) -> String {
-        format!("{}__{}", self.name, id)
+    pub fn mangle_function<T: AsRef<str>>(&self, id: &str, parameters: &[T]) -> String {
+        let mut result = String::new();
+        result.push_str(id);
+        for parameter in parameters {
+            result.push_str(parameter.as_ref());
+        }
+        result
     }
 
     // pub fn get_internal_variable_prefix(&mut self) -> String {

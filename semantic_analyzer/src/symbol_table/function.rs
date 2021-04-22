@@ -62,6 +62,29 @@ impl PartialEq for Function {
 }
 
 impl Function {
+    pub fn signature_matches<T: AsRef<str>>(&self, id: &str, parameters: &[T]) -> bool {
+        if self.id != id {
+            return false;
+        }
+
+        if self.parameter_types.len() != parameters.len() {
+            return false;
+        }
+
+        for (lhs, rhs) in self
+            .parameter_types
+            .iter()
+            .map(|x| x.data_type())
+            .zip(parameters)
+        {
+            if lhs != rhs.as_ref() {
+                return false;
+            }
+        }
+
+        true
+    }
+
     pub fn is_class_member(&self) -> bool {
         self.scope.is_some()
     }

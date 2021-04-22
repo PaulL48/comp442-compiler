@@ -8,6 +8,7 @@ use ast::{Data, Node};
 use log::info;
 use output_manager::OutputConfig;
 use std::convert::TryInto;
+use crate::mangling;
 
 const INTEGER: &str = "integer";
 const FLOAT: &str = "float";
@@ -97,8 +98,6 @@ fn prog(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    
-
     // Here we'll explicitly invoke the individual children
     if let Data::Children(children) = node.data_mut() {
         visit(&mut children[0], context, state, global_table, output);
@@ -129,8 +128,6 @@ fn entry_point(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    
-
     if let Data::Children(children) = node.data_mut() {
         for child in children.iter_mut() {
             visit(child, context, state, global_table, output);
@@ -145,8 +142,6 @@ fn class_list(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    
-
     if let Data::Children(children) = node.data_mut() {
         for child in children {
             visit(child, context, state, global_table, output);
@@ -161,8 +156,6 @@ fn function_list(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    
-
     if let Data::Children(children) = node.data_mut() {
         for child in children {
             visit(child, context, state, global_table, output);
@@ -177,8 +170,6 @@ fn var_list(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    
-
     if let Data::Children(children) = node.data_mut() {
         for child in children {
             visit(child, context, state, global_table, output);
@@ -193,8 +184,6 @@ fn func_body(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    
-
     let mut r_type = None;
     if let Data::Children(children) = node.data_mut() {
         for child in children {
@@ -223,7 +212,6 @@ fn stat_block(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    
     let mut r_type = None;
 
     if let Data::Children(children) = node.data_mut() {
@@ -251,7 +239,6 @@ fn assign_op(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    
     let line = *node.line();
     let col = *node.column();
 
@@ -259,8 +246,6 @@ fn assign_op(
         for child in children.iter_mut() {
             visit(child, context, state, global_table, output);
         }
-
-        
 
         if let Ok(d_type) = check_binary_types(&children[0], &children[1], output, line, col) {
             node.set_type(&d_type);
@@ -277,8 +262,6 @@ fn var_decl(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    
-
     if let Data::Children(children) = node.data_mut() {
         // for child in children {
         //     visit(child, context, state, global_table, output);
@@ -301,8 +284,6 @@ fn var(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    
-
     // This is where a lot of complexity accumulates
     // each child represents one element in a sequence of
     // id.id.id...
@@ -368,8 +349,6 @@ fn data_member(
     // This assuming that the dataMember is an assignable value and on the lhs of an equal sign
     // match context.get(id: &str)
 
-    
-
     if let Data::Children(children) = node.data_mut() {
         for child in children.iter_mut() {
             visit(child, context, state, global_table, output);
@@ -387,13 +366,11 @@ fn data_member(
         }
 
         if let Data::String(id) = child_data_clone {
-            
             match context.get(&id) {
                 Some(SymbolTableEntry::Local(local)) => {
                     // Check to make sure dimensionalities agree
                     // This means the number of indexes must be the same
                     if let Some(dimensions) = index_list_clone.dimensions() {
-                        
                         if local.dimension().len() != dimensions {
                             let err = SemanticError::new_invalid_array_dimension(
                                 node.line(),
@@ -442,8 +419,6 @@ fn add_op(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    
-
     let line = *node.line();
     let col = *node.column();
 
@@ -452,16 +427,13 @@ fn add_op(
             visit(child, context, state, global_table, output);
         }
 
-        
-
         if let Ok(d_type) = check_binary_types(&children[0], &children[2], output, line, col) {
             node.set_type(&d_type);
 
             let new_name = context.get_next_temporary();
             let temp = Temporary::new(&new_name, &d_type, line, col);
             context.add_entry(SymbolTableEntry::Temporary(temp));
-            node.set_label(&context.get_previous_mangled_name());
-
+            node.set_label(&new_name);
         } else {
             node.set_type("error-type");
         }
@@ -475,8 +447,6 @@ fn mul_op(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    
-
     let line = *node.line();
     let col = *node.column();
 
@@ -485,15 +455,13 @@ fn mul_op(
             visit(child, context, state, global_table, output);
         }
 
-        
         if let Ok(d_type) = check_binary_types(&children[0], &children[2], output, line, col) {
             node.set_type(&d_type);
 
             let new_name = context.get_next_temporary();
             let temp = Temporary::new(&new_name, &d_type, line, col);
             context.add_entry(SymbolTableEntry::Temporary(temp));
-            node.set_label(&context.get_previous_mangled_name());
-
+            node.set_label(&new_name);
         } else {
             node.set_type("error-type");
         }
@@ -529,8 +497,7 @@ fn rel_op(
             let new_name = context.get_next_temporary();
             let temp = Temporary::new(&new_name, &d_type, line, col);
             context.add_entry(SymbolTableEntry::Temporary(temp));
-            node.set_label(&context.get_previous_mangled_name());
-
+            node.set_label(&new_name);
         } else {
             node.set_type("error-type");
         }
@@ -544,7 +511,6 @@ fn func_decl(
     _global_table: &mut SymbolTable,
     _output: &mut OutputConfig,
 ) {
-    
 }
 
 fn intfactor(
@@ -554,7 +520,6 @@ fn intfactor(
     _global_table: &mut SymbolTable,
     _output: &mut OutputConfig,
 ) {
-    
     let name = context.get_next_temporary();
     let value = if let Data::Integer(integer) = node.data() {
         *integer
@@ -570,7 +535,7 @@ fn intfactor(
     );
     context.add_entry(SymbolTableEntry::Literal(lit));
     node.set_type(INTEGER);
-    node.set_label(&context.get_previous_mangled_name());
+    node.set_label(&name);
 }
 
 fn floatfactor(
@@ -580,7 +545,6 @@ fn floatfactor(
     _global_table: &mut SymbolTable,
     _output: &mut OutputConfig,
 ) {
-    
     let name = context.get_next_temporary();
     let value = if let Data::Float(float) = node.data() {
         *float as f32
@@ -597,8 +561,7 @@ fn floatfactor(
     context.add_entry(SymbolTableEntry::Literal(lit));
 
     node.set_type(FLOAT);
-    node.set_label(&context.get_previous_mangled_name());
-
+    node.set_label(&name);
 }
 
 fn stringfactor(
@@ -608,7 +571,6 @@ fn stringfactor(
     _global_table: &mut SymbolTable,
     _output: &mut OutputConfig,
 ) {
-    
     let name = context.get_next_temporary();
     let value = if let Data::String(string) = node.data() {
         string
@@ -625,8 +587,9 @@ fn stringfactor(
     context.add_entry(SymbolTableEntry::Literal(lit));
 
     node.set_type(STRING);
-    node.set_label(&context.get_previous_mangled_name());
 
+    // TODO: Replace with name
+    node.set_label(&name);
 }
 
 fn type_node(
@@ -636,8 +599,6 @@ fn type_node(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    
-
     if let Data::String(variable_type) = node.data() {
         match variable_type.as_str() {
             INTEGER | FLOAT | STRING => (), // OK its a primitive
@@ -665,7 +626,6 @@ fn mandatory_dimlist(
 ) {
     // The list is in a mandatory context (a declaration or a datamember)
     // This means if it has any dimensions, they must be defined
-    
 }
 
 fn mandatory_indexlist(
@@ -677,7 +637,6 @@ fn mandatory_indexlist(
 ) {
     // The list is in a mandatory context (a declaration or a datamember)
     // This means if it has any dimensions, they must be defined
-    
 
     // it should be a list of intfactors as children
     if let Data::Children(children) = node.data_mut() {
@@ -727,18 +686,18 @@ fn id(
     // TODO: ID is also used for fCalls
 
     // Seems it would be best to break this out into multiple
-    
 
     if let Data::String(id) = node.data() {
         match context.get(id) {
             Some(SymbolTableEntry::Local(local)) => {
                 node.set_type(local.data_type());
-                node.set_label(&context.mangle(local.id()));
+            
+                node.set_label(&mangling::mangle_id(local.id(), context.name(), None));
                 // TODO: Dimensions
             }
             Some(SymbolTableEntry::Param(parameter)) => {
                 node.set_type(parameter.data_type());
-                node.set_label(&context.mangle(parameter.id()));
+                node.set_label(&mangling::mangle_id(parameter.id(), context.name(), None));
 
                 // TODO: Dimensions
             }
@@ -763,7 +722,6 @@ fn function_id(
     _output: &mut OutputConfig,
     function: &Function,
 ) {
-    
     if let Some(ret_type) = function.return_type() {
         node.set_type(ret_type);
     }
@@ -987,7 +945,6 @@ fn parameter_data_member_exception(
 ) {
     // This is exactly like a normal data except for:
     // Array indexing can be none to pass the array itself as a parameter
-    
 
     if let Data::Children(children) = node.data_mut() {
         // Do we actually want to perform these checks?
@@ -1013,7 +970,6 @@ fn parameter_data_member_exception(
         }
 
         if let Data::String(id) = child_data_clone {
-            
             match context.get(&id) {
                 Some(SymbolTableEntry::Local(local)) => {
                     if let Some(dimensions) = index_list_clone.dimensions() {
@@ -1319,8 +1275,6 @@ fn check_binary_types(
     _line: usize,
     _col: usize,
 ) -> Result<String, ()> {
-    
-
     let lht = if let Some(d_type) = lhs.data_type() {
         d_type
     } else {
@@ -1336,12 +1290,9 @@ fn check_binary_types(
     if lht != rht {
         let err = SemanticError::new_binary_type_error(rhs.line(), rhs.column(), &lht, &rht);
         output.add(&err.to_string(), err.line(), err.col());
-        
 
         Err(())
     } else {
-        
-
         Ok(lht)
     }
 }

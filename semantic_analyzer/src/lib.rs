@@ -5,6 +5,7 @@ mod semantic_error;
 mod type_check_visitor;
 mod utils;
 mod visibility;
+pub mod mangling;
 
 pub use semantic_analyzer::analyze;
 pub use semantic_analyzer::SemanticAnalysisResults;

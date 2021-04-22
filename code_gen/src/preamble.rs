@@ -1,7 +1,6 @@
 //! Code that will be at the top of the generated assembl
 
-pub const PREAMBLE: &str = 
-r#"
+pub const PREAMBLE: &str = r#"
 % A Simple MOON Library
 % Author: Peter Grogono
 % Last modified: 27 Jan 1995

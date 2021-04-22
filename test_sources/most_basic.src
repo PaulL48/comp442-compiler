@@ -23,6 +23,12 @@
 // 5.3: |     |  X  |
 //      -------------
 
+func foo(integer a, integer b, integer c) : integer {
+  var {
+  }
+  return (a);
+}
+
 main
 {
   var
