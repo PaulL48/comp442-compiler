@@ -299,7 +299,6 @@ fn var(
             visit(child, context, state, global_table, output);
         }
 
-        // TODO: This is very good! Come back to it in a bit
         // for pair in children.windows(2) {
 
         //     // left one needs to name a class
@@ -322,12 +321,22 @@ fn var(
         //     panic!("My assumption was wrong");
         // }
         let dim = children[0].dimensions();
+        println!("{:?}", children[0].name());
 
-        if let (Some(d_type), Some(label)) = (children[0].data_type(), children[0].label()) {
+        if children[0].name() == "fCall" {
+            println!("Setting type of var node based on fCall");
+        }
+        let d_type = children[0].data_type().clone();
+        let label = children[0].label().clone();
+
+        if let Some(d_type) = d_type {
             node.set_type(&d_type);
-            node.set_label(&label);
         } else {
             node.set_type("error-type");
+        }
+
+        if let Some(label) = label {
+            node.set_label(&label);
         }
 
         if let Some(dimension) = dim {
@@ -431,9 +440,12 @@ fn add_op(
             node.set_type(&d_type);
 
             let new_name = context.get_next_temporary();
-            let temp = Temporary::new(&new_name, &d_type, line, col);
+            let p = context.collect_parameters();
+            let mangled_func = mangling::mangle_function(context.name(), &p, None);
+            let mangled_name = mangling::mangle_id(&new_name, &mangled_func, None);
+            let temp = Temporary::new(&mangled_name, &d_type, line, col);
             context.add_entry(SymbolTableEntry::Temporary(temp));
-            node.set_label(&new_name);
+            node.set_label(&mangled_name);
         } else {
             node.set_type("error-type");
         }
@@ -459,9 +471,12 @@ fn mul_op(
             node.set_type(&d_type);
 
             let new_name = context.get_next_temporary();
-            let temp = Temporary::new(&new_name, &d_type, line, col);
+            let p = context.collect_parameters();
+            let mangled_func = mangling::mangle_function(context.name(), &p, None);
+            let mangled_name = mangling::mangle_id(&new_name, &mangled_func, None);
+            let temp = Temporary::new(&mangled_name, &d_type, line, col);
             context.add_entry(SymbolTableEntry::Temporary(temp));
-            node.set_label(&new_name);
+            node.set_label(&mangled_name);
         } else {
             node.set_type("error-type");
         }
@@ -495,9 +510,12 @@ fn rel_op(
             node.set_type(&d_type);
 
             let new_name = context.get_next_temporary();
-            let temp = Temporary::new(&new_name, &d_type, line, col);
+            let p = context.collect_parameters();
+            let mangled_func = mangling::mangle_function(context.name(), &p, None);
+            let mangled_name = mangling::mangle_id(&new_name, &mangled_func, None);
+            let temp = Temporary::new(&mangled_name, &d_type, line, col);
             context.add_entry(SymbolTableEntry::Temporary(temp));
-            node.set_label(&new_name);
+            node.set_label(&mangled_name);
         } else {
             node.set_type("error-type");
         }
@@ -520,7 +538,11 @@ fn intfactor(
     _global_table: &mut SymbolTable,
     _output: &mut OutputConfig,
 ) {
-    let name = context.get_next_temporary();
+    let new_name = context.get_next_temporary();
+    let p = context.collect_parameters();
+    let mangled_func = mangling::mangle_function(context.name(), &p, None);
+    let mangled_name = mangling::mangle_id(&new_name, &mangled_func, None);
+
     let value = if let Data::Integer(integer) = node.data() {
         *integer
     } else {
@@ -528,14 +550,14 @@ fn intfactor(
     };
 
     let lit = Literal::new(
-        &name,
+        &mangled_name,
         &LiteralValue::Integer(value.try_into().unwrap()),
         *node.line(),
         *node.column(),
     );
     context.add_entry(SymbolTableEntry::Literal(lit));
     node.set_type(INTEGER);
-    node.set_label(&name);
+    node.set_label(&mangled_name);
 }
 
 fn floatfactor(
@@ -545,7 +567,12 @@ fn floatfactor(
     _global_table: &mut SymbolTable,
     _output: &mut OutputConfig,
 ) {
-    let name = context.get_next_temporary();
+    let new_name = context.get_next_temporary();
+    let p = context.collect_parameters();
+    let mangled_func = mangling::mangle_function(context.name(), &p, None);
+    let mangled_name = mangling::mangle_id(&new_name, &mangled_func, None);
+
+
     let value = if let Data::Float(float) = node.data() {
         *float as f32
     } else {
@@ -553,7 +580,7 @@ fn floatfactor(
     };
 
     let lit = Literal::new(
-        &name,
+        &mangled_name,
         &LiteralValue::Real(value),
         *node.line(),
         *node.column(),
@@ -561,7 +588,7 @@ fn floatfactor(
     context.add_entry(SymbolTableEntry::Literal(lit));
 
     node.set_type(FLOAT);
-    node.set_label(&name);
+    node.set_label(&mangled_name);
 }
 
 fn stringfactor(
@@ -571,7 +598,10 @@ fn stringfactor(
     _global_table: &mut SymbolTable,
     _output: &mut OutputConfig,
 ) {
-    let name = context.get_next_temporary();
+    let new_name = context.get_next_temporary();
+    let p = context.collect_parameters();
+    let mangled_func = mangling::mangle_function(context.name(), &p, None);
+    let mangled_name = mangling::mangle_id(&new_name, &mangled_func, None);
     let value = if let Data::String(string) = node.data() {
         string
     } else {
@@ -579,7 +609,7 @@ fn stringfactor(
     };
 
     let lit = Literal::new(
-        &name,
+        &mangled_name,
         &LiteralValue::StrLit(value.to_string()),
         *node.line(),
         *node.column(),
@@ -589,7 +619,7 @@ fn stringfactor(
     node.set_type(STRING);
 
     // TODO: Replace with name
-    node.set_label(&name);
+    node.set_label(&mangled_name);
 }
 
 fn type_node(
@@ -691,13 +721,17 @@ fn id(
         match context.get(id) {
             Some(SymbolTableEntry::Local(local)) => {
                 node.set_type(local.data_type());
-            
-                node.set_label(&mangling::mangle_id(local.id(), context.name(), None));
+                let p = context.collect_parameters();
+                let mangled_func = mangling::mangle_function(context.name(), &p, None);
+
+                node.set_label(&mangling::mangle_id(local.id(), &mangled_func, None));
                 // TODO: Dimensions
             }
             Some(SymbolTableEntry::Param(parameter)) => {
                 node.set_type(parameter.data_type());
-                node.set_label(&mangling::mangle_id(parameter.id(), context.name(), None));
+                let p = context.collect_parameters();
+                let mangled_func = mangling::mangle_function(context.name(), &p, None);
+                node.set_label(&mangling::mangle_id(parameter.id(), &mangled_func, None));
 
                 // TODO: Dimensions
             }
@@ -771,7 +805,9 @@ fn f_call(
     global_table: &mut SymbolTable,
     output: &mut OutputConfig,
 ) {
-    let nc = node.clone();
+    //let nc = node.clone();
+    let line = *node.line();
+    let col = *node.column();
 
     if let Data::Children(children) = node.data_mut() {
         // for child in children.iter_mut() {
@@ -820,9 +856,20 @@ fn f_call(
                     output,
                     &matching_function,
                 );
+
+    
+
                 if let Some(d_type) = matching_function.return_type() {
+                    println!("Setting type of fCall node to: {:?}", d_type);
                     node.set_type(d_type);
-                }
+                    let new_name = context.get_next_temporary();
+                    let p = context.collect_parameters();
+                    let mangled_func = mangling::mangle_function(context.name(), &p, None);
+                    let mangled_name = mangling::mangle_id(&new_name, &mangled_func, None);
+                    let temp = Temporary::new(&mangled_name, &d_type, line, col);
+                    context.add_entry(SymbolTableEntry::Temporary(temp));
+                    node.set_label(&mangled_name);
+                        }
             }
             Err(Some(_)) => {
                 let parameter_str = parameters
@@ -891,8 +938,14 @@ fn a_params_children(
             // Here we need to dispatch dataMembers exceptionally
             // Since this is the only context where an array can be partially or fully unspecified in their dimension
             match child.name().as_str() {
-                "var" => parameter_var_exception(child, context, state, global_table, output),
-                _ => visit(child, context, state, global_table, output),
+                "var" => {
+                    println!("Visiting p");
+                    parameter_var_exception(child, context, state, global_table, output);
+                },
+                _ => {
+                    println!("Visiting non p");
+                    visit(child, context, state, global_table, output);
+                }
             }
         }
     }
@@ -1159,8 +1212,17 @@ fn func_def(
         // I think all of the checking has already been done in the symbol table assembly
         // so we just need to get the right context by supplying
 
+        let t1 = context.clone();
+
         match select_free_overload_mut(&function_id_str, &parameter_list, context) {
             Ok(matching_function) => {
+                // Add a return to temporary
+                let p = t1.collect_parameters();
+                let mangled_func = mangling::mangle_function(matching_function.symbol_table().name(), &p, None);
+                let mangled_name = mangling::function_return_to(&mangled_func);
+
+
+
                 for child in children.iter_mut() {
                     match child.name().as_str() {
                         "id" => (),
@@ -1185,7 +1247,12 @@ fn func_def(
                     }
                     // We don't actually need to visit the id of the function
                     // since all the verification was done for it already
+
+                    
                 }
+
+                // let temp = Temporary::new(&mangled_name, "integer", line, column);
+                // matching_function.symbol_table_mut().add_entry(SymbolTableEntry::Temporary(temp));
 
                 if return_type != *matching_function.return_type() {
                     let err = SemanticError::new_incorrect_type(

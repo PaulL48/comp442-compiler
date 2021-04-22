@@ -58,17 +58,23 @@ pub fn analyze(root: &mut ast::Node, output_config: &mut OutputConfig) -> Semant
         }
     }
 
+    warn_write(
+        &mut output_config.symbol_table_file,
+        &output_config.symbol_table_path,
+        &format!("{}", results.symbol_table),
+    );
+
     type_check_visitor::process(root, &mut results, output_config);
     memory_size_visitor::process(root, &mut results, output_config);
 
     // output_config.flush_semantic_messages();
 
     // Write results to a file
-    warn_write(
-        &mut output_config.symbol_table_file,
-        &output_config.symbol_table_path,
-        &format!("{}", results.symbol_table),
-    );
+    // warn_write(
+    //     &mut output_config.symbol_table_file,
+    //     &output_config.symbol_table_path,
+    //     &format!("{}", results.symbol_table),
+    // );
 
     results
 }

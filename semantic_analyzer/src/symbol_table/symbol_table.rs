@@ -8,6 +8,7 @@ use std::fmt;
 use crate::symbol_table::Class;
 use maplit::hashset;
 use std::collections::HashSet;
+use crate::mangling;
 
 const GLOBAL_TABLE_WIDTH: usize = 83;
 const TEMP_PREFIX: &str = "temp";
@@ -187,15 +188,21 @@ impl SymbolTable {
     }
 
     pub fn get_next_if_else_label(&mut self) -> (String, String) {
-        let result1 = format!("{}__{}{}", self.name, ELSE_PREFIX, self.if_else_count);
-        let result2 = format!("{}__{}{}", self.name, ENDIF_PREFIX, self.if_else_count);
+        let p = self.collect_parameters();
+        let mangled_func = mangling::mangle_function(self.name(), &p, None);
+
+        let result1 = format!("{}_{}{}", mangled_func, ELSE_PREFIX, self.if_else_count);
+        let result2 = format!("{}_{}{}", mangled_func, ENDIF_PREFIX, self.if_else_count);
         self.if_else_count += 1;
         return (result1, result2);
     }
 
     pub fn get_next_while_label(&mut self) -> (String, String) {
-        let result1 = format!("{}__{}{}", self.name, GOWHILE_PREFIX, self.while_count);
-        let result2 = format!("{}__{}{}", self.name, ENDWHILE_PREFIX, self.while_count);
+        let p = self.collect_parameters();
+        let mangled_func = mangling::mangle_function(self.name(), &p, None);
+
+        let result1 = format!("{}__{}{}", mangled_func, GOWHILE_PREFIX, self.while_count);
+        let result2 = format!("{}__{}{}", mangled_func, ENDWHILE_PREFIX, self.while_count);
         self.while_count += 1;
         return (result1, result2);
     }
@@ -226,6 +233,50 @@ impl SymbolTable {
             }
         }
         None
+    }
+
+    pub fn get_function_mut<'a, T: AsRef<str>>(
+        &'a mut self,
+        id: &str,
+        parameters: &[T],
+    ) -> Option<&'a mut Function> {
+        // Select the correct overload
+        let matches = self.get_all_mut(id);
+        for entry in matches {
+            match entry {
+                SymbolTableEntry::Function(ref mut function) => {
+                    if function.signature_matches(id, parameters) {
+                        return Some(function);
+                    }
+                }
+                _ => (),
+            }
+        }
+        None
+    }
+
+    pub fn collect_parameters(&self) -> Vec<String> {
+        let mut result = Vec::new();
+        // find params and return their string types
+        for entry in &self.values {
+            match entry {
+                SymbolTableEntry::Param(p) => result.push(p.data_type().clone()),
+                _ => (),
+            }
+        }
+        result
+    }
+
+    pub fn collect_parameter_labels(&self) -> Vec<String> {
+        let mut result = Vec::new();
+        // find params and return their string types
+        for entry in &self.values {
+            match entry {
+                SymbolTableEntry::Param(p) => result.push(p.id().clone()),
+                _ => (),
+            }
+        }
+        result
     }
 
     pub fn mangle_function<T: AsRef<str>>(&self, id: &str, parameters: &[T]) -> String {

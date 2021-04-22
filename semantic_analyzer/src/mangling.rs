@@ -4,18 +4,19 @@ const MANGLE_SEPARATOR: &str = "_";
 const PARAMETER_PREFIX: &str = "p";
 const RETURN_PREFIX: &str = "ret";
 const EXIT_PREFIX: &str = "exit";
+const RETURN_TO_PREFIX: &str = "rtt";
 
 pub fn mangle_id(id: &str, mangled_function: &str, mangled_class: Option<&str>) -> String {
     if let Some(class_scope) = mangled_class {
         format!("{}{}{}{}{}{}", MANGLE_SEPARATOR, class_scope, MANGLE_SEPARATOR, mangled_function, MANGLE_SEPARATOR, id)
     } else {
-        format!("{}{}{}{}", MANGLE_SEPARATOR, mangled_function, MANGLE_SEPARATOR, id)
+        format!("{}{}{}", mangled_function, MANGLE_SEPARATOR, id)
     }
 }
 
 pub fn mangle_function<T: AsRef<str>>(id: &str, parameters: &[T], scope: Option<&str>) -> String {
     let mut result = String::new();
-    result.push_str(MANGLE_SEPARATOR);
+    //result.push_str(MANGLE_SEPARATOR);
     if let Some(scope) = scope {
         result.push_str(scope);
         result.push_str(MANGLE_SEPARATOR);
@@ -51,4 +52,8 @@ pub fn function_exit(function: &str,  class: Option<&str>) -> String {
     } else {
         format!("{}{}{}", function, MANGLE_SEPARATOR, EXIT_PREFIX)
     }
+}
+
+pub fn function_return_to(function: &str) -> String {
+    format!("{}{}{}", function, MANGLE_SEPARATOR, RETURN_TO_PREFIX)
 }

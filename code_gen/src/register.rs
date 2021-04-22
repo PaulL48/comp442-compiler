@@ -11,6 +11,7 @@ pub struct RegisterRental {
 pub struct Register(usize);
 
 pub const R0: Register = Register(0);
+pub const R1: Register = Register(1);
 pub const R13: Register = Register(13);
 pub const R14: Register = Register(14);
 pub const R15: Register = Register(15);

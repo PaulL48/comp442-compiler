@@ -1,7 +1,7 @@
 use crate::macros as mm; // for moon-macros
 use crate::moon_instructions as moon;
 use crate::preamble;
-use crate::register::{Register, RegisterPool, R0, R13, R14, R15};
+use crate::register::{Register, RegisterPool, R0, R13, R14, R15, R1};
 use ast::{Data, Node};
 use log::info;
 use output_manager::OutputConfig;
@@ -56,10 +56,14 @@ fn reserve_space(table: &SymbolTable, output: &mut OutputConfig) {
                 reserve_space(function.symbol_table(), output);
             }
             SymbolTableEntry::Local(local) => {
-                mm::res(*local.bytes(), &mangling::mangle_id(local.id(), table.name(), None), output)
+                let p = table.collect_parameters();
+                let mangled_func = mangling::mangle_function(table.name(), &p, None);
+                mm::res(*local.bytes(), &mangling::mangle_id(local.id(), &mangled_func, None), output)
             }
             SymbolTableEntry::Param(param) => {
-                mm::res(*param.bytes(), &mangling::mangle_id(param.id(), table.name(), None), output)
+                let p = table.collect_parameters();
+                let mangled_func = mangling::mangle_function(table.name(), &p, None);
+                mm::res(*param.bytes(), &mangling::mangle_id(param.id(), &mangled_func, None), output)
             }
             SymbolTableEntry::Literal(literal) => {
                 let result = match literal.value() {
@@ -67,14 +71,18 @@ fn reserve_space(table: &SymbolTable, output: &mut OutputConfig) {
                     LiteralValue::Real(f) => i32::from_ne_bytes(f.to_ne_bytes()).to_string(),
                     LiteralValue::StrLit(s) => panic!(), // don't know what to do here
                 };
+                let p = table.collect_parameters();
+                let mangled_func = mangling::mangle_function(table.name(), &p, None);
                 let t = vec![result.as_str()];
                 output.add_data(&moon::labeled_line(
-                    &mangling::mangle_id(table.name(), literal.id(), None),
+                    &literal.id(),
                     &moon::mem_store_w(t.as_slice()),
                 ));
             }
             SymbolTableEntry::Temporary(temporary) => {
-                mm::res(*temporary.bytes(), &mangling::mangle_id(temporary.id(), table.name(), None), output)
+                let p = table.collect_parameters();
+                let mangled_func = mangling::mangle_function(table.name(), &p, None);
+                mm::res(*temporary.bytes(), temporary.id(), output)
             }
             _ => (),
         }
@@ -94,13 +102,13 @@ fn visit(
         // "funcDefList" => function_list(node, current_context, state, global_table, output),
 
         // "funcDecl" => func_decl(node, current_context, state, global_table, output),
-        "funcBody" => visit_children(node, current_context, state, global_table, output),
+        "funcBody" => func_body(node, current_context, state, global_table, output),
         "funcDef" => func_def(node, current_context, state, global_table, output),
-        // "fCall" => f_call(node, current_context, state, global_table, output),
+        "fCall" => f_call(node, current_context, state, global_table, output),
         "varList" => var_list(node, current_context, state, global_table, output),
 
         "statBlock" => stat_block(node, current_context, state, global_table, output),
-        // "var" => var(node, current_context, state, global_table, output),
+        "var" => visit_children(node, current_context, state, global_table, output),
         // "dataMember" => data_member(node, current_context, state, global_table, output),
         // "intfactor" => intfactor(node, current_context, state, global_table, output),
         // "floatfactor" => floatfactor(node, current_context, state, global_table, output),
@@ -109,9 +117,9 @@ fn visit(
         "varDecl" => var_decl(node, current_context, state, global_table, output),
         // "id" => id(node, current_context, state, global_table, output),
         // "indexList" => mandatory_indexlist(node, current_context, state, global_table, output),
-        // "aParams" => a_params_children(node, current_context, state, global_table, output),
+        "aParams" => visit_children(node, current_context, state, global_table, output),
 
-        // "returnStat" => return_stat(node, current_context, state, global_table, output),
+        "returnStat" => return_stat(node, current_context, state, global_table, output),
         "ifStat" => if_stat(node, current_context, state, global_table, output),
         "whileStat" => while_stat(node, current_context, state, global_table, output),
         "writeStat" => write_stat(node, current_context, state, global_table, output),
@@ -209,34 +217,67 @@ fn func_def(
             panic!();
         };
         let parameters = collect_parameters(&children[2]);
+        // println!("{}", context.name());
+        
+        // let parameter_labels = context.collect_parameter_labels();
+        // println!("{:?}", parameter_labels);
 
         // Switch the context 
-        let mut t1 = context.clone();
-        let mut t2 = global_table.clone();
-        if let Some(overload) = global_table.get_function(id, &parameters) {
+        if let Some(overload) = context.get_function_mut(id, &parameters) {
+            let parameter_labels = overload.symbol_table().collect_parameter_labels();
             output.add_exec(&moon::cmt_line(&format!("Defining function {}", id)));
             let mangled_name = mangling::mangle_function(id, &parameters, None);
             output.add_exec(&moon::labeled_line(&mangling::function_return(&mangled_name, None), &moon::res("4")));
+            
+            mm::cmt_exec("Define parameter storage", output);
+
             for (i, _) in parameters.iter().enumerate() {
                 output.add_exec(&moon::labeled_line(&mangling::function_parameter(&mangled_name, i, None), &moon::res("4")));
             }
 
+            // Define return-to storage
+            output.add_exec(&moon::labeled_line(&mangling::function_return_to(&mangled_name), &moon::res("4")));
+
+            mm::cmt_exec("Function entry point", output);
             output.add_exec(&moon::labeled_line(&mangled_name, &moon::noop()));
+            output.add_exec(&moon::instr_line(&moon::store_w(&mangling::function_return_to(&mangled_name), &R0, &R15)));
+
+            let r = state.registers.reserve(1);
+            let local_register = state.registers.pop();
+            // Add linkage from parameter locations to their actual locations
+            mm::cmt_exec("Transfer from parameter temporaries to named parameters", output);
+
+            for (i, l) in parameter_labels.iter().enumerate() {
+                let parameter_destination = mangling::mangle_id(&l, &mangled_name, None);
+                let parameter_source = mangling::function_parameter(&mangled_name, i, None);
+                output.add_exec(&moon::instr_line(&moon::load_w(&local_register, &parameter_source, &R0)));
+                output.add_exec(&moon::instr_line(&moon::store_w(&parameter_destination, &R0, &local_register)));
+
+                // output.add_exec(&moon::labeled_line(&mangling::mangle_id(&l, &mangled_name, None), &moon::res("4")));
+            }
+            state.registers.release(r);
 
             for child in children {
-                visit(child, &mut t1, state, &mut t2, output);
+                match child.name().as_str() {
+                    "funcBody" => {
+                        visit(child, overload.symbol_table_mut(), state, global_table, output);
+                    },
+                    _ => visit(child, overload.symbol_table_mut(), state, global_table, output)
+                }
             }
 
             // generate exit label
             output.add_exec(&moon::labeled_line(&mangling::function_exit(&mangled_name, None), &moon::noop()));
-
+            // reload the place we come from
             // We're going to need some jump back to the call site
+
+            // Load r15 from return-to
+            output.add_exec(&moon::instr_line(&moon::load_w(&R15, &mangling::function_return_to(&mangled_name), &R0)));
             mm::ret(output);
         } else {
             panic!();
         }
-        *context = t1;
-        *global_table = t2;
+        *global_table = context.clone();
     }
 
     // The following code is assuming this a free function
@@ -687,6 +728,111 @@ fn write_stat(
     state.registers.release(r);
 }
 
+fn func_body(
+    node: &Node,
+    context: &mut SymbolTable,
+    state: &mut State,
+    global_table: &mut SymbolTable,
+    output: &mut OutputConfig,
+) {
+    if let Data::Children(children) = node.data() {
+        for child in children {
+            visit(child, context, state, global_table, output);
+        }
+    }
+}
+
+fn f_call(
+    node: &Node,
+    context: &mut SymbolTable,
+    state: &mut State,
+    global_table: &mut SymbolTable,
+    output: &mut OutputConfig,
+) {
+    if let Data::Children(children) = node.data() {
+        for child in children {
+            visit(child, context, state, global_table, output);
+        }
+
+
+        let parameters = a_params_collect(&children[1]);
+        let parameter_labels = a_params_label_collect(&children[1]);
+        let function_id = if let Data::String(name) = children[0].data() {
+            name
+        } else {
+            panic!();
+        };
+        println!("{}", context.name());
+
+        if let Some(overload) = global_table.get_function(function_id, &parameters) {
+            // Load the parameters
+            let r = state.registers.reserve(1);
+            let local_register = state.registers.pop();
+            let mangled_name = mangling::mangle_function(function_id, &parameters, None);
+            let return_label = mangling::function_return(&mangled_name, None);
+            for (i, param) in parameter_labels.iter().enumerate() {
+                let mangled_parameter = mangling::function_parameter(&mangled_name, i, None);
+                // load the value of the label for the parameter
+                output.add_exec(&moon::instr_line(&moon::load_w(&local_register, param, &R0)));
+                output.add_exec(&moon::instr_line(&moon::store_w(&mangled_parameter, &R0, &local_register)));
+            }
+
+            // call into the function
+            let return_temporary = if let Some(l) = node.label() {
+                l
+            } else {
+                panic!();
+            };
+
+            output.add_exec(&moon::instr_line(&moon::jmp_lnk(&R15, &mangled_name)));
+            output.add_exec(&moon::instr_line(&moon::load_w(&local_register, &return_label, &R0)));
+            output.add_exec(&moon::instr_line(&moon::store_w(&return_temporary, &R0, &local_register)));
+            // load the return value into the function label
+
+
+            state.registers.release(r);
+
+
+        }
+
+
+    }
+
+    // Now we actually have to setup the call and pass in the parameters
+
+    // This means we should select the correct overload
+    //
+}
+
+fn return_stat(
+    node: &Node,
+    context: &mut SymbolTable,
+    state: &mut State,
+    global_table: &mut SymbolTable,
+    output: &mut OutputConfig,
+) {
+    if let Data::Children(children) = node.data() {
+        for child in children {
+            visit(child, context, state, global_table, output);
+        }
+
+        let r = state.registers.reserve(1);
+        let local_register = state.registers.pop();
+    
+        let p = context.collect_parameters();
+        let mangled_func = mangling::mangle_function(context.name(), &p, None);
+        let return_value_label = mangling::function_return(&mangled_func, None);
+        let exit_label = mangling::function_exit(&mangled_func, None);
+
+        mm::cmt_exec(&format!("Return statement for function {}", mangled_func), output);
+        output.add_exec(&moon::instr_line(&moon::load_w(&R1, &children[0].label().unwrap(), &R0)));
+        output.add_exec(&moon::instr_line(&moon::store_w(&return_value_label, &R0, &local_register)));
+        output.add_exec(&moon::instr_line(&moon::jmp(&exit_label)));
+
+        state.registers.release(r);
+    }
+}
+
 /// Return the aggregated list of non-array parameter type
 /// from the supplied fparamList node
 fn collect_parameters(node: &Node) -> Vec<String> {
@@ -697,6 +843,30 @@ fn collect_parameters(node: &Node) -> Vec<String> {
                 if let Data::String(d_type) = sub_children[0].data() {
                     result.push(d_type.clone());
                 }
+            }
+        }
+    }
+    result
+}
+
+fn a_params_collect(node: &Node) -> Vec<String> {
+    let mut result = Vec::new();
+    if let Data::Children(children) = node.data() {
+        for child in children {
+            if let Some(d_type) = child.data_type() {
+                result.push(d_type.clone());
+            }
+        }
+    }
+    result
+}
+
+fn a_params_label_collect(node: &Node) -> Vec<String> {
+    let mut result = Vec::new();
+    if let Data::Children(children) = node.data() {
+        for child in children {
+            if let Some(label) = child.label() {
+                result.push(label.clone());
             }
         }
     }
@@ -737,7 +907,7 @@ fn get_child_label(node: &Node, index: usize) -> String {
 }
 
 /// Traverse the tree of nodes looking for the return statement
-fn get_return_statement() {}
+
 
 // This accepts a dataMember
 // fn get_index(node: &Node, child: usize) -> usize {

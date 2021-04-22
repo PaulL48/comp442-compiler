@@ -23,6 +23,19 @@
 // 5.3: |     |  X  |
 //      -------------
 
+func foo(integer a, integer b, integer c) : integer {
+    var {
+        integer i;
+    }
+    i = a + b * c;
+    write (i);
+    return (i);
+}
+
+func foo(integer a) : integer {
+  var {}
+  return (0);
+}
 
 main
 {
@@ -33,29 +46,6 @@ main
     float k;     // 1.1
   }
 
-
-
-  i = 10;        // 3.1
-  j = 1 + 2 * i; // 3.1
-  k = 12.41;     // 3.1
-
-  write (i + 2 * 2); // 3.4
-
-  j = 0;
-  while (j < 10) {     // 3.3
-    if (i > 10) then { // 3.2
-      write (42); // 3.4
-    } else {
-      write (99); // 3.4
-    };
-
-    write (j);  // 3.4
-    write (i);  // 3.4
-    j = j + 1;  // 5.1
-    i = j * j;  // 5.1
-  };
-
-  write (i * i + (j - 2) + 10); // 5.1
-  i = i * i + (j - 2) + 10;     // 5.1
-  write (i);
+  write (foo(1, 2, 3));
+  write (foo(1));
 }
